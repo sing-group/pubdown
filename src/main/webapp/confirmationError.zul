@@ -1,0 +1,9 @@
+<zk>
+	<window title="Pubdown" border="normal" width="400px" height="100px"
+		style="margin: 0 auto;text-align: center;">
+		<vlayout>
+			USER CONFIRMATION ERROR
+			<a label="Back to login" href="index.zul" />
+		</vlayout>
+	</window>
+</zk>

@@ -1,0 +1,45 @@
+<?page title="Pubdown"?>
+<zk>
+	<style src="css/pubdown.css" />
+	<window title="Pubdown Login" border="normal" width="220px"
+		style="margin: 0 auto;"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.UserViewModel')"
+		validationMessages="@id('vmsgs')">
+
+		<vlayout>
+			<label value="Login" />
+			<textbox id="tbLogin" hflex="true"
+				value="@bind(vm.login) @validator(vm.loginValidator)"
+				onChange="@command('checkData')" />
+			<label value="@load(vmsgs[tbLogin])" sclass="error" />
+
+			<label value="Password" />
+			<textbox id="tbPassword" hflex="true"
+				value="@bind(vm.password) @validator(vm.passwordValidator)"
+				type="password" onChange="@command('checkData')"
+				onOK="@command('checkLogin')" />
+			<label value="@load(vmsgs[tbPassword])" sclass="error" />
+
+			<hlayout style="text-align: center;">
+				<button label="Login"
+					disabled="@load(not vm.valid or not empty vmsgs)"
+					onClick="@command('checkLogin')" />
+				<button label="Sign Up" href="registration.zul" />
+			</hlayout>
+			<hlayout style="text-align: center;">
+				<a label="Forgot your password?"
+					href="passwordRecoveryEmail.zul" />
+			</hlayout>
+			<hlayout style="text-align: center;">
+			<a href="#" label="About" onClick="winAbout.doModal()"/>
+				<window id="winAbout" visible="false" closable="true"
+					action="show: slideDown;hide: slideUp" position="center"
+					contentStyle="margin: 0px; padding: 0px" height="450px"
+					width="350px" title="About" border="normal"
+					onClose="self.setVisible(false); event.stopPropagation()">
+					<iframe hflex="true" vflex="true" src="/about.html" />
+				</window>
+			</hlayout>
+		</vlayout>
+	</window>
+</zk>

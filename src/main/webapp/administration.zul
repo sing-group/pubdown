@@ -1,0 +1,197 @@
+<?page title="Pubdown (Beta)" contentType="text/html;charset=UTF-8"?>
+<zk>
+	<window title="Pubdown Administration Panel" id="winJarvestWeb"
+		binder="@init(queueName='pubdown')" closable="true" border="normal"
+		style="margin: 0 auto;" width="960px"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.AdministrationViewModel')"
+		onClose="@command('closeSession')">
+		<tabbox hflex="true">
+			<tabs>
+				<tab label="Users" />
+				<tab label="Robots" />
+				<tab label="Executions" />
+			</tabs>
+			<tabpanels>
+				<tabpanel>
+					<vlayout vflex="true" hflex="true">
+						<toolbar>
+							<toolbarbutton label="New User"
+								onClick="@command('newUser')" />
+							<label value="Filter" />
+							<textbox value="@bind(vm.userFilter)"
+								onChange="@command('searchUser')" instant="true"
+								placeholder="name/email" />
+						</toolbar>
+						<hlayout vflex="true" hflex="true">
+							<grid autopaging="true"
+								pagingPosition="bottom" mold="paging" height="450px"
+								model="@load(vm.usersList)">
+								<columns>
+									<column align="center"
+										label="Login" />
+									<column width="200px" align="center"
+										label="Email" />
+									<column width="55px" align="center"
+										label="Admin" />
+									<column align="center" width="180px"
+										label="API Key" />
+									<column align="center" width="100px"
+										label="Robots" />
+									<column align="center" width="70px"
+										label="Locked" />
+									<column align="center" width="220px"
+										label="Options" />
+								</columns>
+								<template name="model" var="user">
+									<row>
+										<label
+											value="@load(user.login)" />
+										<label
+											value="@load(user.email)" />
+										<checkbox
+											checked="@load(user.admin)" disabled="true" />
+										<label
+											value="@load(user.apiKey)" />
+										<label
+											value="@load(user.robotNumber)" />
+										<checkbox
+											checked="@load(user.locked)" disabled="true" />
+										<cell>
+											<button
+												image="./images/editUser16x16.png" tooltiptext="Edit User"
+												onClick="@command('editUser', currentUser=user )" />
+											<button
+												image="./images/deleteUser16x16.png"
+												tooltiptext="Delete User"
+												onClick="@command('deleteUser', currentUser=user )" />
+											<button
+												image="./images/resetPassword16x16.png"
+												tooltiptext="Reset User Password"
+												onClick="@command('resetUserPassword', currentUser=user )" />
+											<button
+												image="./images/unlockUser16x16.png"
+												tooltiptext="Unlock User"
+												onClick="@command('unlockUser', currentUser=user )"
+												disabled="@load(!user.locked)" />
+										</cell>
+									</row>
+								</template>
+							</grid>
+						</hlayout>
+					</vlayout>
+				</tabpanel>
+				<tabpanel>
+					<vlayout vflex="true" hflex="true">
+						<toolbar>
+							<toolbarbutton label="New Robot"
+								onClick="@command('newRobot')" />
+							<label value="Filter" />
+							<textbox
+								value="@bind(vm.robotFilterByNameDescriptionOwner)"
+								onChange="@command('searchRobotByNameDescriptionOwner')"
+								instant="true" placeholder="name/description/owner" />
+							<textbox
+								value="@bind(vm.robotFilterByCategoryContentType)"
+								onChange="@command('searchRobotByCategoryContentType')"
+								instant="true" placeholder="category/content-type" />
+						</toolbar>
+						<hlayout vflex="true" hflex="true">
+							<grid autopaging="true"
+								pagingPosition="bottom" mold="paging" height="450px"
+								model="@load(vm.robotsList)">
+								<columns>
+									<column align="center" width="160px"
+										label="Name" />
+									<column align="center" width="100px"
+										label="Category" />
+									<column align="center" width="130px"
+										label="Content-type" />
+									<column align="center" width="100px"
+										label="Public" />
+									<column align="center" width="100px"
+										label="Owner" />
+									<column align="center" width="160px"
+										label="Description" />
+									<column align="center"
+										label="Options" />
+								</columns>
+								<template name="model" var="robot">
+									<row>
+										<label
+											value="@load(robot.name)" />
+										<label
+											value="@load(robot.category)" />
+										<label
+											value="@load(robot.contentType)" />
+										<checkbox
+											checked="@load(robot.publicAccess)" disabled="true" />
+										<label
+											value="@load(robot.user.login)" />
+										<label
+											value="@load(robot.description)" />
+										<cell>
+											<button
+												image="./images/editRobot16x16.png" tooltiptext="Edit Robot"
+												onClick="@command('editRobot', currentRobot=robot )" />
+											<button
+												image="./images/deleteRobot16x16.png"
+												tooltiptext="Delete Robot"
+												onClick="@command('deleteRobot', currentRobot=robot )" />
+										</cell>
+									</row>
+								</template>
+							</grid>
+						</hlayout>
+					</vlayout>
+				</tabpanel>
+				<tabpanel>
+					<vlayout vflex="true" hflex="true">
+						<toolbar>
+							<toolbarbutton label="Abort All Executions"
+								tooltiptext="Abort all executions"
+								onClick="@command('abortAllExecutions')" />
+						</toolbar>
+						<hlayout vflex="true" hflex="true">
+							<grid autopaging="true"
+								pagingPosition="bottom" mold="paging" height="450px"
+								model="@load(vm.robotExecutionList)">
+								<columns>
+									<column align="center"
+										label="User Name" />
+									<column align="center"
+										label="Robot Name" />
+									<column align="center"
+										label="Status" />
+									<column align="center"
+										label="Options" />
+								</columns>
+								<template name="model" var="result">
+									<row>
+										<label
+											value="@load(result.userLogin)" />
+										<label
+											value="@load(result.robotName)" />
+										<label
+											value="@load(result.status)" />
+										<cell>
+											<button
+												image="./images/deleteRobotExecution16x16.png"
+												tooltiptext="Delete Result"
+												disabled="@load(not (result.finished or result.aborted))"
+												onClick="@command('deleteResult',currentResult=result)" />
+											<button
+												image="./images/abortRobotExecution16x16.png"
+												tooltiptext="Abort Execution"
+												disabled="@load(result.finished or result.aborted)"
+												onClick="@command('abortExecution',currentResult=result)" />
+										</cell>
+									</row>
+								</template>
+							</grid>
+						</hlayout>
+					</vlayout>
+				</tabpanel>
+			</tabpanels>
+		</tabbox>
+	</window>
+</zk>

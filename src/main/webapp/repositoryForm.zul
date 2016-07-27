@@ -1,0 +1,38 @@
+<zk>
+	<style src="css/pubdown.css" />
+
+	<window title="Repository Form" id="repositoryForm"
+		binder="@init(queueName='pubdown')"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.RepositoryFormViewModel')"
+		width="550px" height="auto" border="normal" minimizable="false"
+		mode="modal" maximizable="false" closable="false"
+		onClose="self.detach()" validationMessages="@id('vmsgs')">
+		<vlayout hflex="true" vflex="true">
+			<grid>
+				<columns>
+					<column width="80px" />
+					<column />
+					<column width="180px" />
+				</columns>
+				<rows>
+					<row>
+						<label value="Name" />
+						<textbox id="tbName" value="@bind(vm.name) @validator(vm.nameValidator)"
+							onChange="@command('checkData')" hflex="true" />
+						<label value="@load(vmsgs[tbName])"
+							sclass="error" />
+					</row>
+					<row>
+						<cell colspan="3" align="center">
+							<button label="Create"
+								onClick="@command('confirm')" forward="repositoryForm.onClose"
+								disabled="@load(not vm.valid or not empty vmsgs)" />
+							<button label="Cancel"
+								forward="robotForm.onClose" />
+						</cell>
+					</row>
+				</rows>
+			</grid>
+		</vlayout>
+	</window>
+</zk>

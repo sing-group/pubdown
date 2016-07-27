@@ -1,0 +1,197 @@
+<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
+<zk>
+	<style src="css/pubdown.css" />
+
+	<window title="Pubdown" id="winPubdown" closable="true"
+		binder="@init(queueName='pubdown')" border="normal"
+		style="margin: 0 auto;" width="960px"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.MainViewModel')"
+		onClose="@command('closeSession')"
+		validationMessages="@id('vmsgs')">
+		<borderlayout height="600px">
+			<west title="Repositories" collapsible="true"
+				width="200px">
+				<vlayout vflex="true" hflex="true" spacing="0">
+					<menubar>
+						<menuitem image="./images/deleteRobot16x16.png"
+							onClick="@command('deleteRepositoryQuery')"
+							tooltiptext="Delete repositoryQuery"
+							disabled="@load(vm.selected)" />
+					</menubar>
+					<tree id="repositoryQueryTree" vflex="true"
+						model="@load(vm.repositoryModel)"
+						onSelect="@command('repositoryQuerySelected')">
+						<template name="model" var="node">
+							<treeitem value="@load(node)"
+								draggable="@load(!node.repository)">
+								<treerow>
+									<treecell label="@load(node.label)"
+										droppable="@load(node.repository)"
+										onDrop="@command('moveRepositoryQueryTo', repositoryQuery = event.dragged.value.robot, repository = event.target.parent.parent.value.label)" />
+								</treerow>
+							</treeitem>
+						</template>
+					</tree>
+					<hlayout valign="bottom">
+						<button label="New repository"
+							onClick="@command('newRepository')" />
+					</hlayout>
+				</vlayout>
+			</west>
+			<center title="Repository">
+				<tabbox>
+					<tabs>
+						<tab label="Papers" />
+						<tab label="Config" />
+					</tabs>
+					<tabpanels>
+						<tabpanel>
+							<vlayout vflex="true" hflex="true">
+								<borderlayout height="540px">
+									<north collapsible="true"
+										title="Information">
+										<vlayout hflex="1" vflex="1">
+											<toolbar>
+												<toolbarbutton
+													label="New Query" onClick="@command('newRepositoryQuery')" />
+												<toolbarbutton
+													label="Discard Changes"
+													onClick="@command('refreshRepositoryQuery')" />
+												<toolbarbutton
+													label="Save Query"
+													onClick="@command('persistRepositoryQuery')"
+													disabled="@load(not vm.validRepositoryQuery or not empty vmsgs)" />
+												<separator
+													orient="vertical" bar="true">
+												</separator>
+												<toolbarbutton
+													label="Launch" onClick="@command('launchRobot')"
+													disabled="@load(not empty vmsgs)" />
+											</toolbar>
+											<vlayout
+												style="padding: 5px" height="100px">
+												<hlayout
+													valign="middle">
+													<label value="Name" />
+													<textbox id="rbName"
+														value="@bind(vm.repositoryQuery.name) @validator(vm.nameValidator)"
+														onChange="@command('checkData')" />
+													<label
+														value="@load(vmsgs[rbName])" sclass="error" />
+													<label
+														value="Query" />
+													<textbox
+														id="rbQuery" width="350px"
+														value="@bind(vm.repositoryQuery.query) @validator(vm.queryValidator)"
+														onChange="@command('checkData')" />
+													<label
+														value="@load(vmsgs[rbQuery])" sclass="error" />
+												</hlayout>
+												<hlayout valign="middle">
+													<label
+														value="Repository" />
+													<combobox
+														id="rbRepository" autodrop="true"
+														model="@load(vm.repositories)" buttonVisible="false"
+														autocomplete="true"
+														value="@bind(vm.repositoryQuery.repository) @validator(vm.repositoryValidator)"
+														onChange="@command('checkData')" />
+													<label
+														value="@load(vmsgs[rbRepository])" sclass="error" />
+												</hlayout>
+												<hlayout
+													valign="middle">
+													<checkbox
+														label="Scopus" checked="@bind(vm.repositoryQuery.scopus)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="Pubmed" checked="@bind(vm.repositoryQuery.pubmed)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="Abstract"
+														checked="@bind(vm.repositoryQuery.abstractPaper)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="Full text"
+														checked="@bind(vm.repositoryQuery.fulltextPaper)"
+														onCheck="@command('checkData')" />
+												</hlayout>
+												<hlayout
+													valign="middle">
+													<checkbox
+														label="Automatic PDF to Text conversion?"
+														checked="@bind(vm.repositoryQuery.pdfToText)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="Keep PDFs?"
+														checked="@bind(vm.repositoryQuery.keepPdf)"
+														onCheck="@command('checkData')" />
+												</hlayout>
+											</vlayout>
+										</vlayout>
+									</north>
+								</borderlayout>
+							</vlayout>
+						</tabpanel>
+						<tabpanel>
+							<borderlayout height="540px">
+								<north title="Robots Executing">
+									<vlayout>
+										<toolbar>
+											<toolbarbutton
+												label="Abort All Executions"
+												tooltiptext="Abort all executions"
+												onClick="@command('abortAllExecutions')" />
+										</toolbar>
+										<hlayout hflex="true"
+											vflex="true">
+											<listbox
+												selectedItem="@bind(vm.robotExecution)"
+												model="@load(vm.robotExecutionList)" mold="paging"
+												height="200px" pageSize="4">
+												<listhead>
+													<listheader
+														label="Robot name" align="center" />
+													<listheader
+														label="Status" align="center" />
+													<listheader
+														label="Options" align="center" />
+												</listhead>
+												<template name="model"
+													var="result">
+													<listitem>
+														<listcell
+															label="@load(result.robotName)" />
+														<listcell
+															label="@load(result.status)" />
+														<listcell>
+															<button
+																image="./images/deleteRobotExecution16x16.png"
+																tooltiptext="Delete Result"
+																disabled="@load(not (result.finished or result.aborted))"
+																onClick="@command('deleteResult',currentResult=result)" />
+															<button
+																image="./images/abortRobotExecution16x16.png"
+																tooltiptext="Abort Execution"
+																disabled="@load(result.finished or result.aborted)"
+																onClick="@command('abortExecution',currentResult=result)" />
+														</listcell>
+													</listitem>
+												</template>
+											</listbox>
+										</hlayout>
+									</vlayout>
+								</north>
+								<center title="Execution Result">
+									<textbox hflex="true" vflex="true"
+										readonly="true" style="font-family: monospace;"
+										multiline="true" value="@load(vm.robotExecution.result)" />
+								</center>
+							</borderlayout>
+						</tabpanel>
+					</tabpanels>
+				</tabbox>
+			</center>
+		</borderlayout>
+	</window>
+</zk>

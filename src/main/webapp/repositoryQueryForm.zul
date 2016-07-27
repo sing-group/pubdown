@@ -1,0 +1,66 @@
+<zk>
+	<style src="css/pubdown.css" />
+
+	<window title="Query Form" id="repositoryQueryForm"
+		binder="@init(queueName='pubdown')"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.RepositoryQueryFormViewModel')"
+		width="550px" height="auto" border="normal" minimizable="false"
+		mode="modal" maximizable="false" closable="false"
+		onClose="self.detach()" validationMessages="@id('vmsgs')">
+		<vlayout hflex="true" vflex="true">
+			<grid>
+				<columns>
+					<column width="80px" />
+					<column />
+					<column width="180px" />
+				</columns>
+				<rows>
+					<row>
+						<label value="Name" />
+						<textbox id="tbName"
+							value="@bind(vm.repositoryQuery.name) @validator(vm.nameValidator)"
+							onChange="@command('checkData')" hflex="true" />
+						<label value="@load(vmsgs[tbName])"
+							sclass="error" />
+					</row>
+					<row>
+						<label value="Repository" />
+						<combobox autodrop="true"
+							model="@load(vm.repositories)" buttonVisible="false"
+							autocomplete="true" value="@bind(vm.repositoryQuery.repository)"
+							hflex="true" />
+					</row>
+					<row>
+						<label value="Content-Type" />
+						<textbox
+							value="@bind(vm.repositoryQuery.contentType)" hflex="true" />
+					</row>
+					<row>
+						<label value="Is public?" />
+						<cell colspan="2">
+							<checkbox
+								checked="@bind(vm.repositoryQuery.publicAccess)" hflex="true" />
+						</cell>
+					</row>
+					<row>
+						<label value="Description" />
+						<textbox rows="3"
+							value="@bind(vm.repositoryQuery.description)" hflex="true" />
+					</row>
+					<row>
+						<cell colspan="3" align="center">
+							<button label="Save"
+								onClick="@command('confirm')"
+								forward="repositoryQueryForm.onClose"
+								disabled="@load(not vm.valid or not empty vmsgs)" />
+							<button label="Cancel"
+								forward="repositoryQueryForm.onClose" />
+							<button label="Reset Form"
+								onClick="@command('refresh')" />
+						</cell>
+					</row>
+				</rows>
+			</grid>
+		</vlayout>
+	</window>
+</zk>

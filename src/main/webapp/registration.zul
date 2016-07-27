@@ -1,0 +1,40 @@
+<zk>
+	<style src="css/pubdown.css" />
+	<window title="Pubdown Registration" border="normal" width="350px"
+		style="margin: 0 auto;"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.RegistrationViewModel')"
+		validationMessages="@id('vmsgs')">
+		<div
+			form="@id('fx') @load(vm.registration) @save(vm.registration, before='registerUser')
+    @validator(vm.passwordValidator, retypedPassword=vm.retypedPassword)">
+			<vlayout>
+				<label value="Login" />
+				<textbox id="tbLogin"
+					value="@bind(vm.registration.login) @validator(vm.loginValidator)"
+					hflex="true" onChange="@command('checkData')" />
+				<label value="@load(vmsgs[tbLogin])" sclass="error" />
+
+				<label value="Password" />
+				<textbox type="password"
+					value="@bind(vm.registration.password)" hflex="true" />
+
+				<label value="Re-type Password" />
+				<textbox type="password"
+					value="@bind(vm.retypedPassword)" hflex="true" />
+				<label value="@load(vmsgs['password'])" sclass="error" />
+
+				<label value="Email" />
+				<textbox id="tbEmail"
+					value="@bind(vm.registration.email) @validator(vm.emailValidator)"
+					hflex="true" onChange="@command('checkData')" />
+				<label value="@load(vmsgs[tbEmail])" sclass="error" />
+
+				<hlayout>
+					<button label="Back to Login" href="index.zul" />
+					<button label="Complete Registration"
+						disabled="@load(not vm.valid)" onClick="@command('registerUser')" />
+				</hlayout>
+			</vlayout>
+		</div>
+	</window>
+</zk>

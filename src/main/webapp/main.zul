@@ -69,7 +69,7 @@
 													disabled="@load(not empty vmsgs)" />
 											</toolbar>
 											<vlayout
-												style="padding: 5px" height="100px">
+												style="padding: 5px" height="120px">
 												<hlayout
 													valign="middle">
 													<label value="Name" />
@@ -87,7 +87,8 @@
 													<label
 														value="@load(vmsgs[rbQuery])" sclass="error" />
 												</hlayout>
-												<hlayout valign="middle">
+												<hlayout
+													valign="middle">
 													<label
 														value="Repository" />
 													<combobox
@@ -126,6 +127,16 @@
 														label="Keep PDFs?"
 														checked="@bind(vm.repositoryQuery.keepPdf)"
 														onCheck="@command('checkData')" />
+												</hlayout>
+												<hlayout
+													valign="middle">
+													<radiogroup onCheck="@command('checkData')"
+														selectedItem="@bind(vm.repositoryQuery.groupBy)">
+														<radio
+															label="Group by abstract/full text" value="true" />
+														<radio
+															label="Group by paper" value="false" />
+													</radiogroup>
 												</hlayout>
 											</vlayout>
 										</vlayout>

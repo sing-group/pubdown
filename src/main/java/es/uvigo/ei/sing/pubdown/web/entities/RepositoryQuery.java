@@ -57,7 +57,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	private boolean keepPdf = false;
 
 	@Basic
-	private boolean groupBy = false;
+	private boolean groupBy = true;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "userId")
@@ -226,12 +226,12 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.keepPdf = keepPdf;
 	}
 
-	public boolean isGroupBy() {
-		return groupBy;
+	public String getGroupBy() {
+		return String.valueOf(groupBy);
 	}
 
-	public void setGroupBy(boolean groupBy) {
-		this.groupBy = groupBy;
+	public void setGroupBy(String groupBy) {
+		this.groupBy = Boolean.parseBoolean(groupBy);
 	}
 
 	/**
@@ -336,6 +336,6 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 				.thenBy(RepositoryQuery::getScopusDownloadTo).thenBy(RepositoryQuery::getPubmedDownloadTo)
 				.thenBy(RepositoryQuery::isAbstractPaper).thenBy(RepositoryQuery::isFulltextPaper)
 				.thenBy(RepositoryQuery::isPdfToText).thenBy(RepositoryQuery::isKeepPdf)
-				.thenBy(RepositoryQuery::isGroupBy).andGet();
+				.thenBy(RepositoryQuery::getGroupBy).andGet();
 	}
 }

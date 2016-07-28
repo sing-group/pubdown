@@ -75,7 +75,8 @@ public class RegistrationViewModel extends ViewModelFunctions {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean isValid() {
-		return isEmail(this.registration.getEmail()) && !isEmpty(this.registration.getLogin());
+		return isEmail(this.registration.getEmail()) && !isEmpty(this.registration.getLogin())
+				&& !isEmpty(this.registration.getApiKey());
 	}
 
 	/**
@@ -155,6 +156,19 @@ public class RegistrationViewModel extends ViewModelFunctions {
 		};
 	}
 
+	public Validator getApikeyValidator() {
+		return new AbstractValidator() {
+			@Override
+			public void validate(final ValidationContext ctx) {
+				final String apikey = (String) ctx.getProperty().getValue();
+
+				if (isEmpty(apikey)) {
+					addInvalidMessage(ctx, "Apikey can't be empty");
+				}
+			}
+		};
+	}
+
 	/**
 	 * Checks if exists a {@link Registration} in DB {@link Registration} table
 	 * 
@@ -229,11 +243,10 @@ public class RegistrationViewModel extends ViewModelFunctions {
 	 */
 	@Command
 	public void registerUser() {
-		final String apiKey = UUID.randomUUID().toString();
 		final String uuid = UUID.randomUUID().toString();
 		final Registration registrationUser = new Registration(this.registration.getLogin(),
-				BCrypt.hashpw(this.registration.getPassword(), BCrypt.gensalt()), apiKey, this.registration.getEmail(),
-				uuid);
+				BCrypt.hashpw(this.registration.getPassword(), BCrypt.gensalt()), this.registration.getApiKey(),
+				this.registration.getEmail(), uuid);
 		tm.runInTransaction(em -> {
 			em.persist(registrationUser);
 			try {

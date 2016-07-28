@@ -18,11 +18,12 @@ import org.zkoss.bind.annotation.GlobalCommand;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 import org.zkoss.bind.validator.AbstractValidator;
-import org.zkoss.zk.ui.Executions;
 import org.zkoss.zul.Messagebox;
 
 import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
 import es.uvigo.ei.sing.pubdown.execution.GlobalEvents;
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.pubmed.PubMedDownloader;
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.scopus.ScopusDownloader;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.entities.RobotExecution;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
@@ -48,7 +49,7 @@ public class MainViewModel extends ViewModelFunctions {
 		GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_ABORTED, MainViewModel.GC_UPDATE_EXECUTIONS);
 	}
 
-	private static final String REPOSITORIES_FOLDER = "/home/lab33/pubdownTest";
+	private static final String REPOSITORY_FOLDER = "/home/lab33/pubdownTest";
 
 	private final static String[] NAVIGATION_PROPERTIES = new String[] { "robotExecutionList" };
 
@@ -57,7 +58,6 @@ public class MainViewModel extends ViewModelFunctions {
 	private RepositoryTreeModel repositoryModel;
 	private List<RobotExecution> robotExecutionList;
 	private RobotExecution robotExecution;
-	private String directory;
 
 	/**
 	 * Initializes variables
@@ -70,7 +70,6 @@ public class MainViewModel extends ViewModelFunctions {
 				em -> em.createQuery("SELECT u FROM RobotExecution u WHERE u.userLogin = :user", RobotExecution.class)
 						.setParameter("user", getCurrentUser(tm).getLogin()).getResultList());
 		this.robotExecution = null;
-		this.directory = REPOSITORIES_FOLDER + File.separator + getCurrentUser(tm).getLogin() + File.separator;
 	}
 
 	/**
@@ -166,14 +165,6 @@ public class MainViewModel extends ViewModelFunctions {
 	 */
 	public boolean isRepositoryQueryModified() {
 		return this.repositoryQuery.compareTo(this.uneditedRepositoryQuery) != 0;
-	}
-
-	public String getDirectory() {
-		return directory;
-	}
-
-	public void setDirectory(String directory) {
-		this.directory = directory;
 	}
 
 	/**
@@ -342,7 +333,7 @@ public class MainViewModel extends ViewModelFunctions {
 	public void addRepository(@BindingParam("repository") final String repositoryName) {
 		this.repositoryModel.addRepository(repositoryName);
 		final File newDirectory = new File(
-				REPOSITORIES_FOLDER + File.separator + getCurrentUser(tm).getLogin() + File.separator + repositoryName);
+				REPOSITORY_FOLDER + File.separator + getCurrentUser(tm).getLogin() + File.separator + repositoryName);
 		if (!newDirectory.exists()) {
 			newDirectory.mkdirs();
 		}
@@ -442,10 +433,16 @@ public class MainViewModel extends ViewModelFunctions {
 	public void persistRepositoryQuery() {
 		final RepositoryQuery repositoryQuery = this.getRepositoryQuery();
 
+		final String downloadDirectory = REPOSITORY_FOLDER + File.separator + getCurrentUser(tm).getLogin()
+				+ File.separator + repositoryQuery.getRepository() + File.separator;
+
 		final boolean isNew = isNewRepositoryQuery();
+
 		if (isNew) {
 			repositoryQuery.setUser(getCurrentUser(tm));
 		}
+
+		repositoryQuery.setDirectory(downloadDirectory);
 
 		tm.runInTransaction(em -> {
 			em.persist(repositoryQuery);
@@ -458,7 +455,6 @@ public class MainViewModel extends ViewModelFunctions {
 					getRepositoryQuery().getRepository());
 		}
 
-		final String downloadDirectory = this.directory + repositoryQuery.getRepository();
 		final File newDirectory = new File(downloadDirectory);
 		if (!newDirectory.exists()) {
 			newDirectory.mkdirs();
@@ -470,12 +466,87 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	/*
+	 * 
+	 * 
+	 * 
 	 * EXECUTION BLOCK
+	 * 
+	 * 
+	 * 
 	 */
 	@Command
-	public void launchRobot() {
-		Executions.createComponents("robotExecutionParameters.zul", null,
-				singletonMap("robot", this.getRepositoryQuery()));
+	public void launchRepositoryQuery() {
+		final RepositoryQuery repositoryQuery = this.getRepositoryQuery();
+		final String query = repositoryQuery.getQuery().replace(" ", "+");
+
+		final ScopusDownloader scopusDownloader = new ScopusDownloader(query, getCurrentUser(tm).getApiKey(),
+				repositoryQuery.getDirectory());
+		final PubMedDownloader pubmedDownloader = new PubMedDownloader(query, repositoryQuery.getDirectory());
+
+		final int downloadFrom = 0;
+
+		int scopusDownloadTo = 0;
+		int pubmedDownloadTo = 0;
+
+		if (repositoryQuery.getScopusDownloadTo() == Integer.MAX_VALUE) {
+			int scopusResult = scopusDownloader.getResultSize();
+			if (scopusResult != 0) {
+				System.out.println("SCOPUS DOWNLOAD TO : " + scopusResult);
+
+				if (scopusResult > 6000) {
+					scopusDownloadTo = 6000;
+				}
+
+				scopusDownloadTo = 3;
+				repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
+				tm.runInTransaction(em -> {
+					em.persist(repositoryQuery);
+				});
+			}
+		}
+
+		if (repositoryQuery.getPubmedDownloadTo() == Integer.MAX_VALUE) {
+			int pubmedResult = pubmedDownloader.getResultSize();
+			if (pubmedResult != 0) {
+				System.out.println("PUBMED DOWNLOAD TO : " + pubmedResult);
+
+				pubmedDownloadTo = 3;
+				repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
+				tm.runInTransaction(em -> {
+					em.persist(repositoryQuery);
+				});
+			}
+		}
+		if (repositoryQuery.isFulltextPaper()) {
+			final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
+			if (repositoryQuery.isScopus() && repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
+				System.out.println("directory type: " + directoryType);
+				scopusDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
+						directoryType, downloadFrom, repositoryQuery.getScopusDownloadTo());
+			}
+
+			if (repositoryQuery.isPubmed() && repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE) {
+				System.out.println("directory type: " + directoryType);
+				pubmedDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
+						directoryType, downloadFrom, repositoryQuery.getPubmedDownloadTo());
+			}
+		}
+
+		if (repositoryQuery.isAbstractPaper()) {
+			final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
+			if (repositoryQuery.isScopus() && repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
+				System.out.println("directory type: " + directoryType);
+				scopusDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
+						directoryType, downloadFrom, repositoryQuery.getScopusDownloadTo());
+			}
+
+			if (repositoryQuery.isPubmed() && repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE) {
+				System.out.println("directory type: " + directoryType);
+				pubmedDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
+						directoryType, downloadFrom, repositoryQuery.getPubmedDownloadTo());
+			}
+		}
+
 	}
 
 	@GlobalCommand

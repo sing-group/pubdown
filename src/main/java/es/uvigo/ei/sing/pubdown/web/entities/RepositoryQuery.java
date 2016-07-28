@@ -33,16 +33,19 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	private String repository;
 
 	@Basic
+	private String directory;
+
+	@Basic
 	private boolean scopus = false;
 
 	@Basic
 	private boolean pubmed = false;
 
 	@Basic
-	private int scopusDownloadTo = 0;
+	private int scopusDownloadTo = Integer.MAX_VALUE;
 
 	@Basic
-	private int pubmedDownloadTo = 0;
+	private int pubmedDownloadTo = Integer.MAX_VALUE;
 
 	@Basic
 	private boolean abstractPaper = false;
@@ -69,13 +72,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public RepositoryQuery() {
 	}
 
-	public RepositoryQuery(User user, String name, String query, String repository, boolean scopus, boolean pubmed,
-			int scopusDownloadTo, int pubmedDownloadTo, boolean abstractPaper, boolean fulltextPaper, boolean pdfToText,
-			boolean keepPdf, boolean groupBy) {
+	public RepositoryQuery(User user, String name, String query, String repository, String directory, boolean scopus,
+			boolean pubmed, int scopusDownloadTo, int pubmedDownloadTo, boolean abstractPaper, boolean fulltextPaper,
+			boolean pdfToText, boolean keepPdf, boolean groupBy) {
 		this.user = user;
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
+		this.directory = directory;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
 		this.scopusDownloadTo = scopusDownloadTo;
@@ -87,13 +91,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.groupBy = groupBy;
 	}
 
-	private RepositoryQuery(Integer id, String name, String query, String repository, boolean scopus, boolean pubmed,
-			int scopusDownloadTo, int pubmedDownloadTo, boolean abstractPaper, boolean fulltextPaper, boolean pdfToText,
-			boolean keepPdf, boolean groupBy) {
+	private RepositoryQuery(Integer id, String name, String query, String repository, String directory, boolean scopus,
+			boolean pubmed, int scopusDownloadTo, int pubmedDownloadTo, boolean abstractPaper, boolean fulltextPaper,
+			boolean pdfToText, boolean keepPdf, boolean groupBy) {
 		this.id = id;
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
+		this.directory = directory;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
 		this.scopusDownloadTo = scopusDownloadTo;
@@ -152,6 +157,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		requireNonNull(repository, "repository can't be null");
 
 		this.repository = repository.trim();
+	}
+
+	public String getDirectory() {
+		return directory;
+	}
+
+	public void setDirectory(String directory) {
+		this.directory = directory;
 	}
 
 	public String getQuery() {
@@ -317,9 +330,9 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	 */
 	@Override
 	public RepositoryQuery clone() {
-		return new RepositoryQuery(this.id, this.name, this.query, this.repository, this.scopus, this.pubmed,
-				this.scopusDownloadTo, this.pubmedDownloadTo, this.abstractPaper, this.fulltextPaper, this.pdfToText,
-				this.keepPdf, this.groupBy);
+		return new RepositoryQuery(this.id, this.name, this.query, this.repository, this.directory, this.scopus,
+				this.pubmed, this.scopusDownloadTo, this.pubmedDownloadTo, this.abstractPaper, this.fulltextPaper,
+				this.pdfToText, this.keepPdf, this.groupBy);
 	}
 
 	/**
@@ -332,10 +345,17 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public int compareTo(final RepositoryQuery o) {
 		return Compare.objects(this, o).by(RepositoryQuery::getId).thenBy(RepositoryQuery::getName)
 				.thenBy(RepositoryQuery::getQuery).thenBy(RepositoryQuery::getRepository)
-				.thenBy(RepositoryQuery::isScopus).thenBy(RepositoryQuery::isPubmed)
-				.thenBy(RepositoryQuery::getScopusDownloadTo).thenBy(RepositoryQuery::getPubmedDownloadTo)
-				.thenBy(RepositoryQuery::isAbstractPaper).thenBy(RepositoryQuery::isFulltextPaper)
-				.thenBy(RepositoryQuery::isPdfToText).thenBy(RepositoryQuery::isKeepPdf)
-				.thenBy(RepositoryQuery::getGroupBy).andGet();
+				.thenBy(RepositoryQuery::getDirectory).thenBy(RepositoryQuery::isScopus)
+				.thenBy(RepositoryQuery::isPubmed).thenBy(RepositoryQuery::isAbstractPaper)
+				.thenBy(RepositoryQuery::isFulltextPaper).thenBy(RepositoryQuery::isPdfToText)
+				.thenBy(RepositoryQuery::isKeepPdf).thenBy(RepositoryQuery::getGroupBy).andGet();
+		// return Compare.objects(this,
+		// o).by(RepositoryQuery::getId).thenBy(RepositoryQuery::getName)
+		// .thenBy(RepositoryQuery::getQuery).thenBy(RepositoryQuery::getRepository)
+		// .thenBy(RepositoryQuery::getDirectory).thenBy(RepositoryQuery::isScopus)
+		// .thenBy(RepositoryQuery::isPubmed).thenBy(RepositoryQuery::getScopusDownloadTo)
+		// .thenBy(RepositoryQuery::getPubmedDownloadTo).thenBy(RepositoryQuery::isAbstractPaper)
+		// .thenBy(RepositoryQuery::isFulltextPaper).thenBy(RepositoryQuery::isPdfToText)
+		// .thenBy(RepositoryQuery::isKeepPdf).thenBy(RepositoryQuery::getGroupBy).andGet();
 	}
 }

@@ -19,6 +19,9 @@
 		<maven-assembly-plugin.version>2.6</maven-assembly-plugin.version>
 		<maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
 		<maven-war-plugin.version>2.6</maven-war-plugin.version>
+		<httpclient.version>4.5.2</httpclient.version>
+		<jsoup.version>1.9.2</jsoup.version>
+		<pdfbox.version>2.0.1</pdfbox.version>
 
 		<maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
 		<packname>-${project.version}-FL-${maven.build.timestamp}</packname>
@@ -127,6 +130,21 @@
 			<groupId>asm</groupId>
 			<artifactId>asm</artifactId>
 			<version>${asm.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>${httpclient.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>${jsoup.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>${pdfbox.version}</version>
 		</dependency>
 	</dependencies>
 	<build>

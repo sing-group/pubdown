@@ -23,6 +23,14 @@
 					value="@bind(vm.retypedPassword)" hflex="true" />
 				<label value="@load(vmsgs['password'])" sclass="error" />
 
+
+				<label value="Scopus Apikey   a1549163d9b16421237ec29c9bbbdf29" />
+				<textbox id="tbApikey"
+					value="@bind(vm.registration.apiKey) @validator(vm.apikeyValidator)"
+					hflex="true" onChange="@command('checkData')" />
+				<label value="@load(vmsgs[tbApikey])" sclass="error" />
+
+
 				<label value="Email" />
 				<textbox id="tbEmail"
 					value="@bind(vm.registration.email) @validator(vm.emailValidator)"

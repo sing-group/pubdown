@@ -32,10 +32,6 @@
 							</treeitem>
 						</template>
 					</tree>
-					<hlayout valign="bottom">
-						<button label="New repository"
-							onClick="@command('newRepository')" />
-					</hlayout>
 				</vlayout>
 			</west>
 			<center title="Repository">
@@ -50,7 +46,8 @@
 								<borderlayout height="540px">
 									<north collapsible="true"
 										title="Information">
-										<vlayout hflex="1" vflex="1">
+										<vlayout hflex="true"
+											vflex="true">
 											<toolbar>
 												<toolbarbutton
 													label="New Query" onClick="@command('newRepositoryQuery')" />
@@ -65,19 +62,30 @@
 													orient="vertical" bar="true">
 												</separator>
 												<toolbarbutton
-													label="Launch" onClick="@command('launchRobot')"
+													label="Launch" onClick="@command('launchRepositoryQuery')"
 													disabled="@load(not empty vmsgs)" />
 											</toolbar>
-											<vlayout
-												style="padding: 5px" height="120px">
-												<hlayout
-													valign="middle">
+											<vlayout height="140px">
+												<hlayout>
 													<label value="Name" />
 													<textbox id="rbName"
+														width="200px"
 														value="@bind(vm.repositoryQuery.name) @validator(vm.nameValidator)"
 														onChange="@command('checkData')" />
 													<label
 														value="@load(vmsgs[rbName])" sclass="error" />
+													<label
+														value="Repository" />
+													<combobox
+														width="200px" id="rbRepository" autodrop="true"
+														model="@load(vm.repositories)" buttonVisible="false"
+														autocomplete="true"
+														value="@bind(vm.repositoryQuery.repository) @validator(vm.repositoryValidator)"
+														onChange="@command('checkData')" />
+													<label
+														value="@load(vmsgs[rbRepository])" sclass="error" />
+												</hlayout>
+												<hlayout>
 													<label
 														value="Query" />
 													<textbox
@@ -87,27 +95,15 @@
 													<label
 														value="@load(vmsgs[rbQuery])" sclass="error" />
 												</hlayout>
-												<hlayout
-													valign="middle">
-													<label
-														value="Repository" />
-													<combobox
-														id="rbRepository" autodrop="true"
-														model="@load(vm.repositories)" buttonVisible="false"
-														autocomplete="true"
-														value="@bind(vm.repositoryQuery.repository) @validator(vm.repositoryValidator)"
-														onChange="@command('checkData')" />
-													<label
-														value="@load(vmsgs[rbRepository])" sclass="error" />
-												</hlayout>
-												<hlayout
-													valign="middle">
+												<hlayout>
 													<checkbox
 														label="Scopus" checked="@bind(vm.repositoryQuery.scopus)"
 														onCheck="@command('checkData')" />
 													<checkbox
 														label="Pubmed" checked="@bind(vm.repositoryQuery.pubmed)"
 														onCheck="@command('checkData')" />
+												</hlayout>
+												<hlayout>
 													<checkbox
 														label="Abstract"
 														checked="@bind(vm.repositoryQuery.abstractPaper)"
@@ -117,20 +113,21 @@
 														checked="@bind(vm.repositoryQuery.fulltextPaper)"
 														onCheck="@command('checkData')" />
 												</hlayout>
-												<hlayout
-													valign="middle">
+												<hlayout>
 													<checkbox
 														label="Automatic PDF to Text conversion?"
 														checked="@bind(vm.repositoryQuery.pdfToText)"
 														onCheck="@command('checkData')" />
 													<checkbox
-														label="Keep PDFs?"
+														label="Delete PDFs?"
+														disabled="@load(not vm.repositoryQuery.pdfToText)"
 														checked="@bind(vm.repositoryQuery.keepPdf)"
 														onCheck="@command('checkData')" />
 												</hlayout>
 												<hlayout
 													valign="middle">
-													<radiogroup onCheck="@command('checkData')"
+													<radiogroup
+														onCheck="@command('checkData')"
 														selectedItem="@bind(vm.repositoryQuery.groupBy)">
 														<radio
 															label="Group by abstract/full text" value="true" />

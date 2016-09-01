@@ -19,8 +19,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import es.uvigo.ei.sing.pubdown.paperdown.downloader.DownloadUtils;
-
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 
 public class PubMedHTMLParser {
 	private static final String SUB_FOLDER_NAME = "pubmed_files";
@@ -80,8 +79,10 @@ public class PubMedHTMLParser {
 										downloadedPDFList.add(paperURL);
 										final String directorySuffix = directoryType ? COMPLETE_PAPERS
 												: SUB_FOLDER_NAME;
-										DownloadUtils.generatePDFFile(paperURL, paperTitle, directory, directorySuffix,
-												isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
+
+										RepositoryManager.generatePDFFile(paperURL, paperTitle, directory,
+												directorySuffix, isCompletePaper, convertPDFtoTXT, keepPDF,
+												directoryType);
 									}
 								}
 							}
@@ -93,7 +94,8 @@ public class PubMedHTMLParser {
 						final String htmlText = Jsoup.parse(abstractTexts.text()).text();
 						if (!htmlText.isEmpty()) {
 							final String directorySuffix = directoryType ? ABSTRACT_PAPERS : SUB_FOLDER_NAME;
-							DownloadUtils.generateTXTFile(paperTitle, htmlText, directory, directorySuffix,
+
+							RepositoryManager.generateTXTFile(paperTitle, htmlText, directory, directorySuffix,
 									isCompletePaper, directoryType);
 						}
 					}

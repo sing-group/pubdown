@@ -24,6 +24,7 @@ import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
 import es.uvigo.ei.sing.pubdown.execution.GlobalEvents;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.pubmed.PubMedDownloader;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.scopus.ScopusDownloader;
+import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.entities.RobotExecution;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
@@ -49,7 +50,7 @@ public class MainViewModel extends ViewModelFunctions {
 		GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_ABORTED, MainViewModel.GC_UPDATE_EXECUTIONS);
 	}
 
-	private static final String REPOSITORY_FOLDER = "/home/lab33/pubdownTest";
+	// private String repositoryPath = "/home/lab33/pubdownTest";
 
 	private final static String[] NAVIGATION_PROPERTIES = new String[] { "robotExecutionList" };
 
@@ -58,6 +59,7 @@ public class MainViewModel extends ViewModelFunctions {
 	private RepositoryTreeModel repositoryModel;
 	private List<RobotExecution> robotExecutionList;
 	private RobotExecution robotExecution;
+	private String repositoryPath;
 
 	/**
 	 * Initializes variables
@@ -93,6 +95,21 @@ public class MainViewModel extends ViewModelFunctions {
 		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
 
 		this.repositoryModel.setSelectedRobot(repositoryQuery);
+	}
+	
+	public String getRepositoryPath() {
+		tm.runInTransaction(em -> {
+			em.clear();
+			this.repositoryPath = em
+					.createQuery("SELECT g FROM GlobalConfiguration g WHERE g.configurationKey = :path",
+							GlobalConfiguration.class)
+					.setParameter("path", "repositoryPath").getSingleResult().getConfigurationValue();
+		});
+		return this.repositoryPath;
+//		return tm.get(em -> 
+//		em.createQuery("SELECT g FROM GlobalConfiguration g WHERE g.configurationKey = :path",
+//						GlobalConfiguration.class)
+//				.setParameter("path", "repositoryPath").getSingleResult().getConfigurationValue());
 	}
 
 	/**
@@ -332,8 +349,9 @@ public class MainViewModel extends ViewModelFunctions {
 	@GlobalCommand
 	public void addRepository(@BindingParam("repository") final String repositoryName) {
 		this.repositoryModel.addRepository(repositoryName);
-		final File newDirectory = new File(
-				REPOSITORY_FOLDER + File.separator + getCurrentUser(tm).getLogin() + File.separator + repositoryName);
+//		final File newDirectory = new File(
+//				getRepositoryPath() + File.separator + getCurrentUser(tm).getLogin() + File.separator + repositoryName);
+		final File newDirectory = new File(getCurrentUser(tm).getLogin() + File.separator + repositoryName);
 		if (!newDirectory.exists()) {
 			newDirectory.mkdirs();
 		}
@@ -433,8 +451,11 @@ public class MainViewModel extends ViewModelFunctions {
 	public void persistRepositoryQuery() {
 		final RepositoryQuery repositoryQuery = this.getRepositoryQuery();
 
-		final String downloadDirectory = REPOSITORY_FOLDER + File.separator + getCurrentUser(tm).getLogin()
-				+ File.separator + repositoryQuery.getRepository() + File.separator;
+//		final String downloadDirectory = getRepositoryPath() + File.separator + getCurrentUser(tm).getLogin()
+//				+ File.separator + repositoryQuery.getRepository() + File.separator;
+		
+		final String downloadDirectory = getCurrentUser(tm).getLogin() + File.separator
+				+ repositoryQuery.getRepository() + File.separator;
 
 		final boolean isNew = isNewRepositoryQuery();
 
@@ -478,11 +499,20 @@ public class MainViewModel extends ViewModelFunctions {
 	public void launchRepositoryQuery() {
 		final RepositoryQuery repositoryQuery = this.getRepositoryQuery();
 		final String query = repositoryQuery.getQuery().replace(" ", "+");
-
-		final ScopusDownloader scopusDownloader = new ScopusDownloader(query, getCurrentUser(tm).getApiKey(),
-				repositoryQuery.getDirectory());
-		final PubMedDownloader pubmedDownloader = new PubMedDownloader(query, repositoryQuery.getDirectory());
-
+		
+		final String scopusApiKey = getCurrentUser(tm).getApiKey();
+		final String directoryPath = getRepositoryPath() + File.separator;
+		
+		final ScopusDownloader scopusDownloader = new ScopusDownloader(query, scopusApiKey,
+				directoryPath + repositoryQuery.getDirectory());
+		
+		final PubMedDownloader pubmedDownloader = new PubMedDownloader(query,
+				directoryPath + repositoryQuery.getDirectory());
+		
+		System.out.println("Directory Path: "+directoryPath);
+		System.out.println("Pubmed dir: "+pubmedDownloader.getDirectory());
+		System.out.println("Scopus dir: "+scopusDownloader.getDirectory());
+		
 		final int downloadFrom = 0;
 
 		int scopusDownloadTo = 0;

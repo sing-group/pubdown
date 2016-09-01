@@ -29,9 +29,8 @@ import org.xml.sax.SAXException;
 
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.DownloadEvent;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.DownloadListener;
-import es.uvigo.ei.sing.pubdown.paperdown.downloader.DownloadUtils;
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.Searcher;
-
 
 public class PubMedDownloader implements Searcher {
 	private static final String SEARCH_REQUEST = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?term=";
@@ -54,6 +53,10 @@ public class PubMedDownloader implements Searcher {
 		final RequestConfig globalConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
 		this.httpClient = HttpClients.custom().setDefaultRequestConfig(globalConfig).build();
 		this.context = HttpClientContext.create();
+	}
+
+	public String getDirectory() {
+		return directory;
 	}
 
 	public void setDirectory(String directory) {
@@ -184,18 +187,20 @@ public class PubMedDownloader implements Searcher {
 			for (final Element link : links) {
 				if (link.attr("ref").contains("aid_type=doi")) {
 					doi = link.text();
-					final Map<String, String> doiMap = DownloadUtils.readMetadata(this.directory);
+					final Map<String, String> doiMap = RepositoryManager.readMetadata(this.directory);
 					if (!doiMap.containsKey(doi)) {
-						DownloadUtils.writeMetadata(this.directory, doi, paperTitle, date, authorList, isCompletePaper);
+						RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList,
+								isCompletePaper);
 						return true;
 					} else {
-						final Map<String, List<String>> auxMap = DownloadUtils.readDoiInMetaData(this.directory, doi);
+						final Map<String, List<String>> auxMap = RepositoryManager.readDoiInMetaData(this.directory,
+								doi);
 						final List<String> auxList = auxMap.get(doi);
 						if (auxList.size() == 1) {
 							final String type = auxList.get(0);
 							final String paperType = isCompletePaper ? "full" : "abstract";
 							if (!paperType.equals(type)) {
-								DownloadUtils.writeMetadata(this.directory, doi, paperTitle, date, authorList,
+								RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList,
 										isCompletePaper);
 								return true;
 							}

@@ -17,8 +17,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
-import es.uvigo.ei.sing.pubdown.paperdown.downloader.DownloadUtils;
-
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 
 public class ScopusHTMLParser {
 	private static final String SUB_FOLDER_NAME = "scopus_files";
@@ -60,7 +59,8 @@ public class ScopusHTMLParser {
 					final URI location = URIUtils.resolve(httpGet.getURI(), target, redirectLocations);
 					response.close();
 					final String directorySuffix = directoryType ? COMPLETE_PAPERS : SUB_FOLDER_NAME;
-					DownloadUtils.generatePDFFile(location.toASCIIString(), fileName, directory, directorySuffix,
+
+					RepositoryManager.generatePDFFile(location.toASCIIString(), fileName, directory, directorySuffix,
 							isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
 				}
 			} catch (URISyntaxException | IOException e) {
@@ -73,8 +73,9 @@ public class ScopusHTMLParser {
 			boolean keepPDF, boolean directoryType) {
 		this.urlsWithTitle.forEach((url, fileName) -> {
 			final String directorySuffix = directoryType ? ABSTRACT_PAPERS : SUB_FOLDER_NAME;
-			DownloadUtils.generatePDFFile(url, fileName, directory, directorySuffix, isCompletePaper, convertPDFtoTXT,
-					keepPDF, directoryType);
+
+			RepositoryManager.generatePDFFile(url, fileName, directory, directorySuffix, isCompletePaper,
+					convertPDFtoTXT, keepPDF, directoryType);
 		});
 	}
 }

@@ -25,7 +25,8 @@ import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
-public class DownloadUtils {
+public class RepositoryManager {
+
 	private static final String PDF_FILE_EXTENSION = ".pdf";
 	private static final String TXT_FILE_EXTENSION = ".txt";
 	private static final String LOG_FILE = "log.csv";

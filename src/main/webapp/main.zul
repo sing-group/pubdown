@@ -27,7 +27,7 @@
 								<treerow>
 									<treecell label="@load(node.label)"
 										droppable="@load(node.repository)"
-										onDrop="@command('moveRepositoryQueryTo', repositoryQuery = event.dragged.value.robot, repository = event.target.parent.parent.value.label)" />
+										onDrop="@command('moveRepositoryQueryTo', repositoryQuery = event.dragged.value.repositoryQuery, repository = event.target.parent.parent.value.label)" />
 								</treerow>
 							</treeitem>
 						</template>
@@ -38,7 +38,7 @@
 				<tabbox>
 					<tabs>
 						<tab label="Papers" />
-						<tab label="Config" />
+						<tab label="Config-Execution" />
 					</tabs>
 					<tabpanels>
 						<tabpanel>
@@ -63,7 +63,7 @@
 												</separator>
 												<toolbarbutton
 													label="Launch" onClick="@command('launchRepositoryQuery')"
-													disabled="@load(not empty vmsgs)" />
+													disabled="@load(not vm.validRepositoryQuery or not empty vmsgs)" />
 											</toolbar>
 											<vlayout height="140px">
 												<hlayout>

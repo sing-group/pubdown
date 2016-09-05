@@ -7,24 +7,24 @@ import java.util.List;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 
 /**
- * Represents a robot node in the {@link RepositoryTreeModel}
+ * Represents a {@link RepositoryQuery} node in the {@link RepositoryTreeModel}
  * 
  *
  */
 public class RepositoryQueryTreeNode extends CategorizableRepositoryTreeNode {
-	private final RepositoryQuery robot;
+	private final RepositoryQuery repositoryQuery;
 
 	/**
 	 * Constructs a {@link RepositoryQueryTreeNode}
 	 * 
-	 * @param robot
+	 * @param repositoryQuery
 	 *            the {@link RepositoryQuery} of the {@link RepositoryQueryTreeNode}
 	 * @param parent
 	 *            the parent of the {@link RepositoryQueryTreeNode}
 	 */
-	public RepositoryQueryTreeNode(final RepositoryQuery robot, final RepositoryTreeNode parent) {
+	public RepositoryQueryTreeNode(final RepositoryQuery repositoryQuery, final RepositoryTreeNode parent) {
 		super(parent);
-		this.robot = robot;
+		this.repositoryQuery = repositoryQuery;
 	}
 
 	/**
@@ -32,8 +32,8 @@ public class RepositoryQueryTreeNode extends CategorizableRepositoryTreeNode {
 	 * 
 	 * @return the {@link RepositoryQuery}
 	 */
-	public RepositoryQuery getRobot() {
-		return this.robot;
+	public RepositoryQuery getRepositoryQuery() {
+		return this.repositoryQuery;
 	}
 
 	/**
@@ -43,7 +43,7 @@ public class RepositoryQueryTreeNode extends CategorizableRepositoryTreeNode {
 	 */
 	@Override
 	public String getLabel() {
-		return this.robot.getName();
+		return this.repositoryQuery.getName();
 	}
 
 	/**

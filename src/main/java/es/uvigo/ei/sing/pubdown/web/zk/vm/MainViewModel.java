@@ -94,7 +94,7 @@ public class MainViewModel extends ViewModelFunctions {
 
 		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
 
-		this.repositoryModel.setSelectedRobot(repositoryQuery);
+		this.repositoryModel.setSelectedRepositoryQuery(repositoryQuery);
 	}
 	
 	public String getRepositoryPath() {
@@ -113,22 +113,22 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	/**
-	 * Getter of the uneditedRobot global variable
+	 * Getter of the uneditedRepositoryQuery global variable
 	 * 
-	 * @return the value of the uneditedRobot global variable
+	 * @return the value of the uneditedRepositoryQuery global variable
 	 */
-	public RepositoryQuery getUneditedRobot() {
+	public RepositoryQuery getUneditedRepositoryQuery() {
 		return uneditedRepositoryQuery;
 	}
 
 	/**
-	 * Setter of the uneditedRobot global variable
+	 * Setter of the uneditedRepositoryQuery global variable
 	 * 
-	 * @param uneditedRobot
-	 *            the value of the uneditedRobot global variable
+	 * @param uneditedRepositoryQuery
+	 *            the value of the uneditedRepositoryQuery global variable
 	 */
-	public void setUneditedRobot(final RepositoryQuery uneditedRobot) {
-		this.uneditedRepositoryQuery = uneditedRobot;
+	public void setUneditedRepositoryQuery(final RepositoryQuery uneditedRepositoryQuery) {
+		this.uneditedRepositoryQuery = uneditedRepositoryQuery;
 	}
 
 	/**
@@ -208,7 +208,7 @@ public class MainViewModel extends ViewModelFunctions {
 	 */
 	@DependsOn("repositoryQuery")
 	public boolean isSelected() {
-		return this.repositoryModel.getSelectedRobot() == null;
+		return this.repositoryModel.getSelectedRepositoryQuery() == null;
 	}
 
 	/**
@@ -293,7 +293,7 @@ public class MainViewModel extends ViewModelFunctions {
 	@Command
 	@NotifyChange({ "repositoryQuery", "repositoryModel" })
 	public void deleteRepositoryQuery() {
-		final RepositoryQuery selectedRepositoryQuery = this.repositoryModel.getSelectedRobot();
+		final RepositoryQuery selectedRepositoryQuery = this.repositoryModel.getSelectedRepositoryQuery();
 		if (selectedRepositoryQuery != null) {
 			Messagebox.show("Do you want to delete the query?", "Delete Query",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
@@ -305,7 +305,7 @@ public class MainViewModel extends ViewModelFunctions {
 								selectedRepositoryQuery.setUser(null);
 							});
 							this.repositoryModel.removeRepositoryQuery(selectedRepositoryQuery);
-							this.repositoryModel.setSelectedRobot(null);
+							this.repositoryModel.setSelectedRepositoryQuery(null);
 							this.setRepositoryQuery(new RepositoryQuery());
 							postNotifyChange(this, "repositoryQuery", "repositoryModel");
 
@@ -314,7 +314,7 @@ public class MainViewModel extends ViewModelFunctions {
 							setRepositoryQuery(selectedRepositoryQuery);
 							break;
 						default:
-							this.repositoryModel.setSelectedRobot(this.repositoryQuery);
+							this.repositoryModel.setSelectedRepositoryQuery(this.repositoryQuery);
 						}
 					}, singletonMap("width", "500"));
 		}
@@ -336,7 +336,7 @@ public class MainViewModel extends ViewModelFunctions {
 		tm.runInTransaction(em -> {
 			em.persist(repositoryQuery);
 		});
-		this.repositoryModel.setSelectedRobot(this.repositoryQuery);
+		this.repositoryModel.setSelectedRepositoryQuery(this.repositoryQuery);
 		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
 	}
 
@@ -366,7 +366,7 @@ public class MainViewModel extends ViewModelFunctions {
 	@Command
 	@NotifyChange("repositoryQuery")
 	public void repositoryQuerySelected() {
-		final RepositoryQuery selectedRepositoryQuery = this.repositoryModel.getSelectedRobot();
+		final RepositoryQuery selectedRepositoryQuery = this.repositoryModel.getSelectedRepositoryQuery();
 		if (selectedRepositoryQuery != null) {
 			if (!this.repositoryQuery.equals(selectedRepositoryQuery) && isRepositoryQueryModified()) {
 				Messagebox.show("Do you want to save?", "Save Query",
@@ -391,7 +391,7 @@ public class MainViewModel extends ViewModelFunctions {
 								break;
 							case Messagebox.ON_NO:
 							default:
-								this.repositoryModel.setSelectedRobot(this.repositoryQuery);
+								this.repositoryModel.setSelectedRepositoryQuery(this.repositoryQuery);
 							}
 						}, singletonMap("width", "500"));
 			} else {
@@ -481,7 +481,7 @@ public class MainViewModel extends ViewModelFunctions {
 			newDirectory.mkdirs();
 		}
 
-		this.repositoryModel.setSelectedRobot(repositoryQuery);
+		this.repositoryModel.setSelectedRepositoryQuery(repositoryQuery);
 
 		this.uneditedRepositoryQuery = repositoryQuery.clone();
 	}

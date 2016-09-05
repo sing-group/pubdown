@@ -25,37 +25,37 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 	/**
 	 * Constructs a {@link RepositoryTreeModel}
 	 * 
-	 * @param robotsByCategory
+	 * @param repositoryQueryByCategories
 	 *            all the {@link RepositoryQuery} of an {@link User} sorted by
 	 *            categories
 	 */
-	public RepositoryTreeModel(final Map<String, List<RepositoryQuery>> robotsByCategory) {
-		super(createRootNode(robotsByCategory));
+	public RepositoryTreeModel(final Map<String, List<RepositoryQuery>> repositoryQueryByCategories) {
+		super(createRootNode(repositoryQueryByCategories));
 	}
 
 	/**
 	 * Creates a {@link RepositoryTreeModel} with {@link RepositoryTreeNode} and
 	 * {@link RepositoryQueryTreeNode}.
 	 * 
-	 * @param robotsByRepository
+	 * @param repositoryQuerysByRepository
 	 *            all the {@link RepositoryQuery} of an {@link User} sorted by
 	 *            categories
 	 * @return a sorted {@link RepositoryTreeModel}
 	 */
-	private static CustomTreeNode createRootNode(Map<String, List<RepositoryQuery>> robotsByRepository) {
+	private static CustomTreeNode createRootNode(Map<String, List<RepositoryQuery>> repositoryQuerysByRepository) {
 		final RepositoryTreeNode root = new RepositoryTreeNode();
-		robotsByRepository = new TreeMap<>(robotsByRepository);
+		repositoryQuerysByRepository = new TreeMap<>(repositoryQuerysByRepository);
 
-		robotsByRepository.forEach((key, value) -> {
+		repositoryQuerysByRepository.forEach((key, value) -> {
 			final String repository = key;
-			final List<RepositoryQuery> robots = value;
+			final List<RepositoryQuery> repositoryQuerys = value;
 
 			final RepositoryTreeNode categoryNode = repository.isEmpty() ? root
 					: new RepositoryTreeNode(repository, root);
 
-			sort(robots, (r1, r2) -> r1.getName().compareTo(r2.getName()));
-			for (final RepositoryQuery robot : robots) {
-				new RepositoryQueryTreeNode(robot, categoryNode);
+			sort(repositoryQuerys, (r1, r2) -> r1.getName().compareTo(r2.getName()));
+			for (final RepositoryQuery reopositoryQuery : repositoryQuerys) {
+				new RepositoryQueryTreeNode(reopositoryQuery, categoryNode);
 			}
 		});
 
@@ -119,14 +119,14 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 	 *         {@link RepositoryQueryTreeNode} instance, <code>null</code>
 	 *         otherwise
 	 */
-	public RepositoryQuery getSelectedRobot() {
+	public RepositoryQuery getSelectedRepositoryQuery() {
 		final Set<CustomTreeNode> selection = this.getSelection();
 
 		if (selection.size() == 1) {
 			final CustomTreeNode selectedNode = selection.iterator().next();
 
 			if (selectedNode instanceof RepositoryQueryTreeNode) {
-				return ((RepositoryQueryTreeNode) selectedNode).getRobot();
+				return ((RepositoryQueryTreeNode) selectedNode).getRepositoryQuery();
 			}
 		}
 
@@ -136,13 +136,13 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 	/**
 	 * Sets a {@link RepositoryQuery} as the current selection
 	 * 
-	 * @param robot
+	 * @param repositoryQuery
 	 *            the {@link RepositoryQuery}
 	 */
-	public void setSelectedRobot(final RepositoryQuery robot) {
+	public void setSelectedRepositoryQuery(final RepositoryQuery repositoryQuery) {
 		this.clearSelection();
 
-		final RepositoryQueryTreeNode node = getRobotTreeNode(robot);
+		final RepositoryQueryTreeNode node = getRepositoryQueryNode(repositoryQuery);
 
 		if (node != null)
 			this.setSelection(asList(node));
@@ -178,7 +178,7 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 	 *            the {@link RepositoryQuery} label to find
 	 * @return a {@link RepositoryQueryTreeNode}
 	 */
-	public RepositoryQueryTreeNode getRobotTreeNode(final RepositoryQuery repositoryQuery) {
+	public RepositoryQueryTreeNode getRepositoryQueryNode(final RepositoryQuery repositoryQuery) {
 		if (repositoryQuery == null)
 			return null;
 
@@ -194,7 +194,7 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 			} else if (node instanceof RepositoryQueryTreeNode) {
 				final RepositoryQueryTreeNode repositoryQueryNode = (RepositoryQueryTreeNode) node;
 
-				if (repositoryQueryNode.getRobot().equals(repositoryQuery)) {
+				if (repositoryQueryNode.getRepositoryQuery().equals(repositoryQuery)) {
 					return repositoryQueryNode;
 				}
 			}
@@ -220,16 +220,16 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 		if (repository == null)
 			throw new IllegalArgumentException("category can't be null");
 
-		final RepositoryQueryTreeNode robotNode = this.getRobotTreeNode(repositoryQuery);
-		if (robotNode == null)
-			throw new IllegalArgumentException("robot doesn't belongs to this tree");
+		final RepositoryQueryTreeNode repositoryQueryNode = this.getRepositoryQueryNode(repositoryQuery);
+		if (repositoryQueryNode == null)
+			throw new IllegalArgumentException("repositoryQuery doesn't belongs to this tree");
 
 		repository = repository.trim();
-		final RepositoryTreeNode previousCategoryNode = robotNode.getParent();
+		final RepositoryTreeNode previousCategoryNode = repositoryQueryNode.getParent();
 		final RepositoryTreeNode categoryNode = getOrCreateRepositoryNode(repository);
 
 		repositoryQuery.setRepository(repository);
-		robotNode.setParent(categoryNode);
+		repositoryQueryNode.setParent(categoryNode);
 
 		if (previousCategoryNode.getChildren().isEmpty()) {
 			previousCategoryNode.setParent(null);
@@ -243,10 +243,10 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 	 *            the {@link RepositoryQuery} to remove
 	 */
 	public void removeRepositoryQuery(final RepositoryQuery repositoryQuery) {
-		final RepositoryQueryTreeNode robotNode = this.getRobotTreeNode(repositoryQuery);
-		final RepositoryTreeNode previousCategoryNode = robotNode.getParent();
+		final RepositoryQueryTreeNode repositoryQueryNode = this.getRepositoryQueryNode(repositoryQuery);
+		final RepositoryTreeNode previousCategoryNode = repositoryQueryNode.getParent();
 
-		previousCategoryNode.effectiveRemoveChild(robotNode);
+		previousCategoryNode.effectiveRemoveChild(repositoryQueryNode);
 
 		if (previousCategoryNode.getChildren().isEmpty()) {
 			previousCategoryNode.setParent(null);
@@ -263,7 +263,7 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 	 *             if the {@link RepositoryQuery} doesn't belong to the tree
 	 */
 	public void addRepositoryQuery(final RepositoryQuery repositoryQuery) {
-		if (this.getRobotTreeNode(repositoryQuery) != null)
+		if (this.getRepositoryQueryNode(repositoryQuery) != null)
 			throw new IllegalArgumentException("RepositoryQuery already belongs to this tree");
 
 		final RepositoryTreeNode categoryNode = getOrCreateRepositoryNode(repositoryQuery.getRepository());

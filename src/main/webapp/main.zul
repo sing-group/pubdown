@@ -13,7 +13,7 @@
 				width="200px">
 				<vlayout vflex="true" hflex="true" spacing="0">
 					<menubar>
-						<menuitem image="./images/deleteRobot16x16.png"
+						<menuitem image="./images/trashCan16x16.png"
 							onClick="@command('deleteRepositoryQuery')"
 							tooltiptext="Delete repositoryQuery"
 							disabled="@load(vm.selected)" />
@@ -62,10 +62,9 @@
 													orient="vertical" bar="true">
 												</separator>
 												<toolbarbutton
-													label="Launch" onClick="@command('launchRepositoryQuery')"
-													disabled="@load(not vm.validRepositoryQuery or not empty vmsgs)" />
+													label="Launch" onClick="@command('launchRepositoryQuery')" />
 											</toolbar>
-											<vlayout height="140px">
+											<vlayout height="220px">
 												<hlayout>
 													<label value="Name" />
 													<textbox id="rbName"
@@ -130,10 +129,68 @@
 														onCheck="@command('checkData')"
 														selectedItem="@bind(vm.repositoryQuery.groupBy)">
 														<radio
-															label="Group by abstract/full text" value="true" />
-														<radio
 															label="Group by paper" value="false" />
+														<radio
+															label="Group by abstract/full text" value="true" />
 													</radiogroup>
+												</hlayout>
+												<hlayout
+													valign="middle">
+													<radiogroup
+														onCheck="@command('checkData')"
+														selectedItem="@bind(vm.repositoryQuery.daily)">
+														<radio
+															label="daily execution" value="true" />
+														<radio
+															label="weekly execution" value="false" />
+													</radiogroup>
+												</hlayout>
+												<hlayout>
+													<label value="hour" />
+													<textbox id="rbHour"
+														width="30px" value="@bind(vm.repositoryQuery.task.hour)"
+														onChange="@command('checkData')" />
+													<label
+														value="@load(vmsgs[rbHour])" sclass="error" />
+													<label
+														value="minutes" />
+													<textbox
+														id="rbMinutes" width="30px"
+														value="@bind(vm.repositoryQuery.task.minutes)"
+														onChange="@command('checkData')" />
+													<label
+														value="@load(vmsgs[rbMinutes])" sclass="error" />
+												</hlayout>
+												<hlayout>
+													<checkbox
+														label="monday"
+														checked="@bind(vm.repositoryQuery.task.monday)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="tuesday"
+														checked="@bind(vm.repositoryQuery.task.tuesday)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="wednesday"
+														checked="@bind(vm.repositoryQuery.task.wednesday)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="thursday"
+														checked="@bind(vm.repositoryQuery.task.thursday)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="friday"
+														checked="@bind(vm.repositoryQuery.task.friday)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="saturday"
+														checked="@bind(vm.repositoryQuery.task.saturday)"
+														onCheck="@command('checkData')" />
+													<checkbox
+														label="sunday"
+														checked="@bind(vm.repositoryQuery.task.sunday)"
+														onCheck="@command('checkData')" />
+
 												</hlayout>
 											</vlayout>
 										</vlayout>
@@ -142,60 +199,60 @@
 							</vlayout>
 						</tabpanel>
 						<tabpanel>
-							<borderlayout height="540px">
-								<north title="Robots Executing">
-									<vlayout>
-										<toolbar>
-											<toolbarbutton
-												label="Abort All Executions"
-												tooltiptext="Abort all executions"
-												onClick="@command('abortAllExecutions')" />
-										</toolbar>
-										<hlayout hflex="true"
-											vflex="true">
-											<listbox
-												selectedItem="@bind(vm.robotExecution)"
-												model="@load(vm.robotExecutionList)" mold="paging"
-												height="200px" pageSize="4">
-												<listhead>
-													<listheader
-														label="Robot name" align="center" />
-													<listheader
-														label="Status" align="center" />
-													<listheader
-														label="Options" align="center" />
-												</listhead>
-												<template name="model"
-													var="result">
-													<listitem>
-														<listcell
-															label="@load(result.robotName)" />
-														<listcell
-															label="@load(result.status)" />
-														<listcell>
-															<button
-																image="./images/deleteRobotExecution16x16.png"
-																tooltiptext="Delete Result"
-																disabled="@load(not (result.finished or result.aborted))"
-																onClick="@command('deleteResult',currentResult=result)" />
-															<button
-																image="./images/abortRobotExecution16x16.png"
-																tooltiptext="Abort Execution"
-																disabled="@load(result.finished or result.aborted)"
-																onClick="@command('abortExecution',currentResult=result)" />
-														</listcell>
-													</listitem>
-												</template>
-											</listbox>
-										</hlayout>
-									</vlayout>
-								</north>
-								<center title="Execution Result">
-									<textbox hflex="true" vflex="true"
-										readonly="true" style="font-family: monospace;"
-										multiline="true" value="@load(vm.robotExecution.result)" />
-								</center>
-							</borderlayout>
+							<!-- 							<borderlayout height="540px"> -->
+							<!-- 								<north title="Robots Executing"> -->
+							<!-- 									<vlayout> -->
+							<!-- 										<toolbar> -->
+							<!-- 											<toolbarbutton -->
+							<!-- 												label="Abort All Executions" -->
+							<!-- 												tooltiptext="Abort all executions" -->
+							<!-- 												onClick="@command('abortAllExecutions')" /> -->
+							<!-- 										</toolbar> -->
+							<!-- 										<hlayout hflex="true" -->
+							<!-- 											vflex="true"> -->
+							<!-- 											<listbox -->
+							<!-- 												selectedItem="@bind(vm.robotExecution)" -->
+							<!-- 												model="@load(vm.robotExecutionList)" mold="paging" -->
+							<!-- 												height="200px" pageSize="4"> -->
+							<!-- 												<listhead> -->
+							<!-- 													<listheader -->
+							<!-- 														label="Robot name" align="center" /> -->
+							<!-- 													<listheader -->
+							<!-- 														label="Status" align="center" /> -->
+							<!-- 													<listheader -->
+							<!-- 														label="Options" align="center" /> -->
+							<!-- 												</listhead> -->
+							<!-- 												<template name="model" -->
+							<!-- 													var="result"> -->
+							<!-- 													<listitem> -->
+							<!-- 														<listcell -->
+							<!-- 															label="@load(result.robotName)" /> -->
+							<!-- 														<listcell -->
+							<!-- 															label="@load(result.status)" /> -->
+							<!-- 														<listcell> -->
+							<!-- 															<button -->
+							<!-- 																image="./images/deleteRobotExecution16x16.png" -->
+							<!-- 																tooltiptext="Delete Result" -->
+							<!-- 																disabled="@load(not (result.finished or result.aborted))" -->
+							<!-- 																onClick="@command('deleteResult',currentResult=result)" /> -->
+							<!-- 															<button -->
+							<!-- 																image="./images/abortRobotExecution16x16.png" -->
+							<!-- 																tooltiptext="Abort Execution" -->
+							<!-- 																disabled="@load(result.finished or result.aborted)" -->
+							<!-- 																onClick="@command('abortExecution',currentResult=result)" /> -->
+							<!-- 														</listcell> -->
+							<!-- 													</listitem> -->
+							<!-- 												</template> -->
+							<!-- 											</listbox> -->
+							<!-- 										</hlayout> -->
+							<!-- 									</vlayout> -->
+							<!-- 								</north> -->
+							<!-- 								<center title="Execution Result"> -->
+							<!-- 									<textbox hflex="true" vflex="true" -->
+							<!-- 										readonly="true" style="font-family: monospace;" -->
+							<!-- 										multiline="true" value="@load(vm.robotExecution.result)" /> -->
+							<!-- 								</center> -->
+							<!-- 							</borderlayout> -->
 						</tabpanel>
 					</tabpanels>
 				</tabbox>

@@ -7,6 +7,7 @@ import org.zkoss.zk.ui.WebApp;
 import org.zkoss.zk.ui.util.WebAppCleanup;
 
 import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
+import es.uvigo.ei.sing.pubdown.scheduler.Scheduler;
 
 /**
  * Manages the {@link ExecutorService}
@@ -19,5 +20,6 @@ public class ExecutorServiceManager implements WebAppCleanup {
 	@Override
 	public void cleanup(final WebApp wapp) throws Exception {
 		ExecutionEngine.getSingleton().shutdown();
+		Scheduler.getSingleton().shutdown();
 	}
 }

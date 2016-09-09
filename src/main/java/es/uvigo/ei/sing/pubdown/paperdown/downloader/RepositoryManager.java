@@ -25,7 +25,13 @@ import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
+import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
+import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
+import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
+import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
+
 public class RepositoryManager {
+	private static final TransactionManager tm = new DesktopTransactionManager();
 
 	private static final String PDF_FILE_EXTENSION = ".pdf";
 	private static final String TXT_FILE_EXTENSION = ".txt";
@@ -33,6 +39,24 @@ public class RepositoryManager {
 
 	private static final String SEMICOLON_DELIMITER = ";";
 	private static final String METADATA_FILE = "metadata.csv";
+	private static String repositoryPath;
+
+	public static String getRepositoryPath() {
+		tm.runInTransaction(em -> {
+			em.clear();
+			repositoryPath = em
+					.createQuery("SELECT g FROM GlobalConfiguration g WHERE g.configurationKey = :path",
+							GlobalConfiguration.class)
+					.setParameter("path", "repositoryPath").getSingleResult().getConfigurationValue();
+		});
+		return repositoryPath;
+	}
+
+	public static void updateRepositoryQuery(RepositoryQuery repositoryQuery) {
+		tm.runInTransaction(em -> {
+			em.merge(repositoryQuery);
+		});
+	}
 
 	public static void generatePDFFile(String pdfURL, String fileName, String directory, String directorySuffix,
 			boolean isCompletePaper, boolean convertPDFtoTXT, boolean keepPDF, boolean directoryType) {

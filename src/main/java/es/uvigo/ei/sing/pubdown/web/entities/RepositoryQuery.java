@@ -3,6 +3,7 @@ package es.uvigo.ei.sing.pubdown.web.entities;
 import static java.util.Objects.requireNonNull;
 
 import javax.persistence.Basic;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -66,11 +67,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	@Basic
 	private boolean daily = true;
 
+	@Basic
+	private boolean checked = false;
+
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "userId")
 	private User user;
 
-	@OneToOne
+	@OneToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "taskId")
 	private Task task;
 
@@ -85,7 +89,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 			final String directory, final boolean scopus, final boolean pubmed, final int scopusDownloadTo,
 			final int pubmedDownloadTo, final boolean abstractPaper, final boolean fulltextPaper,
 			final boolean pdfToText, final boolean keepPdf, final boolean groupBy, final boolean daily,
-			final Task task) {
+			final boolean checked, final Task task) {
 		this.user = user;
 		this.name = name;
 		this.query = query;
@@ -101,6 +105,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.keepPdf = keepPdf;
 		this.groupBy = groupBy;
 		this.daily = daily;
+		this.checked = checked;
 		this.task = new Task();
 	}
 
@@ -108,7 +113,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 			final String directory, final boolean scopus, final boolean pubmed, final int scopusDownloadTo,
 			final int pubmedDownloadTo, final boolean abstractPaper, final boolean fulltextPaper,
 			final boolean pdfToText, final boolean keepPdf, final boolean groupBy, final boolean daily,
-			final Task task) {
+			final boolean checked, final Task task) {
 		this.id = id;
 		this.name = name;
 		this.query = query;
@@ -124,6 +129,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.keepPdf = keepPdf;
 		this.groupBy = groupBy;
 		this.daily = daily;
+		this.checked = checked;
 		this.task = task;
 	}
 
@@ -272,6 +278,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.daily = Boolean.parseBoolean(daily);
 	}
 
+	public boolean isChecked() {
+		return checked;
+	}
+
+	public void setChecked(boolean checked) {
+		this.checked = checked;
+	}
+
 	public Task getTask() {
 		return task;
 	}
@@ -370,7 +384,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public RepositoryQuery clone() {
 		return new RepositoryQuery(this.id, this.name, this.query, this.repository, this.directory, this.scopus,
 				this.pubmed, this.scopusDownloadTo, this.pubmedDownloadTo, this.abstractPaper, this.fulltextPaper,
-				this.pdfToText, this.keepPdf, this.groupBy, this.daily, this.task.clone());
+				this.pdfToText, this.keepPdf, this.groupBy, this.daily, this.checked, this.task.clone());
 	}
 
 	/**
@@ -389,4 +403,5 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 				.thenBy(RepositoryQuery::isKeepPdf).thenBy(RepositoryQuery::getGroupBy)
 				.thenBy(RepositoryQuery::getDaily).thenBy(RepositoryQuery::getTask).andGet();
 	}
+
 }

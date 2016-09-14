@@ -67,7 +67,7 @@ public class ScopusDownloader implements Searcher {
 	@Override
 	public void downloadPapers(boolean isCompletePaper, boolean convertPDFtoTXT, boolean keepPDF, boolean directoryType,
 			int downloadFrom, int downloadTo) {
-
+		
 		int aux = downloadTo;
 		int searchIncrease = 1;
 		final int resultNumber = getResultSize();

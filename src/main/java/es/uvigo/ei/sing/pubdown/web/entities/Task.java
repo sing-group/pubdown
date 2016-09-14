@@ -1,7 +1,5 @@
 package es.uvigo.ei.sing.pubdown.web.entities;
 
-import java.io.File;
-
 import javax.persistence.Basic;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -10,9 +8,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 
-import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
-import es.uvigo.ei.sing.pubdown.paperdown.downloader.pubmed.PubMedDownloader;
-import es.uvigo.ei.sing.pubdown.paperdown.downloader.scopus.ScopusDownloader;
 import es.uvigo.ei.sing.pubdown.util.Compare;
 
 @Entity
@@ -170,92 +165,6 @@ public class Task implements Cloneable, Comparable<Task> {
 		this.repositoryQuery = repositoryQuery;
 	}
 
-	public Runnable getRunnableQuery() {
-		return () -> {
-			try {
-				// final RepositoryQuery repositoryQuery =
-				// this.getRepositoryQuery();
-				final String query = this.repositoryQuery.getQuery().replace(" ", "+");
-
-				final String scopusApiKey = this.getRepositoryQuery().getUser().getApiKey();
-				final String directoryPath = RepositoryManager.getRepositoryPath() + File.separator;
-
-				final ScopusDownloader scopusDownloader = new ScopusDownloader(query, scopusApiKey,
-						directoryPath + this.repositoryQuery.getDirectory());
-
-				final PubMedDownloader pubmedDownloader = new PubMedDownloader(query,
-						directoryPath + this.repositoryQuery.getDirectory());
-
-				final int downloadFrom = 0;
-
-				int scopusDownloadTo = 0;
-				int pubmedDownloadTo = 0;
-
-				if (this.repositoryQuery.getScopusDownloadTo() == Integer.MAX_VALUE
-						&& this.repositoryQuery.isScopus()) {
-					final int scopusResult = scopusDownloader.getResultSize();
-					if (scopusResult != 0) {
-						if (scopusResult > 6000) {
-							scopusDownloadTo = 6000;
-						}
-
-						// 3 to test
-						scopusDownloadTo = 3;
-						this.repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
-
-						RepositoryManager.updateRepositoryQuery(this.repositoryQuery);
-					}
-				}
-
-				if (this.repositoryQuery.getPubmedDownloadTo() == Integer.MAX_VALUE
-						&& this.repositoryQuery.isPubmed()) {
-					final int pubmedResult = pubmedDownloader.getResultSize();
-					if (pubmedResult != 0) {
-						// 3 to test
-						pubmedDownloadTo = 3;
-						this.repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
-
-						RepositoryManager.updateRepositoryQuery(this.repositoryQuery);
-					}
-				}
-				if (this.repositoryQuery.isFulltextPaper()) {
-					final boolean directoryType = Boolean.valueOf(this.repositoryQuery.getGroupBy());
-					if (this.repositoryQuery.isScopus()
-							&& this.repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
-						scopusDownloader.downloadPapers(true, this.repositoryQuery.isPdfToText(),
-								this.repositoryQuery.isKeepPdf(), directoryType, downloadFrom,
-								this.repositoryQuery.getScopusDownloadTo());
-					}
-
-					if (this.repositoryQuery.isPubmed()
-							&& this.repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE) {
-						pubmedDownloader.downloadPapers(true, this.repositoryQuery.isPdfToText(),
-								this.repositoryQuery.isKeepPdf(), directoryType, downloadFrom,
-								this.repositoryQuery.getPubmedDownloadTo());
-					}
-				}
-
-				if (this.repositoryQuery.isAbstractPaper()) {
-					final boolean directoryType = Boolean.valueOf(this.repositoryQuery.getGroupBy());
-					if (this.repositoryQuery.isScopus()
-							&& this.repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
-						scopusDownloader.downloadPapers(false, this.repositoryQuery.isPdfToText(),
-								this.repositoryQuery.isKeepPdf(), directoryType, downloadFrom,
-								this.repositoryQuery.getScopusDownloadTo());
-					}
-
-					if (this.repositoryQuery.isPubmed()
-							&& this.repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE) {
-						pubmedDownloader.downloadPapers(false, this.repositoryQuery.isPdfToText(),
-								this.repositoryQuery.isKeepPdf(), directoryType, downloadFrom,
-								this.repositoryQuery.getPubmedDownloadTo());
-					}
-				}
-			} catch (final Exception e) {
-			}
-		};
-	}
-
 	/**
 	 * {@link RepositoryQuery} hashcode method
 	 */
@@ -289,6 +198,7 @@ public class Task implements Cloneable, Comparable<Task> {
 		return true;
 	}
 
+
 	@Override
 	public Task clone() {
 		return new Task(this.id, this.hour, this.minutes, this.monday, this.tuesday, this.wednesday, this.thursday,
@@ -302,12 +212,4 @@ public class Task implements Cloneable, Comparable<Task> {
 				.thenBy(Task::isFriday).thenBy(Task::isSaturday).thenBy(Task::isSunday).andGet();
 	}
 
-	@Override
-	public String toString() {
-		return "Task [id=" + id + ", hour=" + hour + ", minutes=" + minutes + ", monday=" + monday + ", tuesday="
-				+ tuesday + ", wednesday=" + wednesday + ", thursday=" + thursday + ", friday=" + friday + ", saturday="
-				+ saturday + ", sunday=" + sunday + "]";
-	}
-	
-	
 }

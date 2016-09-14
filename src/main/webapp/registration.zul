@@ -26,7 +26,7 @@
 
 				<label value="Scopus Apikey   a1549163d9b16421237ec29c9bbbdf29" />
 				<textbox id="tbApikey"
-					value="@bind(vm.registration.apiKey) @validator(vm.apikeyValidator)"
+					value="@bind(vm.registration.apiKey)"
 					hflex="true" onChange="@command('checkData')" />
 				<label value="@load(vmsgs[tbApikey])" sclass="error" />
 

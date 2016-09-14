@@ -45,7 +45,7 @@ public class RepositoryManager {
 		tm.runInTransaction(em -> {
 			em.clear();
 			repositoryPath = em
-					.createQuery("SELECT g FROM GlobalConfiguration g WHERE g.configurationKey = :path",
+					.createQuery("SELECT g FROM GlobalConfiguration g WHERE	 g.configurationKey = :path",
 							GlobalConfiguration.class)
 					.setParameter("path", "repositoryPath").getSingleResult().getConfigurationValue();
 		});
@@ -197,6 +197,7 @@ public class RepositoryManager {
 	}
 
 	private static File createDirectory(String directory) {
+		System.out.println("Entro para crear directorio");
 		final File newDirectory = new File(directory);
 		if (!newDirectory.exists()) {
 			newDirectory.mkdirs();

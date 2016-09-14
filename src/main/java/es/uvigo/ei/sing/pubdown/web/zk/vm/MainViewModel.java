@@ -14,17 +14,14 @@ import org.zkoss.bind.Validator;
 import org.zkoss.bind.annotation.BindingParam;
 import org.zkoss.bind.annotation.Command;
 import org.zkoss.bind.annotation.DependsOn;
-import org.zkoss.bind.annotation.GlobalCommand;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 import org.zkoss.bind.validator.AbstractValidator;
 import org.zkoss.zul.Messagebox;
 
-import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
 import es.uvigo.ei.sing.pubdown.execution.GlobalEvents;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
-import es.uvigo.ei.sing.pubdown.paperdown.downloader.pubmed.PubMedDownloader;
-import es.uvigo.ei.sing.pubdown.paperdown.downloader.scopus.ScopusDownloader;
+import es.uvigo.ei.sing.pubdown.scheduler.Scheduler;
 import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.entities.RobotExecution;
@@ -35,7 +32,6 @@ import es.uvigo.ei.sing.pubdown.web.zk.tree.RepositoryTreeModel;
 import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
-import es.uvigo.ei.sing.pubdown.web.zk.vm.robot.RobotExecutionTask;
 
 /**
  * ViewModel to manage the user panel
@@ -95,7 +91,7 @@ public class MainViewModel extends ViewModelFunctions {
 		this.repositoryQuery = repositoryQuery;
 
 		this.repositoryQueryTask = repositoryQuery.getTask();
-		
+
 		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
 
 		this.uneditedRepositoryQueryTask = this.uneditedRepositoryQuery.getTask();
@@ -131,6 +127,10 @@ public class MainViewModel extends ViewModelFunctions {
 	 */
 	public void setUneditedRepositoryQuery(final RepositoryQuery uneditedRepositoryQuery) {
 		this.uneditedRepositoryQuery = uneditedRepositoryQuery;
+	}
+
+	public Task getRepositoryQueryTask() {
+		return repositoryQueryTask;
 	}
 
 	public Task getUneditedRepositoryQueryTask() {
@@ -191,40 +191,19 @@ public class MainViewModel extends ViewModelFunctions {
 	 *         <code>false</code> otherwise
 	 */
 	public boolean isRepositoryQueryModified() {
-		System.out.println("ENTRO EN isRepositoryQueryModified()");
 		return this.repositoryQuery.compareTo(this.uneditedRepositoryQuery) != 0;
 	}
 
 	public boolean isRepositoryQueryTaskModified() {
-		System.out.println("ENTRO EN isRepositoryQueryTaskModified()");
-
-		if (this.repositoryQueryTask.compareTo(this.uneditedRepositoryQueryTask) == 0) {
-			System.out.println("task iguales");
-		} else {
-			System.out.println("task distintas");
-		}
-
 		return this.repositoryQueryTask.compareTo(this.uneditedRepositoryQueryTask) != 0;
 	}
 
 	/**
-	 * Discards all the changes done in the {@link RepositoryQuery}
+	 * Closes the current {@link User} session
 	 */
-	private void discardChanges() {
-		if (!isNewRepositoryQuery()) {
-			tm.runInTransaction(em -> {
-//				em.refresh(this.repositoryQuery.getTask());
-				
-				em.refresh(this.repositoryQueryTask);
-
-				em.refresh(this.repositoryQuery);
-
-				this.uneditedRepositoryQuery = this.repositoryQuery.clone();
-				this.uneditedRepositoryQueryTask = this.uneditedRepositoryQuery.getTask();
-			});
-		} else {
-			this.setRepositoryQuery(new RepositoryQuery());
-		}
+	@Command
+	public void closeSession() {
+		closeUserSession();
 	}
 
 	/**
@@ -251,12 +230,25 @@ public class MainViewModel extends ViewModelFunctions {
 				&& !isEmpty(this.repositoryQuery.getRepository());
 	}
 
+	public boolean isUserApiKeyEmpty() {
+		return getCurrentUser(tm).getApiKey() == null;
+	}
+
+	public boolean isQueryReadyToCheckResult() {
+		return isValidRepositoryQuery() && (this.repositoryQuery.isScopus() || this.repositoryQuery.isPubmed())
+				&& (this.repositoryQuery.isFulltextPaper() || this.repositoryQuery.isAbstractPaper());
+	}
+
+	public boolean isRepositoryQueryChecked() {
+		return this.repositoryQuery.isChecked();
+	}
+
 	/**
 	 * Checks if some variables are valid. Method linked with
 	 * {@link MainViewModel#isValidRepositoryQuery()}
 	 */
 	@Command
-	@NotifyChange("validRepositoryQuery")
+	@NotifyChange({ "validRepositoryQuery", "queryReadyToCheckResult" })
 	public void checkData() {
 	}
 
@@ -359,12 +351,26 @@ public class MainViewModel extends ViewModelFunctions {
 	 */
 	@Command
 	@NotifyChange({ "repositoryQuery", "repositoryModel" })
-	public void moveRepositoryQueryTo(@BindingParam("repositoryQuery") final RepositoryQuery repositoryQuery,
+	public void moveRepositoryQueryTo(@BindingParam("repositoryQuery") RepositoryQuery repositoryQuery,
 			@BindingParam("repository") final String repository) {
 		this.repositoryModel.moveRepositoryQueryToRepository(repositoryQuery, repository);
+//		final boolean isNew = isNewRepositoryQuery();
 		tm.runInTransaction(em -> {
-			em.persist(repositoryQuery);
+			em.merge(repositoryQuery);
 		});
+		
+		
+		
+
+//		if (isNew) {
+//			tm.runInTransaction(em -> em.persist(repositoryQuery));
+//			this.repositoryModel.addRepositoryQuery(repositoryQuery);
+//		} else {
+//			tm.runInTransaction(em -> em.merge(repositoryQuery));
+//			this.repositoryModel.moveRepositoryQueryToRepository(getRepositoryQuery(),
+//				getRepositoryQuery().getRepository());
+//		}
+		
 		this.repositoryModel.setSelectedRepositoryQuery(this.repositoryQuery);
 		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
 	}
@@ -375,11 +381,12 @@ public class MainViewModel extends ViewModelFunctions {
 	 * selected
 	 */
 	@Command
-	@NotifyChange("repositoryQuery")
+	@NotifyChange({ "repositoryQuery", "validRepositoryQuery", "queryReadyToCheckResult" })
 	public void repositoryQuerySelected() {
 		final RepositoryQuery selectedRepositoryQuery = this.repositoryModel.getSelectedRepositoryQuery();
 		if (selectedRepositoryQuery != null) {
-			if (!this.repositoryQuery.equals(selectedRepositoryQuery) && (isRepositoryQueryModified() || isRepositoryQueryTaskModified())) {
+			if (!this.repositoryQuery.equals(selectedRepositoryQuery)
+					&& (isRepositoryQueryModified() || isRepositoryQueryTaskModified())) {
 				Messagebox.show("Do you want to save?", "Save Query",
 						new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL,
 								Messagebox.Button.NO },
@@ -391,14 +398,14 @@ public class MainViewModel extends ViewModelFunctions {
 
 								setRepositoryQuery(selectedRepositoryQuery);
 
-								postNotifyChange(this, "repositoryQuery", "repositoryModel");
+								postNotifyChange(this, "repositoryQuery", "repositoryModel", "repositoryQueryTask");
 								break;
 							case Messagebox.ON_CANCEL:
 								discardChanges();
 
 								setRepositoryQuery(selectedRepositoryQuery);
 
-								postNotifyChange(this, "repositoryQuery");
+								postNotifyChange(this, "repositoryQuery", "repositoryQueryTask");
 								break;
 							case Messagebox.ON_NO:
 							default:
@@ -412,11 +419,21 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	/**
-	 * Closes the current {@link User} session
+	 * Discards all the changes done in the {@link RepositoryQuery}
 	 */
-	@Command
-	public void closeSession() {
-		closeUserSession();
+	private void discardChanges() {
+		if (!isNewRepositoryQuery()) {
+			tm.runInTransaction(em -> {
+				em.refresh(this.repositoryQueryTask);
+	
+				em.refresh(this.repositoryQuery);
+	
+				this.uneditedRepositoryQuery = this.repositoryQuery.clone();
+				this.uneditedRepositoryQueryTask = this.uneditedRepositoryQuery.getTask();
+			});
+		} else {
+			this.setRepositoryQuery(new RepositoryQuery());
+		}
 	}
 
 	/**
@@ -458,35 +475,24 @@ public class MainViewModel extends ViewModelFunctions {
 	 * Persists the {@link RepositoryQuery} creation/changes
 	 */
 	@Command
-	@NotifyChange({ "repositoryQuery", "repositories", "repositoryModel" })
+	@NotifyChange({ "repositoryQuery", "repositories", "repositoryModel", "repositoryQueryTask" })
 	public void persistRepositoryQuery() {
 		final RepositoryQuery repositoryQuery = this.getRepositoryQuery();
-
-		// final String downloadDirectory = getRepositoryPath() + File.separator
-		// + getCurrentUser(tm).getLogin()
-		// + File.separator + repositoryQuery.getRepository() + File.separator;
 
 		final String downloadDirectory = getCurrentUser(tm).getLogin() + File.separator
 				+ repositoryQuery.getRepository() + File.separator;
 
 		final boolean isNew = isNewRepositoryQuery();
 
+		repositoryQuery.setDirectory(downloadDirectory);
 		if (isNew) {
 			repositoryQuery.setUser(getCurrentUser(tm));
-		}
-
-		repositoryQuery.setDirectory(downloadDirectory);
-
-		tm.runInTransaction(em -> {
-			em.persist(repositoryQuery.getTask());
-			em.persist(repositoryQuery);
-		});
-
-		if (isNew) {
+			tm.runInTransaction(em -> em.persist(repositoryQuery));
 			this.repositoryModel.addRepositoryQuery(repositoryQuery);
 		} else {
+			tm.runInTransaction(em -> em.merge(repositoryQuery));
 			this.repositoryModel.moveRepositoryQueryToRepository(getRepositoryQuery(),
-					getRepositoryQuery().getRepository());
+				getRepositoryQuery().getRepository());
 		}
 
 		final File newDirectory = new File(downloadDirectory);
@@ -497,6 +503,7 @@ public class MainViewModel extends ViewModelFunctions {
 		this.repositoryModel.setSelectedRepositoryQuery(repositoryQuery);
 
 		this.uneditedRepositoryQuery = repositoryQuery.clone();
+		this.uneditedRepositoryQueryTask = this.uneditedRepositoryQuery.getTask();
 	}
 
 	/*
@@ -508,131 +515,61 @@ public class MainViewModel extends ViewModelFunctions {
 	 * 
 	 * 
 	 */
+
+	@Command
+	@NotifyChange({ "repositoryQuery", "repositories", "repositoryModel", "repositoryQueryTask" })
+	public void checkRepositoryQueryResult() {
+		final RepositoryQuery repositoryQuery = this.repositoryQuery;
+		final String directoryPath = RepositoryManager.getRepositoryPath() + File.separator;
+		Scheduler.getSingleton().executeQueryResultSize(directoryPath, repositoryQuery);
+	}
+
 	@Command
 	public void launchRepositoryQuery() {
-		final RepositoryQuery repositoryQuery = this.getRepositoryQuery();
-		final String query = repositoryQuery.getQuery().replace(" ", "+");
-
-		final String scopusApiKey = getCurrentUser(tm).getApiKey();
-		// final String directoryPath = getRepositoryPath() + File.separator;
+		final Task task = this.repositoryQuery.getTask();
 		final String directoryPath = RepositoryManager.getRepositoryPath() + File.separator;
-
-		final ScopusDownloader scopusDownloader = new ScopusDownloader(query, scopusApiKey,
-				directoryPath + repositoryQuery.getDirectory());
-
-		final PubMedDownloader pubmedDownloader = new PubMedDownloader(query,
-				directoryPath + repositoryQuery.getDirectory());
-
-		System.out.println("Directory Path: " + directoryPath);
-		System.out.println("Pubmed dir: " + pubmedDownloader.getDirectory());
-		System.out.println("Scopus dir: " + scopusDownloader.getDirectory());
-
-		final int downloadFrom = 0;
-
-		int scopusDownloadTo = 0;
-		int pubmedDownloadTo = 0;
-
-		if (repositoryQuery.getScopusDownloadTo() == Integer.MAX_VALUE && repositoryQuery.isScopus()) {
-			scopusDownloadTo = scopusDownloader.getResultSize();
-			if (scopusDownloadTo != 0) {
-				System.out.println("SCOPUS DOWNLOAD TO : " + scopusDownloadTo);
-
-				if (scopusDownloadTo > 6000) {
-					scopusDownloadTo = 6000;
-				}
-
-				scopusDownloadTo = 3;
-				repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
-				// tm.runInTransaction(em -> {
-				// em.merge(repositoryQuery);
-				// });
-
-				RepositoryManager.updateRepositoryQuery(repositoryQuery);
-			}
-		}
-
-		if (repositoryQuery.getPubmedDownloadTo() == Integer.MAX_VALUE && repositoryQuery.isPubmed()) {
-			pubmedDownloadTo = pubmedDownloader.getResultSize();
-			if (pubmedDownloadTo != 0) {
-				System.out.println("PUBMED DOWNLOAD TO : " + pubmedDownloadTo);
-
-				pubmedDownloadTo = 3;
-				repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
-
-				// tm.runInTransaction(em -> {
-				// em.merge(repositoryQuery);
-				// });
-
-				RepositoryManager.updateRepositoryQuery(repositoryQuery);
-			}
-		}
-		if (repositoryQuery.isFulltextPaper()) {
-			final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
-			if (repositoryQuery.isScopus() && repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
-				System.out.println("directory type: " + directoryType);
-				scopusDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-						directoryType, downloadFrom, repositoryQuery.getScopusDownloadTo());
-			}
-
-			if (repositoryQuery.isPubmed() && repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE) {
-				System.out.println("directory type: " + directoryType);
-				pubmedDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-						directoryType, downloadFrom, repositoryQuery.getPubmedDownloadTo());
-			}
-		}
-
-		if (repositoryQuery.isAbstractPaper()) {
-			final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
-			if (repositoryQuery.isScopus() && repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
-				System.out.println("directory type: " + directoryType);
-				scopusDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-						directoryType, downloadFrom, repositoryQuery.getScopusDownloadTo());
-			}
-
-			if (repositoryQuery.isPubmed() && repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE) {
-				System.out.println("directory type: " + directoryType);
-				pubmedDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-						directoryType, downloadFrom, repositoryQuery.getPubmedDownloadTo());
-			}
-		}
-
+		Scheduler.getSingleton().scheduleTask(directoryPath, task);
 	}
 
-	@GlobalCommand
-	public void executeRobot(@BindingParam("input") final String input) {
-		final String[] inputs = (input == null || input.trim().isEmpty()) ? new String[0] : input.split("\n");
-		final RobotExecution robotExecution = new RobotExecution(getCurrentUser(tm).getLogin(),
-				repositoryQuery.getName(), "");
-
-		ExecutionEngine.getSingleton()
-				.execute(new RobotExecutionTask(getCurrentUser(tm), repositoryQuery, robotExecution, inputs));
-	}
-
-	@GlobalCommand(MainViewModel.GC_UPDATE_EXECUTIONS)
-	public void updateExecutions(@BindingParam("task") final RobotExecutionTask task,
-			@BindingParam("action") final String action) {
-		final RobotExecution robotExecution = task.getRobotExecution();
-
-		switch (action) {
-		case GlobalEvents.ACTION_SCHEDULED:
-			synchronized (this.robotExecutionList) {
-				this.robotExecutionList.add(robotExecution);
-			}
-			break;
-		default:
-			synchronized (this.robotExecutionList) {
-				final int indexOf = this.robotExecutionList.indexOf(robotExecution);
-
-				this.robotExecutionList.remove(indexOf);
-				this.robotExecutionList.add(indexOf, robotExecution);
-			}
-		}
-
-		for (final String property : NAVIGATION_PROPERTIES) {
-			postNotifyChange(this, property);
-		}
-	}
-
+	// @GlobalCommand
+	// public void executeRobot(@BindingParam("input") final String input) {
+	// final String[] inputs = (input == null || input.trim().isEmpty()) ? new
+	// String[0] : input.split("\n");
+	// final RobotExecution robotExecution = new
+	// RobotExecution(getCurrentUser(tm).getLogin(),
+	// repositoryQuery.getName(), "");
+	//
+	// ExecutionEngine.getSingleton()
+	// .execute(new RobotExecutionTask(getCurrentUser(tm), repositoryQuery,
+	// robotExecution, inputs));
+	// }
+	//
+	// @GlobalCommand(MainViewModel.GC_UPDATE_EXECUTIONS)
+	// public void updateExecutions(@BindingParam("task") final
+	// RobotExecutionTask task,
+	// @BindingParam("action") final String action) {
+	// final RobotExecution robotExecution = task.getRobotExecution();
+	//
+	// switch (action) {
+	// case GlobalEvents.ACTION_SCHEDULED:
+	// synchronized (this.robotExecutionList) {
+	// this.robotExecutionList.add(robotExecution);
+	// }
+	// break;
+	// default:
+	// synchronized (this.robotExecutionList) {
+	// final int indexOf = this.robotExecutionList.indexOf(robotExecution);
+	//
+	// this.robotExecutionList.remove(indexOf);
+	// this.robotExecutionList.add(indexOf, robotExecution);
+	// }
+	// }
+	//
+	// for (final String property : NAVIGATION_PROPERTIES) {
+	// postNotifyChange(this, property);
+	// }
+	// }
+	//
 	// @Command
 	// public void deleteResult(@BindingParam("currentResult") final
 	// RobotExecution robotExecution) {

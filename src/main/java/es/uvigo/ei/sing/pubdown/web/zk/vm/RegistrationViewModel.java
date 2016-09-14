@@ -75,8 +75,7 @@ public class RegistrationViewModel extends ViewModelFunctions {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean isValid() {
-		return isEmail(this.registration.getEmail()) && !isEmpty(this.registration.getLogin())
-				&& !isEmpty(this.registration.getApiKey());
+		return isEmail(this.registration.getEmail()) && !isEmpty(this.registration.getLogin());
 	}
 
 	/**
@@ -156,18 +155,18 @@ public class RegistrationViewModel extends ViewModelFunctions {
 		};
 	}
 
-	public Validator getApikeyValidator() {
-		return new AbstractValidator() {
-			@Override
-			public void validate(final ValidationContext ctx) {
-				final String apikey = (String) ctx.getProperty().getValue();
-
-				if (isEmpty(apikey)) {
-					addInvalidMessage(ctx, "Apikey can't be empty");
-				}
-			}
-		};
-	}
+	// public Validator getApikeyValidator() {
+	// return new AbstractValidator() {
+	// @Override
+	// public void validate(final ValidationContext ctx) {
+	// final String apikey = (String) ctx.getProperty().getValue();
+	//
+	// if (isEmpty(apikey)) {
+	// addInvalidMessage(ctx, "Apikey can't be empty");
+	// }
+	// }
+	// };
+	// }
 
 	/**
 	 * Checks if exists a {@link Registration} in DB {@link Registration} table

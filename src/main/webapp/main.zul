@@ -37,8 +37,8 @@
 			<center title="Repository">
 				<tabbox>
 					<tabs>
-						<tab label="Papers" />
-						<tab label="Config-Execution" />
+						<tab label="Configuration" />
+						<tab label="Query executions" />
 					</tabs>
 					<tabpanels>
 						<tabpanel>
@@ -62,9 +62,17 @@
 													orient="vertical" bar="true">
 												</separator>
 												<toolbarbutton
-													label="Launch" onClick="@command('launchRepositoryQuery')" />
+													label="Check Result"
+													onClick="@command('checkRepositoryQueryResult')"
+													disabled="@load(not vm.queryReadyToCheckResult or not empty vmsgs)" />
+												<separator
+													orient="vertical" bar="true">
+												</separator>
+												<toolbarbutton
+													label="Launch" onClick="@command('launchRepositoryQuery')"
+													disabled="@load(not vm.repositoryQuery.checked or not empty vmsgs)" />
 											</toolbar>
-											<vlayout height="220px">
+											<vlayout height="230px">
 												<hlayout>
 													<label value="Name" />
 													<textbox id="rbName"
@@ -97,7 +105,8 @@
 												<hlayout>
 													<checkbox
 														label="Scopus" checked="@bind(vm.repositoryQuery.scopus)"
-														onCheck="@command('checkData')" />
+														onCheck="@command('checkData')"
+														disabled="@load(vm.userApiKeyEmpty)" />
 													<checkbox
 														label="Pubmed" checked="@bind(vm.repositoryQuery.pubmed)"
 														onCheck="@command('checkData')" />
@@ -114,11 +123,11 @@
 												</hlayout>
 												<hlayout>
 													<checkbox
-														label="Automatic PDF to Text conversion?"
+														label="Automatic PDF to Text conversion"
 														checked="@bind(vm.repositoryQuery.pdfToText)"
 														onCheck="@command('checkData')" />
 													<checkbox
-														label="Delete PDFs?"
+														label="Delete PDFs"
 														disabled="@load(not vm.repositoryQuery.pdfToText)"
 														checked="@bind(vm.repositoryQuery.keepPdf)"
 														onCheck="@command('checkData')" />
@@ -140,20 +149,21 @@
 														onCheck="@command('checkData')"
 														selectedItem="@bind(vm.repositoryQuery.daily)">
 														<radio
-															label="daily execution" value="true" />
+															label="Daily execution" value="true" />
 														<radio
-															label="weekly execution" value="false" />
+															label="Weekly execution" value="false" />
 													</radiogroup>
 												</hlayout>
+												<separator bar="true" />
 												<hlayout>
-													<label value="hour" />
+													<label value="Hour" />
 													<textbox id="rbHour"
 														width="30px" value="@bind(vm.repositoryQuery.task.hour)"
 														onChange="@command('checkData')" />
 													<label
 														value="@load(vmsgs[rbHour])" sclass="error" />
 													<label
-														value="minutes" />
+														value="Minutes" />
 													<textbox
 														id="rbMinutes" width="30px"
 														value="@bind(vm.repositoryQuery.task.minutes)"
@@ -163,34 +173,40 @@
 												</hlayout>
 												<hlayout>
 													<checkbox
-														label="monday"
+														label="Monday"
 														checked="@bind(vm.repositoryQuery.task.monday)"
-														onCheck="@command('checkData')" />
+														onCheck="@command('checkData')"
+														disabled="@load(vm.repositoryQuery.daily)" />
 													<checkbox
-														label="tuesday"
+														label="Tuesday"
 														checked="@bind(vm.repositoryQuery.task.tuesday)"
-														onCheck="@command('checkData')" />
+														onCheck="@command('checkData')"
+														disabled="@load(vm.repositoryQuery.daily)" />
 													<checkbox
-														label="wednesday"
+														label="Wednesday"
 														checked="@bind(vm.repositoryQuery.task.wednesday)"
-														onCheck="@command('checkData')" />
+														onCheck="@command('checkData')"
+														disabled="@load(vm.repositoryQuery.daily)" />
 													<checkbox
-														label="thursday"
+														label="Thursday"
 														checked="@bind(vm.repositoryQuery.task.thursday)"
-														onCheck="@command('checkData')" />
+														onCheck="@command('checkData')"
+														disabled="@load(vm.repositoryQuery.daily)" />
 													<checkbox
-														label="friday"
+														label="Friday"
 														checked="@bind(vm.repositoryQuery.task.friday)"
-														onCheck="@command('checkData')" />
+														onCheck="@command('checkData')"
+														disabled="@load(vm.repositoryQuery.daily)" />
 													<checkbox
-														label="saturday"
+														label="Saturday"
 														checked="@bind(vm.repositoryQuery.task.saturday)"
-														onCheck="@command('checkData')" />
+														onCheck="@command('checkData')"
+														disabled="@load(vm.repositoryQuery.daily)" />
 													<checkbox
-														label="sunday"
+														label="Sunday"
 														checked="@bind(vm.repositoryQuery.task.sunday)"
-														onCheck="@command('checkData')" />
-
+														onCheck="@command('checkData')"
+														disabled="@load(vm.repositoryQuery.daily)" />
 												</hlayout>
 											</vlayout>
 										</vlayout>

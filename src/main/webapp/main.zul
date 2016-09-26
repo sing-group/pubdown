@@ -20,7 +20,7 @@
 					</menubar>
 					<tree id="repositoryQueryTree" vflex="true"
 						model="@load(vm.repositoryModel)"
-						onSelect="@command('repositoryQuerySelected')">
+						onSelect="@command('selectRepositoryQuery')">
 						<template name="model" var="node">
 							<treeitem value="@load(node)"
 								draggable="@load(!node.repository)">
@@ -38,7 +38,8 @@
 				<tabbox>
 					<tabs>
 						<tab label="Configuration" />
-						<tab label="Query executions" />
+						<tab label="Scheduled querys" />
+						<tab label="Edit profile" />
 					</tabs>
 					<tabpanels>
 						<tabpanel>
@@ -62,15 +63,9 @@
 													orient="vertical" bar="true">
 												</separator>
 												<toolbarbutton
-													label="Check Result"
+													label="Prepare for launch"
 													onClick="@command('checkRepositoryQueryResult')"
 													disabled="@load(not vm.queryReadyToCheckResult or not empty vmsgs)" />
-												<separator
-													orient="vertical" bar="true">
-												</separator>
-												<toolbarbutton
-													label="Launch" onClick="@command('launchRepositoryQuery')"
-													disabled="@load(not vm.repositoryQuery.checked or not empty vmsgs)" />
 											</toolbar>
 											<vlayout height="230px">
 												<hlayout>
@@ -156,16 +151,21 @@
 												</hlayout>
 												<separator bar="true" />
 												<hlayout>
+													<label
+														value="Hour: " />
 													<label value="Hour" />
 													<textbox id="rbHour"
-														width="30px" value="@bind(vm.repositoryQuery.task.hour)"
+														constraint="/[01]?[0-9]|2[0-3]/: Hour must be between 0 and 23"
+														maxlength="2" width="30px"
+														value="@bind(vm.repositoryQuery.task.hour)"
 														onChange="@command('checkData')" />
 													<label
 														value="@load(vmsgs[rbHour])" sclass="error" />
 													<label
 														value="Minutes" />
 													<textbox
-														id="rbMinutes" width="30px"
+														id="rbMinutes" width="30px" maxlength="2"
+														constraint="/[0-5]|[0-5]?[0-9]/: Minutes must be between 0 and 59"
 														value="@bind(vm.repositoryQuery.task.minutes)"
 														onChange="@command('checkData')" />
 													<label
@@ -215,60 +215,104 @@
 							</vlayout>
 						</tabpanel>
 						<tabpanel>
-							<!-- 							<borderlayout height="540px"> -->
-							<!-- 								<north title="Robots Executing"> -->
-							<!-- 									<vlayout> -->
-							<!-- 										<toolbar> -->
-							<!-- 											<toolbarbutton -->
-							<!-- 												label="Abort All Executions" -->
-							<!-- 												tooltiptext="Abort all executions" -->
-							<!-- 												onClick="@command('abortAllExecutions')" /> -->
-							<!-- 										</toolbar> -->
-							<!-- 										<hlayout hflex="true" -->
-							<!-- 											vflex="true"> -->
-							<!-- 											<listbox -->
-							<!-- 												selectedItem="@bind(vm.robotExecution)" -->
-							<!-- 												model="@load(vm.robotExecutionList)" mold="paging" -->
-							<!-- 												height="200px" pageSize="4"> -->
-							<!-- 												<listhead> -->
-							<!-- 													<listheader -->
-							<!-- 														label="Robot name" align="center" /> -->
-							<!-- 													<listheader -->
-							<!-- 														label="Status" align="center" /> -->
-							<!-- 													<listheader -->
-							<!-- 														label="Options" align="center" /> -->
-							<!-- 												</listhead> -->
-							<!-- 												<template name="model" -->
-							<!-- 													var="result"> -->
-							<!-- 													<listitem> -->
-							<!-- 														<listcell -->
-							<!-- 															label="@load(result.robotName)" /> -->
-							<!-- 														<listcell -->
-							<!-- 															label="@load(result.status)" /> -->
-							<!-- 														<listcell> -->
-							<!-- 															<button -->
-							<!-- 																image="./images/deleteRobotExecution16x16.png" -->
-							<!-- 																tooltiptext="Delete Result" -->
-							<!-- 																disabled="@load(not (result.finished or result.aborted))" -->
-							<!-- 																onClick="@command('deleteResult',currentResult=result)" /> -->
-							<!-- 															<button -->
-							<!-- 																image="./images/abortRobotExecution16x16.png" -->
-							<!-- 																tooltiptext="Abort Execution" -->
-							<!-- 																disabled="@load(result.finished or result.aborted)" -->
-							<!-- 																onClick="@command('abortExecution',currentResult=result)" /> -->
-							<!-- 														</listcell> -->
-							<!-- 													</listitem> -->
-							<!-- 												</template> -->
-							<!-- 											</listbox> -->
-							<!-- 										</hlayout> -->
-							<!-- 									</vlayout> -->
-							<!-- 								</north> -->
-							<!-- 								<center title="Execution Result"> -->
-							<!-- 									<textbox hflex="true" vflex="true" -->
-							<!-- 										readonly="true" style="font-family: monospace;" -->
-							<!-- 										multiline="true" value="@load(vm.robotExecution.result)" /> -->
-							<!-- 								</center> -->
-							<!-- 							</borderlayout> -->
+							<borderlayout height="540px">
+								<north title="Querys Executing">
+									<vlayout>
+										<toolbar>
+											<toolbarbutton
+												label="Abort All Executions"
+												tooltiptext="Abort all executions"
+												onClick="@command('abortAllExecutions')" />
+										</toolbar>
+										<hlayout hflex="true"
+											vflex="true">
+											<listbox
+												selectedItem="@bind(vm.repositoryQuery)"
+												model="@load(vm.runningRepositoryQuery)" mold="paging"
+												height="200px" pageSize="4">
+												<listhead>
+													<listheader
+														label="Query name" align="center" />
+													<listheader
+														label="Options" align="center" />
+												</listhead>
+												<template name="model"
+													var="templateRepositoryQuery">
+													<listitem>
+														<listcell
+															label="@load(templateRepositoryQuery.name)" />
+														<listcell>
+															<button
+																label="Launch" tooltiptext="Launch Execution"
+																visible="@load(not templateRepositoryQuery.running)"
+																onClick="@command('launchExecution',current=templateRepositoryQuery)" />
+															<button
+																label="Remove" tooltiptext="Remove Execution"
+																visible="@load(not templateRepositoryQuery.running)"
+																onClick="@command('abortOrRemoveExecution',current=templateRepositoryQuery)" />
+															<button
+																label="Stop" tooltiptext="Stop Execution"
+																visible="@load(templateRepositoryQuery.running)"
+																onClick="@command('abortOrRemoveExecution',current=templateRepositoryQuery)" />
+															<!-- 															<button -->
+															<!-- 																image="./images/abortRobotExecution16x16.png" -->
+															<!-- 																tooltiptext="Abort Execution" -->
+															<!-- 																onClick="@command('abortExecution',current=runningRepositoryQuery)" /> -->
+														</listcell>
+													</listitem>
+												</template>
+											</listbox>
+										</hlayout>
+									</vlayout>
+								</north>
+							</borderlayout>
+						</tabpanel>
+						<tabpanel>
+							<borderlayout height="540px">
+								<north title="User profile">
+									<vlayout>
+										<toolbar>
+											<toolbarbutton
+												label="Save changes"
+												onClick="@command('persistUserToEdit')" />
+										</toolbar>
+										<grid>
+											<columns>
+												<column width="75px" />
+												<column />
+											</columns>
+											<rows>
+												<row>
+													<label
+														value="Login" />
+													<hlayout>
+														<textbox
+															width="250px" readonly="true"
+															value="@bind(vm.userToEdit.login)" />
+													</hlayout>
+												</row>
+												<row>
+													<label
+														value="Email" />
+													<hlayout>
+														<textbox
+															width="250px" readonly="true"
+															value="@bind(vm.userToEdit.email)" />
+													</hlayout>
+												</row>
+												<row>
+													<label
+														value="ApiKey" />
+													<hlayout>
+														<textbox
+															width="250px" value="@bind(vm.userToEdit.apiKey)" />
+													</hlayout>
+												</row>
+											</rows>
+										</grid>
+									</vlayout>
+								</north>
+							</borderlayout>
 						</tabpanel>
 					</tabpanels>
 				</tabbox>

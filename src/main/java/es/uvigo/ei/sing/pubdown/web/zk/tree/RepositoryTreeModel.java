@@ -175,7 +175,7 @@ public class RepositoryTreeModel extends AbstractTreeModel<CustomTreeNode> {
 	 * Returns a {@link RepositoryQueryTreeNode}
 	 * 
 	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery} label to find
+	 *            the {@link RepositoryQuery} to find
 	 * @return a {@link RepositoryQueryTreeNode}
 	 */
 	public RepositoryQueryTreeNode getRepositoryQueryNode(final RepositoryQuery repositoryQuery) {

@@ -41,6 +41,11 @@ public class ScopusDownloader implements Searcher {
 	private String apiKey;
 	private String directory;
 	private final List<DownloadListener> downloadListeners = new CopyOnWriteArrayList<>();
+	
+	private String doi = "";
+	private String paperTitle = "";
+	private String date = "";
+	private List<String> authorList = new LinkedList<>();
 
 	public ScopusDownloader() {
 
@@ -99,6 +104,10 @@ public class ScopusDownloader implements Searcher {
 				if (checkMetadata(xmlParser.getQueryURL(), isCompletePaper)) {
 					htmlParser.setUrlsWithTitle(urlsWithTitle);
 					downloadCompleteOrAbstract(isCompletePaper, htmlParser, convertPDFtoTXT, keepPDF, directoryType);
+					RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date,
+							authorList, isCompletePaper);
+				} else {
+					System.out.println("Scopus does not download");
 				}
 
 				aux = aux - searchIncrease;
@@ -185,8 +194,8 @@ public class ScopusDownloader implements Searcher {
 				for (int i = 0; i < entryElements.getLength(); i++) {
 					final NodeList entryChildrens = entryElements.item(i).getChildNodes();
 
-					final List<String> authorList = new LinkedList<>();
-					String date = "";
+//					final List<String> authorList = new LinkedList<>();
+//					String date = "";
 					for (int j = 0; j < entryChildrens.getLength(); j++) {
 						final Node child = entryChildrens.item(j);
 						if (child.getNodeName().equals("authors")) {
@@ -207,7 +216,7 @@ public class ScopusDownloader implements Searcher {
 						}
 					}
 
-					String paperTitle = "";
+//					String paperTitle = "";
 					for (int j = 0; j < entryChildrens.getLength(); j++) {
 						final Node child = entryChildrens.item(j);
 
@@ -221,13 +230,13 @@ public class ScopusDownloader implements Searcher {
 							}
 						}
 
-						String doi = "";
+//						String doi = "";
 						if (child.getNodeName().equals("prism:doi")) {
 							doi = child.getFirstChild().getTextContent();
 							final Map<String, String> doiMap = RepositoryManager.readMetadata(this.directory);
 							if (!doiMap.containsKey(doi)) {
-								RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList,
-										isCompletePaper);
+//								RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList,
+//										isCompletePaper);
 								return true;
 							} else {
 								final Map<String, List<String>> auxMap = RepositoryManager
@@ -237,8 +246,8 @@ public class ScopusDownloader implements Searcher {
 									final String type = auxList.get(0);
 									final String paperType = isCompletePaper ? "full" : "abstract";
 									if (!paperType.equals(type)) {
-										RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date,
-												authorList, isCompletePaper);
+//										RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date,
+//												authorList, isCompletePaper);
 										return true;
 									}
 								}

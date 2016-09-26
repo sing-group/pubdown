@@ -70,6 +70,9 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	@Basic
 	private boolean checked = false;
 
+	@Basic
+	private boolean running = false;
+
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "userId")
 	private User user;
@@ -89,7 +92,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 			final String directory, final boolean scopus, final boolean pubmed, final int scopusDownloadTo,
 			final int pubmedDownloadTo, final boolean abstractPaper, final boolean fulltextPaper,
 			final boolean pdfToText, final boolean keepPdf, final boolean groupBy, final boolean daily,
-			final boolean checked, final Task task) {
+			final boolean checked, final boolean running, final Task task) {
 		this.user = user;
 		this.name = name;
 		this.query = query;
@@ -106,6 +109,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.groupBy = groupBy;
 		this.daily = daily;
 		this.checked = checked;
+		this.running = running;
 		this.task = new Task();
 	}
 
@@ -113,7 +117,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 			final String directory, final boolean scopus, final boolean pubmed, final int scopusDownloadTo,
 			final int pubmedDownloadTo, final boolean abstractPaper, final boolean fulltextPaper,
 			final boolean pdfToText, final boolean keepPdf, final boolean groupBy, final boolean daily,
-			final boolean checked, final Task task) {
+			final boolean checked, final boolean running, final Task task) {
 		this.id = id;
 		this.name = name;
 		this.query = query;
@@ -130,6 +134,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.groupBy = groupBy;
 		this.daily = daily;
 		this.checked = checked;
+		this.running = running;
 		this.task = task;
 	}
 
@@ -286,6 +291,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.checked = checked;
 	}
 
+	public boolean isRunning() {
+		return running;
+	}
+
+	public void setRunning(boolean running) {
+		this.running = running;
+	}
+
 	public Task getTask() {
 		return task;
 	}
@@ -384,7 +397,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public RepositoryQuery clone() {
 		return new RepositoryQuery(this.id, this.name, this.query, this.repository, this.directory, this.scopus,
 				this.pubmed, this.scopusDownloadTo, this.pubmedDownloadTo, this.abstractPaper, this.fulltextPaper,
-				this.pdfToText, this.keepPdf, this.groupBy, this.daily, this.checked, this.task.clone());
+				this.pdfToText, this.keepPdf, this.groupBy, this.daily, this.checked, this.running, this.task.clone());
 	}
 
 	/**

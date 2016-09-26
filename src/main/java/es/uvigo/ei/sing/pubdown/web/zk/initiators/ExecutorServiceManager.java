@@ -7,7 +7,7 @@ import org.zkoss.zk.ui.WebApp;
 import org.zkoss.zk.ui.util.WebAppCleanup;
 
 import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
-import es.uvigo.ei.sing.pubdown.scheduler.Scheduler;
+import es.uvigo.ei.sing.pubdown.execution.Scheduler;
 
 /**
  * Manages the {@link ExecutorService}

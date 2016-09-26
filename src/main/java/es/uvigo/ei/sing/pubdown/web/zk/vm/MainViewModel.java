@@ -19,9 +19,10 @@ import org.zkoss.bind.annotation.NotifyChange;
 import org.zkoss.bind.validator.AbstractValidator;
 import org.zkoss.zul.Messagebox;
 
-import es.uvigo.ei.sing.pubdown.execution.GlobalEvents;
+import es.uvigo.ei.sing.pubdown.execution.Scheduler;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
-import es.uvigo.ei.sing.pubdown.scheduler.Scheduler;
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.pubmed.PubMedDownloader;
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.scopus.ScopusDownloader;
 import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.entities.RobotExecution;
@@ -29,6 +30,7 @@ import es.uvigo.ei.sing.pubdown.web.entities.Task;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
 import es.uvigo.ei.sing.pubdown.web.zk.tree.RepositoryQueryTreeNode;
 import es.uvigo.ei.sing.pubdown.web.zk.tree.RepositoryTreeModel;
+import es.uvigo.ei.sing.pubdown.web.zk.util.CleanEntityManagerTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
@@ -39,36 +41,45 @@ import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
 public class MainViewModel extends ViewModelFunctions {
 	private final TransactionManager tm = new DesktopTransactionManager();
 
-	private static final String GC_UPDATE_EXECUTIONS = "updateExecutions";
-
-	static {
-		GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_SCHEDULED, MainViewModel.GC_UPDATE_EXECUTIONS);
-		GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_STARTED, MainViewModel.GC_UPDATE_EXECUTIONS);
-		GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_FINISHED, MainViewModel.GC_UPDATE_EXECUTIONS);
-		GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_ABORTED, MainViewModel.GC_UPDATE_EXECUTIONS);
-	}
-
-	private final static String[] NAVIGATION_PROPERTIES = new String[] { "robotExecutionList" };
+	// private static final String GC_UPDATE_EXECUTIONS = "updateExecutions";
+	//
+	// static {
+	// GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_SCHEDULED,
+	// MainViewModel.GC_UPDATE_EXECUTIONS);
+	// GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_STARTED,
+	// MainViewModel.GC_UPDATE_EXECUTIONS);
+	// GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_FINISHED,
+	// MainViewModel.GC_UPDATE_EXECUTIONS);
+	// GlobalEvents.fullActionRegisterGlobalCommand(GlobalEvents.ACTION_ABORTED,
+	// MainViewModel.GC_UPDATE_EXECUTIONS);
+	// }
+	//
+	// private final static String[] NAVIGATION_PROPERTIES = new String[] {
+	// "robotExecutionList" };
 
 	private RepositoryQuery repositoryQuery;
 	private RepositoryQuery uneditedRepositoryQuery;
 	private Task repositoryQueryTask;
 	private Task uneditedRepositoryQueryTask;
 	private RepositoryTreeModel repositoryModel;
-	private List<RobotExecution> robotExecutionList;
+	private List<RepositoryQuery> runningRepositoryQuery;
 	private RobotExecution robotExecution;
 	private String repositoryPath;
+	private User userToEdit;
 
 	/**
 	 * Initializes variables
 	 */
 	@Init
 	public void init() {
+		this.userToEdit = getCurrentUser(tm);
 		this.repositoryModel = new RepositoryTreeModel(getCurrentUser(tm).getRepositoriesQueryByRepository());
 		this.setRepositoryQuery(new RepositoryQuery());
-		this.robotExecutionList = tm.get(
-				em -> em.createQuery("SELECT u FROM RobotExecution u WHERE u.userLogin = :user", RobotExecution.class)
-						.setParameter("user", getCurrentUser(tm).getLogin()).getResultList());
+		this.runningRepositoryQuery = tm.get(em -> em
+				.createQuery("SELECT r FROM RepositoryQuery r WHERE r.user = :user AND (r.running = 1 or r.checked= 1)",
+						RepositoryQuery.class)
+				.setParameter("user", getCurrentUser(tm)).getResultList());
+
 		this.robotExecution = null;
 	}
 
@@ -88,15 +99,20 @@ public class MainViewModel extends ViewModelFunctions {
 	 *            the value of the repositoryQuery global variable
 	 */
 	public void setRepositoryQuery(RepositoryQuery repositoryQuery) {
+
 		this.repositoryQuery = repositoryQuery;
 
 		this.repositoryQueryTask = repositoryQuery.getTask();
 
 		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
 
-		this.uneditedRepositoryQueryTask = this.uneditedRepositoryQuery.getTask();
+		this.uneditedRepositoryQueryTask = this.repositoryQuery.getTask();
 
-		this.repositoryModel.setSelectedRepositoryQuery(repositoryQuery);
+		this.repositoryModel.setSelectedRepositoryQuery(this.repositoryQuery);
+	}
+
+	public User getUserToEdit() {
+		return this.userToEdit;
 	}
 
 	public String getRepositoryPath() {
@@ -137,8 +153,8 @@ public class MainViewModel extends ViewModelFunctions {
 		return uneditedRepositoryQueryTask;
 	}
 
-	public void setUneditedRepositoryQueryTask(Task uneditedRepositoryQueryTask) {
-		this.uneditedRepositoryQueryTask = uneditedRepositoryQueryTask;
+	public List<RepositoryQuery> getRunningRepositoryQuery() {
+		return runningRepositoryQuery;
 	}
 
 	/**
@@ -160,10 +176,6 @@ public class MainViewModel extends ViewModelFunctions {
 	public SortedSet<String> getRepositories() {
 		return new TreeSet<>(getCurrentUser(tm).getRepositoriesQueryByRepository().keySet().stream()
 				.filter(category -> !category.isEmpty()).collect(toSet()));
-	}
-
-	public List<RobotExecution> getRobotExecutionList() {
-		return this.robotExecutionList;
 	}
 
 	public RobotExecution getRobotExecution() {
@@ -196,14 +208,6 @@ public class MainViewModel extends ViewModelFunctions {
 
 	public boolean isRepositoryQueryTaskModified() {
 		return this.repositoryQueryTask.compareTo(this.uneditedRepositoryQueryTask) != 0;
-	}
-
-	/**
-	 * Closes the current {@link User} session
-	 */
-	@Command
-	public void closeSession() {
-		closeUserSession();
 	}
 
 	/**
@@ -299,6 +303,14 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	/**
+	 * Closes the current {@link User} session
+	 */
+	@Command
+	public void closeSession() {
+		closeUserSession();
+	}
+
+	/**
 	 * Refresh the current {@link RepositoryQuery}
 	 */
 	@Command
@@ -342,47 +354,13 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	/**
-	 * Moves a {@link RepositoryQuery} from a repository to another
-	 * 
-	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery}
-	 * @param repository
-	 *            the {@link RepositoryQuery} new repository
-	 */
-	@Command
-	@NotifyChange({ "repositoryQuery", "repositoryModel" })
-	public void moveRepositoryQueryTo(@BindingParam("repositoryQuery") RepositoryQuery repositoryQuery,
-			@BindingParam("repository") final String repository) {
-		this.repositoryModel.moveRepositoryQueryToRepository(repositoryQuery, repository);
-//		final boolean isNew = isNewRepositoryQuery();
-		tm.runInTransaction(em -> {
-			em.merge(repositoryQuery);
-		});
-		
-		
-		
-
-//		if (isNew) {
-//			tm.runInTransaction(em -> em.persist(repositoryQuery));
-//			this.repositoryModel.addRepositoryQuery(repositoryQuery);
-//		} else {
-//			tm.runInTransaction(em -> em.merge(repositoryQuery));
-//			this.repositoryModel.moveRepositoryQueryToRepository(getRepositoryQuery(),
-//				getRepositoryQuery().getRepository());
-//		}
-		
-		this.repositoryModel.setSelectedRepositoryQuery(this.repositoryQuery);
-		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
-	}
-
-	/**
 	 * If the {@link RepositoryQuery} clicked by an user is a
 	 * {@link RepositoryQueryTreeNode}, sets the {@link RepositoryQuery} as
 	 * selected
 	 */
 	@Command
 	@NotifyChange({ "repositoryQuery", "validRepositoryQuery", "queryReadyToCheckResult" })
-	public void repositoryQuerySelected() {
+	public void selectRepositoryQuery() {
 		final RepositoryQuery selectedRepositoryQuery = this.repositoryModel.getSelectedRepositoryQuery();
 		if (selectedRepositoryQuery != null) {
 			if (!this.repositoryQuery.equals(selectedRepositoryQuery)
@@ -398,14 +376,14 @@ public class MainViewModel extends ViewModelFunctions {
 
 								setRepositoryQuery(selectedRepositoryQuery);
 
-								postNotifyChange(this, "repositoryQuery", "repositoryModel", "repositoryQueryTask");
+								postNotifyChange(this, "repositoryQuery", "repositoryModel");
 								break;
 							case Messagebox.ON_CANCEL:
 								discardChanges();
 
 								setRepositoryQuery(selectedRepositoryQuery);
 
-								postNotifyChange(this, "repositoryQuery", "repositoryQueryTask");
+								postNotifyChange(this, "repositoryQuery", "repositoryModel");
 								break;
 							case Messagebox.ON_NO:
 							default:
@@ -419,18 +397,73 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	/**
+	 * Moves a {@link RepositoryQuery} from a repository to another
+	 * 
+	 * @param repositoryQuery
+	 *            the {@link RepositoryQuery}
+	 * @param repository
+	 *            the {@link RepositoryQuery} new repository
+	 */
+	@Command
+	@NotifyChange({ "repositoryQuery", "repositoryModel" })
+	public void moveRepositoryQueryTo(@BindingParam("repositoryQuery") RepositoryQuery repositoryQuery,
+			@BindingParam("repository") final String repository) {
+		this.repositoryModel.moveRepositoryQueryToRepository(repositoryQuery, repository);
+		// final boolean isNew = isNewRepositoryQuery();
+		tm.runInTransaction(em -> {
+			em.merge(repositoryQuery);
+		});
+
+		// if (isNew) {
+		// tm.runInTransaction(em -> em.persist(repositoryQuery));
+		// this.repositoryModel.addRepositoryQuery(repositoryQuery);
+		// } else {
+		// tm.runInTransaction(em -> em.merge(repositoryQuery));
+		// this.repositoryModel.moveRepositoryQueryToRepository(getRepositoryQuery(),
+		// getRepositoryQuery().getRepository());
+		// }
+
+		this.repositoryModel.setSelectedRepositoryQuery(this.repositoryQuery);
+		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
+	}
+
+	/**
 	 * Discards all the changes done in the {@link RepositoryQuery}
 	 */
 	private void discardChanges() {
+
 		if (!isNewRepositoryQuery()) {
+
 			tm.runInTransaction(em -> {
+				if (!em.contains(this.repositoryQuery)) {
+					this.repositoryQuery = em.find(RepositoryQuery.class, this.repositoryQuery.getId());
+				}
+
+				if (!em.contains(this.repositoryQueryTask)) {
+					this.repositoryQueryTask = em.find(Task.class, this.repositoryQuery.getTask().getId());
+				}				
+				this.repositoryModel.removeRepositoryQuery(this.repositoryQuery);
+
 				em.refresh(this.repositoryQueryTask);
-	
 				em.refresh(this.repositoryQuery);
-	
+
+				this.repositoryModel.addRepositoryQuery(this.repositoryQuery);
+
 				this.uneditedRepositoryQuery = this.repositoryQuery.clone();
 				this.uneditedRepositoryQueryTask = this.uneditedRepositoryQuery.getTask();
+
 			});
+
+			// tm.runInTransaction(em -> {
+			// em.refresh(this.repositoryQueryTask);
+			// em.refresh(this.repositoryQuery);
+			//
+			//
+			// this.uneditedRepositoryQuery = this.repositoryQuery.clone();
+			// this.uneditedRepositoryQueryTask =
+			// this.uneditedRepositoryQuery.getTask();
+			//
+			// });
 		} else {
 			this.setRepositoryQuery(new RepositoryQuery());
 		}
@@ -477,6 +510,7 @@ public class MainViewModel extends ViewModelFunctions {
 	@Command
 	@NotifyChange({ "repositoryQuery", "repositories", "repositoryModel", "repositoryQueryTask" })
 	public void persistRepositoryQuery() {
+
 		final RepositoryQuery repositoryQuery = this.getRepositoryQuery();
 
 		final String downloadDirectory = getCurrentUser(tm).getLogin() + File.separator
@@ -485,6 +519,7 @@ public class MainViewModel extends ViewModelFunctions {
 		final boolean isNew = isNewRepositoryQuery();
 
 		repositoryQuery.setDirectory(downloadDirectory);
+
 		if (isNew) {
 			repositoryQuery.setUser(getCurrentUser(tm));
 			tm.runInTransaction(em -> em.persist(repositoryQuery));
@@ -492,7 +527,7 @@ public class MainViewModel extends ViewModelFunctions {
 		} else {
 			tm.runInTransaction(em -> em.merge(repositoryQuery));
 			this.repositoryModel.moveRepositoryQueryToRepository(getRepositoryQuery(),
-				getRepositoryQuery().getRepository());
+					getRepositoryQuery().getRepository());
 		}
 
 		final File newDirectory = new File(downloadDirectory);
@@ -506,29 +541,190 @@ public class MainViewModel extends ViewModelFunctions {
 		this.uneditedRepositoryQueryTask = this.uneditedRepositoryQuery.getTask();
 	}
 
-	/*
-	 * 
-	 * 
-	 * 
-	 * EXECUTION BLOCK
-	 * 
-	 * 
-	 * 
-	 */
-
 	@Command
-	@NotifyChange({ "repositoryQuery", "repositories", "repositoryModel", "repositoryQueryTask" })
-	public void checkRepositoryQueryResult() {
-		final RepositoryQuery repositoryQuery = this.repositoryQuery;
-		final String directoryPath = RepositoryManager.getRepositoryPath() + File.separator;
-		Scheduler.getSingleton().executeQueryResultSize(directoryPath, repositoryQuery);
+	public void persistUserToEdit() {
+		final User user = this.getUserToEdit();
+
+		tm.runInTransaction(em -> em.merge(user));
 	}
 
 	@Command
-	public void launchRepositoryQuery() {
-		final Task task = this.repositoryQuery.getTask();
+	public void checkRepositoryQueryResult() {
+		final Task task = this.repositoryQueryTask;
 		final String directoryPath = RepositoryManager.getRepositoryPath() + File.separator;
-		Scheduler.getSingleton().scheduleTask(directoryPath, task);
+		// Scheduler.getSingleton().executeTask(directoryPath, task, true);
+		Scheduler.getSingleton().executeTask(getRepositoryQueryResult(directoryPath), task);
+
+		if (!this.runningRepositoryQuery.contains(this.repositoryQuery)) {
+			this.runningRepositoryQuery.add(this.repositoryQuery);
+		}
+		postNotifyChange(this, "repositoryQuery", "runningRepositoryQuery");
+	}
+
+	//
+	// @Command
+	// @NotifyChange("runningRepositoryQuery")
+	// public void launchRepositoryQuery() {
+	// final Task task = this.repositoryQuery.getTask();
+	// final String directoryPath = RepositoryManager.getRepositoryPath() +
+	// File.separator;
+	// Scheduler.getSingleton().scheduleTask(getRunnableQuery(directoryPath),
+	// task);
+	// this.repositoryQuery.setRunning(true);
+	// tm.runInTransaction(em -> em.merge(this.repositoryQuery));
+	//
+	// if (!this.runningRepositoryQuery.contains(this.repositoryQuery)) {
+	// this.runningRepositoryQuery.add(this.repositoryQuery);
+	// }
+	// }
+
+	@Command
+	public void launchExecution(@BindingParam("current") final RepositoryQuery repositoryQuery) {
+		final Task task = repositoryQuery.getTask();
+		final String directoryPath = RepositoryManager.getRepositoryPath() + File.separator;
+		Scheduler.getSingleton().scheduleTask(getRunnableQuery(directoryPath), task);
+		repositoryQuery.setRunning(true);
+		tm.runInTransaction(em -> em.merge(repositoryQuery));
+		postNotifyChange(this, "repositoryQuery", "runningRepositoryQuery");
+	}
+
+	@Command
+	public void abortOrRemoveExecution(@BindingParam("current") final RepositoryQuery repositoryQuery) {
+		final Task task = repositoryQuery.getTask();
+		if (repositoryQuery.isRunning()) {
+			Messagebox.show("Do you want to abort the current execution?", "Abort execution",
+					Messagebox.OK | Messagebox.NO, Messagebox.EXCLAMATION, event -> {
+						if (event.getName().equals(Messagebox.ON_OK)) {
+							Scheduler.getSingleton().removeTask(task);
+
+							repositoryQuery.setRunning(false);
+							tm.runInTransaction(em -> em.merge(repositoryQuery));
+
+							postNotifyChange(this, "runningRepositoryQuery", "runningRepositoryQuery");
+						}
+					});
+		} else {
+			Messagebox.show("Do you want to remove the query?", "Abort execution", Messagebox.OK | Messagebox.NO,
+					Messagebox.EXCLAMATION, event -> {
+						if (event.getName().equals(Messagebox.ON_OK)) {
+							repositoryQuery.setChecked(false);
+							tm.runInTransaction(em -> em.merge(repositoryQuery));
+							if (this.runningRepositoryQuery.contains(repositoryQuery)) {
+								this.runningRepositoryQuery.remove(repositoryQuery);
+							}
+							postNotifyChange(this, "runningRepositoryQuery", "runningRepositoryQuery");
+						}
+					});
+		}
+	}
+
+	public Runnable getRunnableQuery(final String directoryPath) {
+		final int startsDownloadFrom = 0;
+		return () -> {
+			ScopusDownloader scopusDownloader = new ScopusDownloader();
+			PubMedDownloader pubmedDownloader = new PubMedDownloader();
+			boolean scopusReady = false;
+			boolean pubmedReady = false;
+
+			final String query = repositoryQuery.getQuery().replace(" ", "+");
+
+			final String scopusApiKey = repositoryQuery.getUser().getApiKey();
+
+			if (repositoryQuery.isScopus() && repositoryQuery.getScopusDownloadTo() != 0
+					&& repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
+				scopusDownloader = new ScopusDownloader(query, scopusApiKey,
+						directoryPath + repositoryQuery.getDirectory());
+				scopusReady = true;
+			}
+
+			if (repositoryQuery.isPubmed() && repositoryQuery.getPubmedDownloadTo() != 0
+					&& repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE) {
+				pubmedDownloader = new PubMedDownloader(query, directoryPath + repositoryQuery.getDirectory());
+				pubmedReady = true;
+			}
+
+			if (repositoryQuery.isFulltextPaper()) {
+				final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
+				if (repositoryQuery.isScopus() && scopusReady) {
+					scopusDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
+							directoryType, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+				}
+
+				if (repositoryQuery.isPubmed() && pubmedReady) {
+					pubmedDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
+							directoryType, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+				}
+			}
+
+			if (repositoryQuery.isAbstractPaper()) {
+				final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
+				if (repositoryQuery.isScopus() && scopusReady) {
+					scopusDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
+							directoryType, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+				}
+				if (repositoryQuery.isPubmed() && pubmedReady) {
+					pubmedDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
+							directoryType, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+				}
+
+			}
+		};
+	}
+
+	public Runnable getRepositoryQueryResult(final String directoryPath) {
+		return () -> {
+			final TransactionManager tm = new CleanEntityManagerTransactionManager();
+			ScopusDownloader scopusDownloader = new ScopusDownloader();
+			PubMedDownloader pubmedDownloader = new PubMedDownloader();
+
+			int scopusResult = 0;
+			int pubmedResult = 0;
+			int scopusDownloadTo = 0;
+			int pubmedDownloadTo = 0;
+
+			final String query = repositoryQuery.getQuery().replace(" ", "+");
+
+			final String scopusApiKey = repositoryQuery.getUser().getApiKey();
+
+			if (repositoryQuery.isScopus()) {
+				scopusDownloader = new ScopusDownloader(query, scopusApiKey,
+						directoryPath + repositoryQuery.getDirectory());
+
+				if (repositoryQuery.getScopusDownloadTo() == Integer.MAX_VALUE
+						|| repositoryQuery.getScopusDownloadTo() == 0) {
+					scopusResult = scopusDownloader.getResultSize();
+					System.out.println("Scopus real result = " + scopusResult);
+					if (scopusResult != 0) {
+						if (scopusResult > 6000) {
+							scopusDownloadTo = 6000;
+						}
+
+						// limit to 3 to test
+						scopusDownloadTo = 3;
+						repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
+					}
+				}
+			}
+
+			if (repositoryQuery.isPubmed()) {
+				pubmedDownloader = new PubMedDownloader(query, directoryPath + repositoryQuery.getDirectory());
+				if (repositoryQuery.getPubmedDownloadTo() == Integer.MAX_VALUE
+						|| repositoryQuery.getPubmedDownloadTo() == 0) {
+					pubmedResult = pubmedDownloader.getResultSize();
+					System.out.println("PubMed real result = " + pubmedResult);
+					if (pubmedResult != 0) {
+						// limit to 3 to test
+						pubmedDownloadTo = 3;
+						repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
+					}
+				}
+			}
+			repositoryQuery.setChecked(true);
+			tm.runInTransaction(em -> {
+				em.merge(repositoryQuery);
+			});
+			setRepositoryQuery(repositoryQuery);
+		};
 	}
 
 	// @GlobalCommand
@@ -600,19 +796,6 @@ public class MainViewModel extends ViewModelFunctions {
 	// }, singletonMap("width", "500"));
 	// }
 	//
-	// @Command
-	// public void abortExecution(@BindingParam("currentResult") final
-	// RobotExecution robotExecution) {
-	// final String userId = getCurrentUser(tm).getLogin();
-	//
-	// Messagebox.show("Are you sure you want to abort the current execution?",
-	// "Abort execution",
-	// Messagebox.OK | Messagebox.NO, Messagebox.EXCLAMATION, event -> {
-	// if (event.getName().equals(Messagebox.ON_OK)) {
-	// ExecutionEngine.getSingleton().cancelUserTask(userId, robotExecution);
-	// }
-	// });
-	// }
 	//
 	// @Command
 	// public void abortAllExecutions() {
@@ -626,4 +809,5 @@ public class MainViewModel extends ViewModelFunctions {
 	// }
 	// });
 	// }
+
 }

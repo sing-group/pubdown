@@ -65,14 +65,14 @@ public class MainViewModel extends ViewModelFunctions {
 	private List<RepositoryQuery> runningRepositoryQuery;
 	private RobotExecution robotExecution;
 	private String repositoryPath;
-	private User userToEdit;
+	private User currentUser;
 
 	/**
 	 * Initializes variables
 	 */
 	@Init
 	public void init() {
-		this.userToEdit = getCurrentUser(tm);
+		this.currentUser = getCurrentUser(tm);
 		this.repositoryModel = new RepositoryTreeModel(getCurrentUser(tm).getRepositoriesQueryByRepository());
 		this.setRepositoryQuery(new RepositoryQuery());
 		this.runningRepositoryQuery = tm.get(em -> em
@@ -111,8 +111,8 @@ public class MainViewModel extends ViewModelFunctions {
 		this.repositoryModel.setSelectedRepositoryQuery(this.repositoryQuery);
 	}
 
-	public User getUserToEdit() {
-		return this.userToEdit;
+	public User getCurrentUser() {
+		return this.currentUser;
 	}
 
 	public String getRepositoryPath() {
@@ -234,8 +234,8 @@ public class MainViewModel extends ViewModelFunctions {
 				&& !isEmpty(this.repositoryQuery.getRepository());
 	}
 
-	public boolean isUserApiKeyEmpty() {
-		return getCurrentUser(tm).getApiKey() == null;
+	public boolean isUserApiKeyValid() {
+		return !(getCurrentUser(tm).getApiKey() == null || getCurrentUser(tm).getApiKey().isEmpty());
 	}
 
 	public boolean isQueryReadyToCheckResult() {
@@ -254,6 +254,11 @@ public class MainViewModel extends ViewModelFunctions {
 	@Command
 	@NotifyChange({ "validRepositoryQuery", "queryReadyToCheckResult" })
 	public void checkData() {
+	}
+
+	@Command
+	@NotifyChange("userApiKeyValid")
+	public void checkUserApiKey() {
 	}
 
 	/**
@@ -441,7 +446,7 @@ public class MainViewModel extends ViewModelFunctions {
 
 				if (!em.contains(this.repositoryQueryTask)) {
 					this.repositoryQueryTask = em.find(Task.class, this.repositoryQuery.getTask().getId());
-				}				
+				}
 				this.repositoryModel.removeRepositoryQuery(this.repositoryQuery);
 
 				em.refresh(this.repositoryQueryTask);
@@ -542,9 +547,8 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	@Command
-	public void persistUserToEdit() {
-		final User user = this.getUserToEdit();
-
+	public void persistUserChanges() {
+		final User user = this.getCurrentUser();
 		tm.runInTransaction(em -> em.merge(user));
 	}
 
@@ -595,26 +599,50 @@ public class MainViewModel extends ViewModelFunctions {
 			Messagebox.show("Do you want to abort the current execution?", "Abort execution",
 					Messagebox.OK | Messagebox.NO, Messagebox.EXCLAMATION, event -> {
 						if (event.getName().equals(Messagebox.ON_OK)) {
-							Scheduler.getSingleton().removeTask(task);
+							abortRepositoryQueryExecution(repositoryQuery, task);
 
-							repositoryQuery.setRunning(false);
-							tm.runInTransaction(em -> em.merge(repositoryQuery));
-
-							postNotifyChange(this, "runningRepositoryQuery", "runningRepositoryQuery");
+							postNotifyChange(this, "runningRepositoryQuery");
 						}
 					});
 		} else {
 			Messagebox.show("Do you want to remove the query?", "Abort execution", Messagebox.OK | Messagebox.NO,
 					Messagebox.EXCLAMATION, event -> {
 						if (event.getName().equals(Messagebox.ON_OK)) {
-							repositoryQuery.setChecked(false);
-							tm.runInTransaction(em -> em.merge(repositoryQuery));
-							if (this.runningRepositoryQuery.contains(repositoryQuery)) {
-								this.runningRepositoryQuery.remove(repositoryQuery);
-							}
-							postNotifyChange(this, "runningRepositoryQuery", "runningRepositoryQuery");
+							removeRepositoryQueryExecution(repositoryQuery);
+							postNotifyChange(this, "runningRepositoryQuery");
 						}
 					});
+		}
+	}
+
+	@Command
+	public void abortAllExecutions() {
+		Messagebox.show("Are you sure you want to abort all executions?", "Abort executions",
+				Messagebox.OK | Messagebox.NO, Messagebox.EXCLAMATION, event -> {
+					if (event.getName().equals(Messagebox.ON_OK)) {
+						for (RepositoryQuery repositoryQuery : this.runningRepositoryQuery) {
+							final Task task = repositoryQuery.getTask();
+							if (repositoryQuery.isRunning()) {
+								abortRepositoryQueryExecution(repositoryQuery, task);
+							}
+						}
+						postNotifyChange(this, "runningRepositoryQuery");
+					}
+				});
+	}
+
+	private void abortRepositoryQueryExecution(final RepositoryQuery repositoryQuery, final Task task) {
+		Scheduler.getSingleton().removeTask(task);
+
+		repositoryQuery.setRunning(false);
+		tm.runInTransaction(em -> em.merge(repositoryQuery));
+	}
+
+	private void removeRepositoryQueryExecution(final RepositoryQuery repositoryQuery) {
+		repositoryQuery.setChecked(false);
+		tm.runInTransaction(em -> em.merge(repositoryQuery));
+		if (this.runningRepositoryQuery.contains(repositoryQuery)) {
+			this.runningRepositoryQuery.remove(repositoryQuery);
 		}
 	}
 
@@ -630,7 +658,7 @@ public class MainViewModel extends ViewModelFunctions {
 
 			final String scopusApiKey = repositoryQuery.getUser().getApiKey();
 
-			if (repositoryQuery.isScopus() && repositoryQuery.getScopusDownloadTo() != 0
+			if (repositoryQuery.isScopus() && isUserApiKeyValid() && repositoryQuery.getScopusDownloadTo() != 0
 					&& repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
 				scopusDownloader = new ScopusDownloader(query, scopusApiKey,
 						directoryPath + repositoryQuery.getDirectory());
@@ -794,20 +822,6 @@ public class MainViewModel extends ViewModelFunctions {
 	// default:
 	// }
 	// }, singletonMap("width", "500"));
-	// }
-	//
-	//
-	// @Command
-	// public void abortAllExecutions() {
-	// final String userId = getCurrentUser(tm).getLogin();
-	//
-	// Messagebox.show("Are you sure you want to abort all executions?", "Abort
-	// executions",
-	// Messagebox.OK | Messagebox.NO, Messagebox.EXCLAMATION, event -> {
-	// if (event.getName().equals(Messagebox.ON_OK)) {
-	// ExecutionEngine.getSingleton().cancelUserTasks(userId);
-	// }
-	// });
 	// }
 
 }

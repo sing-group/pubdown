@@ -101,7 +101,7 @@
 													<checkbox
 														label="Scopus" checked="@bind(vm.repositoryQuery.scopus)"
 														onCheck="@command('checkData')"
-														disabled="@load(vm.userApiKeyEmpty)" />
+														disabled="@load(not vm.userApiKeyValid)" />
 													<checkbox
 														label="Pubmed" checked="@bind(vm.repositoryQuery.pubmed)"
 														onCheck="@command('checkData')" />
@@ -254,10 +254,6 @@
 																label="Stop" tooltiptext="Stop Execution"
 																visible="@load(templateRepositoryQuery.running)"
 																onClick="@command('abortOrRemoveExecution',current=templateRepositoryQuery)" />
-															<!-- 															<button -->
-															<!-- 																image="./images/abortRobotExecution16x16.png" -->
-															<!-- 																tooltiptext="Abort Execution" -->
-															<!-- 																onClick="@command('abortExecution',current=runningRepositoryQuery)" /> -->
 														</listcell>
 													</listitem>
 												</template>
@@ -274,7 +270,7 @@
 										<toolbar>
 											<toolbarbutton
 												label="Save changes"
-												onClick="@command('persistUserToEdit')" />
+												onClick="@command('persistUserChanges')" />
 										</toolbar>
 										<grid>
 											<columns>
@@ -288,7 +284,7 @@
 													<hlayout>
 														<textbox
 															width="250px" readonly="true"
-															value="@bind(vm.userToEdit.login)" />
+															value="@bind(vm.currentUser.login)" />
 													</hlayout>
 												</row>
 												<row>
@@ -297,15 +293,15 @@
 													<hlayout>
 														<textbox
 															width="250px" readonly="true"
-															value="@bind(vm.userToEdit.email)" />
+															value="@bind(vm.currentUser.email)" />
 													</hlayout>
 												</row>
 												<row>
 													<label
 														value="ApiKey" />
 													<hlayout>
-														<textbox
-															width="250px" value="@bind(vm.userToEdit.apiKey)" />
+														<textbox onChange="@command('checkUserApiKey')"
+															width="250px" value="@bind(vm.currentUser.apiKey)" />
 													</hlayout>
 												</row>
 											</rows>

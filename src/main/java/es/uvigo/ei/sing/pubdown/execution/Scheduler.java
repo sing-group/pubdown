@@ -85,7 +85,7 @@ public class Scheduler {
 
 			scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
 
-			if (Boolean.valueOf(task.getRepositoryQuery().getDaily())) {
+			if (Boolean.valueOf(task.getRepositoryQuery().isDaily())) {
 				final long initialDelay = schedulerExecutor.getDailyInitialDelay(task);
 				System.out.println(initialDelay);
 				final ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(runnable, initialDelay,

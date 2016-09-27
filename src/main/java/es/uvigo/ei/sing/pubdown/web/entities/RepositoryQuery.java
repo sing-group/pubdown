@@ -21,6 +21,10 @@ import es.uvigo.ei.sing.pubdown.util.Compare;
 @Entity(name = "RepositoryQuery")
 public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 
+	private static final String FREQUENCY_DAILY = "daily";
+
+	private static final String FREQUENCY_WEEKLY = "weekly";
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
@@ -274,13 +278,30 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public void setGroupBy(final String groupBy) {
 		this.groupBy = Boolean.parseBoolean(groupBy);
 	}
-
-	public String getDaily() {
-		return String.valueOf(daily);
+	
+	public void setExecutionFrequency(String frequency) {
+		switch (frequency) {
+		case FREQUENCY_DAILY:
+			this.setDaily(true);
+			break;
+		case FREQUENCY_WEEKLY:
+			this.setDaily(false);
+			break;
+		default:
+			throw new IllegalArgumentException("Valid frequencies are 'daily' and 'weekly'");
+		}
+	}
+	
+	public String getExecutionFrequency() {
+		return this.isDaily() ? FREQUENCY_DAILY : FREQUENCY_WEEKLY;
 	}
 
-	public void setDaily(final String daily) {
-		this.daily = Boolean.parseBoolean(daily);
+	public boolean isDaily() {
+		return daily;
+	}
+
+	public void setDaily(final boolean daily) {
+		this.daily = daily;
 	}
 
 	public boolean isChecked() {
@@ -408,13 +429,22 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	 */
 	@Override
 	public int compareTo(final RepositoryQuery obj) {
-		return Compare.objects(this, obj).by(RepositoryQuery::getId).thenBy(RepositoryQuery::getName)
-				.thenBy(RepositoryQuery::getQuery).thenBy(RepositoryQuery::getRepository)
-				.thenBy(RepositoryQuery::getDirectory).thenBy(RepositoryQuery::isScopus)
-				.thenBy(RepositoryQuery::isPubmed).thenBy(RepositoryQuery::isAbstractPaper)
-				.thenBy(RepositoryQuery::isFulltextPaper).thenBy(RepositoryQuery::isPdfToText)
-				.thenBy(RepositoryQuery::isKeepPdf).thenBy(RepositoryQuery::getGroupBy)
-				.thenBy(RepositoryQuery::getDaily).thenBy(RepositoryQuery::getTask).andGet();
+		return Compare.objects(this, obj)
+			.by(RepositoryQuery::getId)
+			.thenBy(RepositoryQuery::getName)
+			.thenBy(RepositoryQuery::getQuery)
+			.thenBy(RepositoryQuery::getRepository)
+			.thenBy(RepositoryQuery::getDirectory)
+			.thenBy(RepositoryQuery::isScopus)
+			.thenBy(RepositoryQuery::isPubmed)
+			.thenBy(RepositoryQuery::isAbstractPaper)
+			.thenBy(RepositoryQuery::isFulltextPaper)
+			.thenBy(RepositoryQuery::isPdfToText)
+			.thenBy(RepositoryQuery::isKeepPdf)
+			.thenBy(RepositoryQuery::getGroupBy)
+			.thenBy(RepositoryQuery::isDaily)
+			.thenBy(RepositoryQuery::getTask)
+		.andGet();
 	}
 
 }

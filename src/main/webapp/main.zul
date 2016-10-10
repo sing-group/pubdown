@@ -22,7 +22,8 @@
 							onClick="@command('schedulerSize')" />
 					</menubar>
 					<listbox vflex="true" model="@load(vm.repositories)"
-						selectedItem="@bind(vm.repository)" onSelect="@command('updateRepositoryQueries')">
+						selectedItem="@bind(vm.repository)"
+						onSelect="@command('updateRepositoryQueries')">
 						<listhead>
 							<listheader />
 						</listhead>
@@ -95,54 +96,65 @@
 										<hlayout valign="middle">
 											<button
 												label="Download papers" onClick="@command('downloadPapers')"
-												disabled="@load(not vm.repositoryReadyToCompress)"/>
+												disabled="@load(not vm.repositoryReadyToCompress)" />
 										</hlayout>
-										<hlayout hflex="true"
-											vflex="true">
-											<grid
-												model="@load(vm.repositoryQueries)" autopaging="true"
-												pagingPosition="bottom" mold="paging" hflex="true"
-												pageSize="4" height="200px">
-												<columns>
-													<column
-														align="center" label="Repository name" />
-													<column
-														align="center" label="Query name" />
-													<column
-														align="center" label="Options" width="400px" />
-												</columns>
-												<template name="model"
-													var="repositoryQuery">
-													<row>
-														<label
-															value="@load(repositoryQuery.repository.name)" />
-														<label
-															value="@load(repositoryQuery.name)" />
-														<cell>
-															<button
-																style="margin-right: 10px" label="Schedule"
-																tooltiptext="Schedule query"
-																disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-																onClick="@command('launchExecution',current=repositoryQuery)" />
-															<button
-																style="margin-right: 10px" label="Stop"
-																tooltiptext="Stop query"
-																disabled="@load(not repositoryQuery.running)"
-																onClick="@command('abortExecution',current=repositoryQuery)" />
-															<button
-																style="margin-right: 10px" label="Edit"
-																tooltiptext="Edit query"
-																disabled="@load(repositoryQuery.running)"
-																onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
-															<button
-																label="Remove" tooltiptext="Remove Query"
-																disabled="@load(repositoryQuery.running)"
-																onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
-														</cell>
-													</row>
-												</template>
-											</grid>
-										</hlayout>
+										<groupbox
+											contentStyle="padding: 0">
+											<vlayout hflex="true"
+												vflex="true">
+												<toolbar>
+													<toolbarbutton
+														label="New Query" tooltiptext="Create a new query"
+														onClick="@command('newRepositoryQuery')" />
+												</toolbar>
+												<hlayout hflex="true"
+													vflex="true">
+													<grid
+														model="@load(vm.repositoryQueries)" autopaging="true"
+														pagingPosition="bottom" mold="paging" hflex="true"
+														height="200px" pageSize="4">
+														<columns>
+															<column
+																align="center" label="Repository name" />
+															<column
+																align="center" label="Query name" />
+															<column
+																align="center" label="Options" width="400px" />
+														</columns>
+														<template
+															name="model" var="repositoryQuery">
+															<row>
+																<label
+																	value="@load(repositoryQuery.repository.name)" />
+																<label
+																	value="@load(repositoryQuery.name)" />
+																<cell>
+																	<button
+																		style="margin-right: 10px" label="Schedule"
+																		tooltiptext="Schedule query"
+																		disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+																		onClick="@command('launchExecution',current=repositoryQuery)" />
+																	<button
+																		style="margin-right: 10px" label="Stop"
+																		tooltiptext="Stop query"
+																		disabled="@load(not repositoryQuery.running)"
+																		onClick="@command('abortExecution',current=repositoryQuery)" />
+																	<button
+																		style="margin-right: 10px" label="Edit"
+																		tooltiptext="Edit query"
+																		disabled="@load(repositoryQuery.running)"
+																		onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
+																	<button
+																		label="Remove" tooltiptext="Remove Query"
+																		disabled="@load(repositoryQuery.running)"
+																		onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
+																</cell>
+															</row>
+														</template>
+													</grid>
+												</hlayout>
+											</vlayout>
+										</groupbox>
 									</vlayout>
 								</vlayout>
 							</groupbox>
@@ -167,10 +179,9 @@
 									</toolbar>
 									<hlayout hflex="true"
 										vflex="true">
-										<grid
-											model="@load(vm.queries)" autopaging="true"
-											pagingPosition="bottom" mold="paging" hflex="true"
-											height="490px">
+										<grid model="@load(vm.queries)"
+											autopaging="true" pagingPosition="bottom" mold="paging"
+											hflex="true" height="490px">
 											<columns>
 												<column align="center"
 													label="Repository name" />

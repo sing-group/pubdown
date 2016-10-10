@@ -1,6 +1,6 @@
 <?page title="Pubdown (Beta)" contentType="text/html;charset=UTF-8"?>
 <zk>
-	<window title="Pubdown Administration Panel" id="winJarvestWeb"
+	<window title="Pubdown Administration Panel" id="winPubDown"
 		binder="@init(queueName='pubdown')" closable="true" border="normal"
 		style="margin: 0 auto;" width="960px"
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.AdministrationViewModel')"

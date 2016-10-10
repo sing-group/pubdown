@@ -46,8 +46,9 @@ public class SecurityInitiator implements Initiator {
 
 		if (requestPath.equals(LOGOUT_PAGE)) {
 			final Session session = Sessions.getCurrent(false);
-			if (session != null)
+			if (session != null) {
 				session.invalidate();
+			}
 
 			Executions.sendRedirect(INDEX_PAGE);
 		} else if (!IGNORE_PAGES.contains(requestPath)) {

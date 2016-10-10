@@ -7,7 +7,7 @@ public class DownloadEvent implements DownloadListener {
 	}
 
 	@Override
-	public void downloadComplete(DownloadEvent downloadEvent) {
+	public void downloadComplete(final DownloadEvent downloadEvent) {
 	}
 
 }

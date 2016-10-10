@@ -10,8 +10,12 @@ import javax.persistence.OneToOne;
 
 import es.uvigo.ei.sing.pubdown.util.Compare;
 
-@Entity
-public class Task implements Cloneable, Comparable<Task> {
+@Entity(name = "RepositoryQueryTask")
+public class RepositoryQueryTask implements Cloneable, Comparable<RepositoryQueryTask> {
+
+	private static final String FREQUENCY_DAILY = "daily";
+
+	private static final String FREQUENCY_WEEKLY = "weekly";
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,6 +26,9 @@ public class Task implements Cloneable, Comparable<Task> {
 
 	@Basic
 	private int minutes;
+
+	@Basic
+	private boolean daily = true;
 
 	@Basic
 	private boolean monday = false;
@@ -47,11 +54,12 @@ public class Task implements Cloneable, Comparable<Task> {
 	@OneToOne(fetch = FetchType.EAGER, mappedBy = "task")
 	private RepositoryQuery repositoryQuery;
 
-	public Task() {
+	public RepositoryQueryTask() {
 	}
 
-	public Task(int hour, int minutes, boolean monday, boolean tuesday, boolean wednesday, boolean thursday,
-			boolean friday, boolean saturday, boolean sunday, RepositoryQuery repositoryQuery) {
+	public RepositoryQueryTask(final int hour, final int minutes, final boolean daily, final boolean monday,
+			final boolean tuesday, final boolean wednesday, final boolean thursday, final boolean friday,
+			final boolean saturday, final boolean sunday, final RepositoryQuery repositoryQuery) {
 		super();
 		this.hour = hour;
 		this.minutes = minutes;
@@ -65,12 +73,14 @@ public class Task implements Cloneable, Comparable<Task> {
 		this.repositoryQuery = repositoryQuery;
 	}
 
-	private Task(Integer id, int hour, int minutes, boolean monday, boolean tuesday, boolean wednesday,
-			boolean thursday, boolean friday, boolean saturday, boolean sunday, RepositoryQuery repositoryQuery) {
+	private RepositoryQueryTask(final Integer id, final int hour, final int minutes, final boolean daily,
+			final boolean monday, final boolean tuesday, final boolean wednesday, final boolean thursday,
+			final boolean friday, final boolean saturday, final boolean sunday) {
 		super();
 		this.id = id;
 		this.hour = hour;
 		this.minutes = minutes;
+		this.daily = daily;
 		this.monday = monday;
 		this.tuesday = tuesday;
 		this.wednesday = wednesday;
@@ -78,7 +88,6 @@ public class Task implements Cloneable, Comparable<Task> {
 		this.friday = friday;
 		this.saturday = saturday;
 		this.sunday = sunday;
-		this.repositoryQuery = repositoryQuery;
 	}
 
 	public Integer getId() {
@@ -101,11 +110,36 @@ public class Task implements Cloneable, Comparable<Task> {
 		this.minutes = minutes;
 	}
 
+	public void setExecutionFrequency(final String frequency) {
+		switch (frequency) {
+		case FREQUENCY_DAILY:
+			this.setDaily(true);
+			break;
+		case FREQUENCY_WEEKLY:
+			this.setDaily(false);
+			break;
+		default:
+			throw new IllegalArgumentException("Valid frequencies are 'daily' and 'weekly'");
+		}
+	}
+
+	public String getExecutionFrequency() {
+		return this.isDaily() ? FREQUENCY_DAILY : FREQUENCY_WEEKLY;
+	}
+
+	public boolean isDaily() {
+		return daily;
+	}
+
+	public void setDaily(final boolean daily) {
+		this.daily = daily;
+	}
+
 	public boolean isMonday() {
 		return monday;
 	}
 
-	public void setMonday(boolean monday) {
+	public void setMonday(final boolean monday) {
 		this.monday = monday;
 	}
 
@@ -113,7 +147,7 @@ public class Task implements Cloneable, Comparable<Task> {
 		return tuesday;
 	}
 
-	public void setTuesday(boolean tuesday) {
+	public void setTuesday(final boolean tuesday) {
 		this.tuesday = tuesday;
 	}
 
@@ -121,7 +155,7 @@ public class Task implements Cloneable, Comparable<Task> {
 		return wednesday;
 	}
 
-	public void setWednesday(boolean wednesday) {
+	public void setWednesday(final boolean wednesday) {
 		this.wednesday = wednesday;
 	}
 
@@ -129,7 +163,7 @@ public class Task implements Cloneable, Comparable<Task> {
 		return thursday;
 	}
 
-	public void setThursday(boolean thursday) {
+	public void setThursday(final boolean thursday) {
 		this.thursday = thursday;
 	}
 
@@ -137,7 +171,7 @@ public class Task implements Cloneable, Comparable<Task> {
 		return friday;
 	}
 
-	public void setFriday(boolean friday) {
+	public void setFriday(final boolean friday) {
 		this.friday = friday;
 	}
 
@@ -145,7 +179,7 @@ public class Task implements Cloneable, Comparable<Task> {
 		return saturday;
 	}
 
-	public void setSaturday(boolean saturday) {
+	public void setSaturday(final boolean saturday) {
 		this.saturday = saturday;
 	}
 
@@ -153,7 +187,7 @@ public class Task implements Cloneable, Comparable<Task> {
 		return sunday;
 	}
 
-	public void setSunday(boolean sunday) {
+	public void setSunday(final boolean sunday) {
 		this.sunday = sunday;
 	}
 
@@ -187,7 +221,7 @@ public class Task implements Cloneable, Comparable<Task> {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		final Task other = (Task) obj;
+		final RepositoryQueryTask other = (RepositoryQueryTask) obj;
 		if (id == null) {
 			if (other.id != null) {
 				return false;
@@ -198,18 +232,26 @@ public class Task implements Cloneable, Comparable<Task> {
 		return true;
 	}
 
-
 	@Override
-	public Task clone() {
-		return new Task(this.id, this.hour, this.minutes, this.monday, this.tuesday, this.wednesday, this.thursday,
-				this.friday, this.saturday, this.sunday, this.repositoryQuery);
+	public RepositoryQueryTask clone() {
+		return new RepositoryQueryTask(this.id, this.hour, this.minutes, this.daily, this.monday, this.tuesday,
+				this.wednesday, this.thursday, this.friday, this.saturday, this.sunday);
 	}
 
 	@Override
-	public int compareTo(final Task obj) {
-		return Compare.objects(this, obj).by(Task::getId).thenBy(Task::getHour).thenBy(Task::getMinutes)
-				.thenBy(Task::isMonday).thenBy(Task::isTuesday).thenBy(Task::isWednesday).thenBy(Task::isThursday)
-				.thenBy(Task::isFriday).thenBy(Task::isSaturday).thenBy(Task::isSunday).andGet();
+	public int compareTo(final RepositoryQueryTask obj) {
+		return Compare.objects(this, obj).by(RepositoryQueryTask::getId)
+				.thenBy(RepositoryQueryTask::getHour)
+				.thenBy(RepositoryQueryTask::getMinutes)
+				.thenBy(RepositoryQueryTask::isDaily)
+				.thenBy(RepositoryQueryTask::isMonday)
+				.thenBy(RepositoryQueryTask::isTuesday)
+				.thenBy(RepositoryQueryTask::isWednesday)
+				.thenBy(RepositoryQueryTask::isThursday)
+				.thenBy(RepositoryQueryTask::isFriday)
+				.thenBy(RepositoryQueryTask::isSaturday)
+				.thenBy(RepositoryQueryTask::isSunday)
+			.andGet();
 	}
 
 }

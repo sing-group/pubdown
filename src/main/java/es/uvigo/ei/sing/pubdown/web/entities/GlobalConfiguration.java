@@ -27,7 +27,7 @@ public class GlobalConfiguration {
 		return configurationKey;
 	}
 
-	public void setConfigurationKey(String configurationKey) {
+	public void setConfigurationKey(final String configurationKey) {
 		this.configurationKey = configurationKey;
 	}
 
@@ -35,7 +35,7 @@ public class GlobalConfiguration {
 		return configurationValue;
 	}
 
-	public void setConfigurationValue(String configurationValue) {
+	public void setConfigurationValue(final String configurationValue) {
 		this.configurationValue = configurationValue;
 	}
 

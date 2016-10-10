@@ -28,8 +28,8 @@ public class ScopusHTMLParser {
 	private final HttpClientContext context;
 	private Map<String, String> urlsWithTitle;
 
-	public ScopusHTMLParser(CloseableHttpClient httpClient, HttpClientContext context,
-			Map<String, String> urlsWithTitle) {
+	public ScopusHTMLParser(final CloseableHttpClient httpClient, final HttpClientContext context,
+			final Map<String, String> urlsWithTitle) {
 		super();
 		this.httpClient = httpClient;
 		this.context = context;
@@ -40,12 +40,12 @@ public class ScopusHTMLParser {
 		return urlsWithTitle;
 	}
 
-	public void setUrlsWithTitle(Map<String, String> urlsWithTitle) {
+	public void setUrlsWithTitle(final Map<String, String> urlsWithTitle) {
 		this.urlsWithTitle = urlsWithTitle;
 	}
 
-	public void downloadCompletePDFs(String directory, boolean isCompletePaper, boolean convertPDFtoTXT,
-			boolean keepPDF, boolean directoryType) {
+	public void downloadCompletePDFs(final String directory, final boolean isCompletePaper,
+			final boolean convertPDFtoTXT, final boolean keepPDF, final boolean directoryType) {
 		this.urlsWithTitle.forEach((url, fileName) -> {
 			try {
 				final Document document = Jsoup.connect(url).get();
@@ -69,8 +69,8 @@ public class ScopusHTMLParser {
 		});
 	}
 
-	public void downloadAbstractTXTs(String directory, boolean isCompletePaper, boolean convertPDFtoTXT,
-			boolean keepPDF, boolean directoryType) {
+	public void downloadAbstractTXTs(final String directory, final boolean isCompletePaper,
+			final boolean convertPDFtoTXT, final boolean keepPDF, final boolean directoryType) {
 		this.urlsWithTitle.forEach((url, fileName) -> {
 			final String directorySuffix = directoryType ? ABSTRACT_PAPERS : SUB_FOLDER_NAME;
 

@@ -8,142 +8,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import es.uvigo.ei.sing.pubdown.web.entities.Task;
+import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQueryTask;
 
 public class SchedulerExecutor {
-//	private final TransactionManager tm = new CleanEntityManagerTransactionManager();
-
 	private static final int WEEK_DAYS = 7;
 	private static final int WEEK_HOURS = WEEK_DAYS * 24;
 	private static final int WEEKLY_PERIOD_IN_MINUTES = WEEK_HOURS * 60;
 	private static final int DAY_HOURS = 24;
 	private static final int DAILY_PERIOD_MINUTES = DAY_HOURS * 60;
 	private static final int SECONDS = 0;
-	
-//	private static final int STARTS_DOWNLOAD_FROM = 0;
 
 	public SchedulerExecutor() {
 	}
 
-//	public Runnable getRunnableQuery(final String directoryPath, final Task task) {
-//		return () -> {
-//			final RepositoryQuery repositoryQuery = task.getRepositoryQuery();
-//
-//			ScopusDownloader scopusDownloader = new ScopusDownloader();
-//			PubMedDownloader pubmedDownloader = new PubMedDownloader();
-//			boolean scopusReady = false;
-//			boolean pubmedReady = false;
-//
-//			final String query = repositoryQuery.getQuery().replace(" ", "+");
-//
-//			final String scopusApiKey = repositoryQuery.getUser().getApiKey();
-//
-//			if (repositoryQuery.isScopus() && repositoryQuery.getScopusDownloadTo() != 0
-//					&& repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE) {
-//				scopusDownloader = new ScopusDownloader(query, scopusApiKey,
-//						directoryPath + repositoryQuery.getDirectory());
-//				scopusReady = true;
-//			}
-//
-//			if (repositoryQuery.isPubmed() && repositoryQuery.getPubmedDownloadTo() != 0
-//					&& repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE) {
-//				pubmedDownloader = new PubMedDownloader(query, directoryPath + repositoryQuery.getDirectory());
-//				pubmedReady = true;
-//			}
-//
-//			if (repositoryQuery.isFulltextPaper()) {
-//				final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
-//				if (repositoryQuery.isScopus() && scopusReady) {
-//					scopusDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-//							directoryType, STARTS_DOWNLOAD_FROM, repositoryQuery.getScopusDownloadTo());
-//				}
-//
-//				if (repositoryQuery.isPubmed() && pubmedReady) {
-//					pubmedDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-//							directoryType, STARTS_DOWNLOAD_FROM, repositoryQuery.getPubmedDownloadTo());
-//				}
-//			}
-//
-//			if (repositoryQuery.isAbstractPaper()) {
-//				final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
-//				if (repositoryQuery.isScopus() && scopusReady) {
-//					scopusDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-//							directoryType, STARTS_DOWNLOAD_FROM, repositoryQuery.getScopusDownloadTo());
-//				}
-//				if (repositoryQuery.isPubmed() && pubmedReady) {
-//					pubmedDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-//							directoryType, STARTS_DOWNLOAD_FROM, repositoryQuery.getPubmedDownloadTo());
-//				}
-//
-//			}
-//		};
-//	}
-
-//	public Runnable getRepositoryQueryResult(final String directoryPath, final Task task) {
-//		return () -> {
-//			RepositoryQuery repositoryQuery = task.getRepositoryQuery();
-//			ScopusDownloader scopusDownloader = new ScopusDownloader();
-//			PubMedDownloader pubmedDownloader = new PubMedDownloader();
-//
-//			int scopusResult = 0;
-//			int pubmedResult = 0;
-//			int scopusDownloadTo = 0;
-//			int pubmedDownloadTo = 0;
-//
-//			final String query = repositoryQuery.getQuery().replace(" ", "+");
-//
-//			final String scopusApiKey = repositoryQuery.getUser().getApiKey();
-//
-//			if (repositoryQuery.isScopus()) {
-//				scopusDownloader = new ScopusDownloader(query, scopusApiKey,
-//						directoryPath + repositoryQuery.getDirectory());
-//
-//				if (repositoryQuery.getScopusDownloadTo() == Integer.MAX_VALUE
-//						|| repositoryQuery.getScopusDownloadTo() == 0) {
-//					scopusResult = scopusDownloader.getResultSize();
-//					System.out.println("Scopus real result = " + scopusResult);
-//					if (scopusResult != 0) {
-//						if (scopusResult > 6000) {
-//							scopusDownloadTo = 6000;
-//						}
-//
-//						// limit to 100 to improve performance
-//						scopusDownloadTo = 100;
-//						repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
-//
-//						// tm.runInTransaction(em -> {
-//						// em.merge(repositoryQuery);
-//						// });
-//					}
-//				}
-//			}
-//
-//			if (repositoryQuery.isPubmed()) {
-//				pubmedDownloader = new PubMedDownloader(query, directoryPath + repositoryQuery.getDirectory());
-//				if (repositoryQuery.getPubmedDownloadTo() == Integer.MAX_VALUE
-//						|| repositoryQuery.getPubmedDownloadTo() == 0) {
-//					pubmedResult = pubmedDownloader.getResultSize();
-//					System.out.println("PubMed real result = " + pubmedResult);
-//					if (pubmedResult != 0) {
-//						// limit to 100 to improve performance
-//						pubmedDownloadTo = 100;
-//						repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
-//
-//						// tm.runInTransaction(em -> {
-//						// em.merge(repositoryQuery);
-//						// });
-//					}
-//				}
-//			}
-//			repositoryQuery.setChecked(true);
-//			tm.runInTransaction(em -> {
-//				em.merge(repositoryQuery);
-//			});
-//		};
-//	}
-	
-
-	public long getDailyInitialDelay(final Task task) {
+	public long getDailyInitialDelay(final RepositoryQueryTask task) {
 
 		final int hourOfDay = task.getHour();
 		final int minutes = task.getMinutes();
@@ -154,7 +32,7 @@ public class SchedulerExecutor {
 
 		final Calendar userCalendar = createCalendar(hourOfDay, minutes);
 
-		long initialDelayInMinutes = getInitialDelayInMinutes(true, actualCalendar, userCalendar);
+		final long initialDelayInMinutes = getInitialDelayInMinutes(true, actualCalendar, userCalendar);
 
 		if (initialDelayInMinutes == DAILY_PERIOD_MINUTES) {
 			userCalendar.set(Calendar.MINUTE, userCalendar.get(Calendar.MINUTE) + (int) initialDelayInMinutes);
@@ -163,7 +41,7 @@ public class SchedulerExecutor {
 		return initialDelayInMinutes;
 	}
 
-	public List<Long> getWeeklyInitialDelay(final Task task) {
+	public List<Long> getWeeklyInitialDelay(final RepositoryQueryTask task) {
 		final int hourOfDay = task.getHour();
 		final int minutes = task.getMinutes();
 
@@ -176,7 +54,7 @@ public class SchedulerExecutor {
 		executionDays.put("SATURDAY", task.isSaturday());
 		executionDays.put("SUNDAY", task.isSunday());
 
-		List<Long> initialDelays = new LinkedList<>();
+		final List<Long> initialDelays = new LinkedList<>();
 
 		final Calendar actualCalendar = Calendar.getInstance();
 		actualCalendar.setTime(new Date());
@@ -184,10 +62,10 @@ public class SchedulerExecutor {
 
 		final Calendar userCalendar = createCalendar(hourOfDay, minutes);
 
-		executionDays.forEach((day, toExecute) -> {
-			if (toExecute) {
+		executionDays.forEach((nameOfDay, isToExecute) -> {
+			if (isToExecute) {
 				final Calendar calendarClone = (Calendar) userCalendar.clone();
-				calendarClone.set(Calendar.DAY_OF_WEEK, getCalendarDay(day));
+				calendarClone.set(Calendar.DAY_OF_WEEK, getCalendarDay(nameOfDay));
 
 				final long initialDelayInMinutes = getInitialDelayInMinutes(false, actualCalendar, calendarClone);
 
@@ -195,7 +73,7 @@ public class SchedulerExecutor {
 					calendarClone.set(Calendar.MINUTE,
 							calendarClone.get(Calendar.MINUTE) + (int) initialDelayInMinutes);
 				}
-				
+
 				initialDelays.add(initialDelayInMinutes);
 			}
 		});
@@ -210,7 +88,7 @@ public class SchedulerExecutor {
 		final Date userDate = userCalendar.getTime();
 
 		long delayInMinutes = TimeUnit.MILLISECONDS.toMinutes((userDate.getTime() - actualDate.getTime()));
-		
+
 		if (daily) {
 			if (delayInMinutes == DAILY_PERIOD_MINUTES) {
 				delayInMinutes = 0;

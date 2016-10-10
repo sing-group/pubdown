@@ -9,7 +9,6 @@ import javax.swing.SwingWorker;
 
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.Searcher;
 
-
 public class SearchSwingWorker extends SwingWorker<Void, Integer> {
 
 	private Searcher downloader;
@@ -25,9 +24,9 @@ public class SearchSwingWorker extends SwingWorker<Void, Integer> {
 
 	}
 
-	public SearchSwingWorker(JFrame frame, Searcher downloader, int resultSize, JTextField resultTextField,
-			JTextField downloadFromTextField, JTextField downloadToTextField, JCheckBox limitCheckBox,
-			int defaultSearchResultLimit) {
+	public SearchSwingWorker(final JFrame frame, final Searcher downloader, final int resultSize,
+			final JTextField resultTextField, final JTextField downloadFromTextField,
+			final JTextField downloadToTextField, final JCheckBox limitCheckBox, final int defaultSearchResultLimit) {
 		super();
 		this.frame = frame;
 		this.frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));

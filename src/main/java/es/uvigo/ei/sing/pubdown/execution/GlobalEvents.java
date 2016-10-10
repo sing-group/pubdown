@@ -1,5 +1,7 @@
 package es.uvigo.ei.sing.pubdown.execution;
 
+import static java.util.Collections.unmodifiableMap;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,19 +30,20 @@ public final class GlobalEvents {
 	public static final String SUFFIX_SUBTASK_ABORTED = ACTION_MARKER + ACTION_SUBTASK_ABORTED;
 	public static final String SUFFIX_SUBTASK_ERROR = ACTION_MARKER + ACTION_SUBTASK_ERROR;
 
-	public static final String EVENT_ROBOT_EXECUTION = "eventRobotExecution";
-	public static final String EVENT_ROBOT_EXECUTION_STARTED = EVENT_ROBOT_EXECUTION + SUFFIX_STARTED;
-	public static final String EVENT_ROBOT_EXECUTION_FINISHED = EVENT_ROBOT_EXECUTION + SUFFIX_FINISHED;
-	public static final String EVENT_ROBOT_EXECUTION_ABORTED = EVENT_ROBOT_EXECUTION + SUFFIX_ABORTED;
-	public static final String EVENT_ROBOT_EXECUTION_SCHEDULED = EVENT_ROBOT_EXECUTION + SUFFIX_SCHEDULED;
-	public static final String EVENT_ROBOT_EXECUTION_SUBTASK_STARTED = EVENT_ROBOT_EXECUTION + SUFFIX_SUBTASK_STARTED;
-	public static final String EVENT_ROBOT_EXECUTION_SUBTASK_FINISHED = EVENT_ROBOT_EXECUTION + SUFFIX_SUBTASK_FINISHED;
-	public static final String EVENT_ROBOT_EXECUTION_SUBTASK_ABORTED = EVENT_ROBOT_EXECUTION + SUFFIX_SUBTASK_ABORTED;
-	public static final String EVENT_ROBOT_EXECUTION_SUBTASK_ERROR = EVENT_ROBOT_EXECUTION + SUFFIX_SUBTASK_ERROR;
+	public static final String EVENT_REPOSITORY_QUERY = "eventRepositoryQuery";
+	public static final String EVENT_REPOSITORY_QUERY_STARTED = EVENT_REPOSITORY_QUERY + SUFFIX_STARTED;
+	public static final String EVENT_REPOSITORY_QUERY_FINISHED = EVENT_REPOSITORY_QUERY + SUFFIX_FINISHED;
+	public static final String EVENT_REPOSITORY_QUERY_ABORTED = EVENT_REPOSITORY_QUERY + SUFFIX_ABORTED;
+	public static final String EVENT_REPOSITORY_QUERY_SCHEDULED = EVENT_REPOSITORY_QUERY + SUFFIX_SCHEDULED;
+	public static final String EVENT_REPOSITORY_QUERY_SUBTASK_STARTED = EVENT_REPOSITORY_QUERY + SUFFIX_SUBTASK_STARTED;
+	public static final String EVENT_REPOSITORY_QUERY_SUBTASK_FINISHED = EVENT_REPOSITORY_QUERY
+			+ SUFFIX_SUBTASK_FINISHED;
+	public static final String EVENT_REPOSITORY_QUERY_SUBTASK_ABORTED = EVENT_REPOSITORY_QUERY + SUFFIX_SUBTASK_ABORTED;
+	public static final String EVENT_REPOSITORY_QUERY_SUBTASK_ERROR = EVENT_REPOSITORY_QUERY + SUFFIX_SUBTASK_ERROR;
 
 	private static final String[] SUFFIXES = new String[] { SUFFIX_STARTED, SUFFIX_FINISHED, SUFFIX_ABORTED,
 			SUFFIX_SCHEDULED, SUFFIX_SUBTASK_ABORTED, SUFFIX_SUBTASK_FINISHED, SUFFIX_SUBTASK_STARTED };
-	public static final String[] EVENTS = new String[] { EVENT_ROBOT_EXECUTION };
+	public static final String[] EVENTS = new String[] { EVENT_REPOSITORY_QUERY };
 
 	private final static Map<String, List<String>> EVENT_GLOBAL_COMMANDS = Collections
 			.synchronizedMap(new HashMap<String, List<String>>());
@@ -124,5 +127,9 @@ public final class GlobalEvents {
 		final List<String> commands = EVENT_GLOBAL_COMMANDS.get(eventId);
 
 		return (commands == null) ? new ArrayList<>() : new ArrayList<>(commands);
+	}
+
+	public final static Map<String, List<String>> getEventGlobalCommands() {
+		return unmodifiableMap(EVENT_GLOBAL_COMMANDS);
 	}
 }

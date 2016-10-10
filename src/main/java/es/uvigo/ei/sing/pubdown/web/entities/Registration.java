@@ -50,7 +50,8 @@ public class Registration {
 	 * @param uuid
 	 *            a random {@link UUID}
 	 */
-	public Registration(final String login, final String password, final String apiKey, final String email, final String uuid) {
+	public Registration(final String login, final String password, final String apiKey, final String email,
+			final String uuid) {
 		super();
 		this.login = login;
 		this.password = password;

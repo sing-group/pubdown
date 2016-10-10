@@ -2,6 +2,7 @@ package es.uvigo.ei.sing.pubdown.paperdown.downloader;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -19,11 +20,14 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.activation.MimetypesFileTypeMap;
+
 import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.io.RandomAccessFile;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.zkoss.zul.Filedownload;
 
 import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
@@ -52,14 +56,43 @@ public class RepositoryManager {
 		return repositoryPath;
 	}
 
-	public static void updateRepositoryQuery(RepositoryQuery repositoryQuery) {
+	public static void updateRepositoryQuery(final RepositoryQuery repositoryQuery) {
 		tm.runInTransaction(em -> {
 			em.merge(repositoryQuery);
 		});
 	}
 
-	public static void generatePDFFile(String pdfURL, String fileName, String directory, String directorySuffix,
-			boolean isCompletePaper, boolean convertPDFtoTXT, boolean keepPDF, boolean directoryType) {
+	public static void compressAndDownloadPapers(final String compressedFileName, final String basePath,
+			final String repositoryPath, final String suggestedDownloadName) {
+		try {
+			String command = "tar -czvf " + compressedFileName + " " + repositoryPath;
+			String[] commandsToExecute = { "/bin/sh", "-c", command };
+
+			Process process = Runtime.getRuntime().exec(commandsToExecute, null, new File(basePath));
+			process.waitFor();
+
+			FileInputStream inputStream;
+			final String fileToDownload = basePath + compressedFileName;
+			final File file = new File(fileToDownload);
+			if (file.exists()) {
+				inputStream = new FileInputStream(file);
+
+				Filedownload.save(inputStream, new MimetypesFileTypeMap().getContentType(file), suggestedDownloadName);
+			}
+
+			command = "rm " + compressedFileName;
+			commandsToExecute[2] = command;
+			process = Runtime.getRuntime().exec(commandsToExecute, null, new File(basePath));
+			process.waitFor();
+
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void generatePDFFile(final String pdfURL, final String fileName, final String directory,
+			final String directorySuffix, final boolean isCompletePaper, final boolean convertPDFtoTXT,
+			final boolean keepPDF, final boolean directoryType) {
 		try {
 			final URL url = new URL(pdfURL);
 			final ReadableByteChannel readableByteChannel = Channels.newChannel(url.openStream());
@@ -113,8 +146,8 @@ public class RepositoryManager {
 		}
 	}
 
-	public static void generateTXTFile(String fileName, String abstractText, String directory, String directorySuffix,
-			boolean isCompletePaper, boolean directoryType) {
+	public static void generateTXTFile(final String fileName, final String abstractText, final String directory,
+			final String directorySuffix, final boolean isCompletePaper, final boolean directoryType) {
 		File file;
 		String createdFile;
 		File subDirectory;
@@ -145,8 +178,8 @@ public class RepositoryManager {
 
 	}
 
-	private static void convertPDFFiletoTXTFile(File file, String directory, String directorySuffix,
-			boolean isCompletePaper, boolean keepPDF, boolean directoryType) {
+	private static void convertPDFFiletoTXTFile(final File file, final String directory, final String directorySuffix,
+			final boolean isCompletePaper, final boolean keepPDF, final boolean directoryType) {
 		PDFTextStripper pdfStripper = null;
 		PDDocument pdDoc = null;
 		COSDocument cosDoc = null;
@@ -175,7 +208,7 @@ public class RepositoryManager {
 		}
 	}
 
-	private static boolean checkIfCorruptedPDF(File file) {
+	private static boolean checkIfCorruptedPDF(final File file) {
 		PDFTextStripper pdfStripper = null;
 		PDDocument pdDoc = null;
 		COSDocument cosDoc = null;
@@ -196,7 +229,7 @@ public class RepositoryManager {
 		return false;
 	}
 
-	private static File createDirectory(String directory) {
+	private static File createDirectory(final String directory) {
 		System.out.println("Entro para crear directorio");
 		final File newDirectory = new File(directory);
 		if (!newDirectory.exists()) {
@@ -205,14 +238,14 @@ public class RepositoryManager {
 		return newDirectory;
 	}
 
-	public static boolean itsDOI(String text) {
+	public static boolean itsDOI(final String text) {
 		final String pattern = "\\b(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![\"&\\'<>])\\S)+)\\b";
 		final Pattern regexPattern = Pattern.compile(pattern);
 		final Matcher matcher = regexPattern.matcher(text);
 		return matcher.find();
 	}
 
-	public static String getDOI(String text) {
+	public static String getDOI(final String text) {
 		final String pattern = "\\b(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![\"&\\'<>])\\S)+)\\b";
 		final Pattern regexPattern = Pattern.compile(pattern);
 		final Matcher matcher = regexPattern.matcher(text);
@@ -223,7 +256,7 @@ public class RepositoryManager {
 		}
 	}
 
-	public static Map<String, String> readMetadata(String directory) {
+	public static Map<String, String> readMetadata(final String directory) {
 		BufferedReader bufferedReader = null;
 		String line = "";
 		final Map<String, String> doiMap = new HashMap<>();
@@ -252,7 +285,7 @@ public class RepositoryManager {
 
 	}
 
-	public static Map<String, List<String>> readDoiInMetaData(String directory, String doi) {
+	public static Map<String, List<String>> readDoiInMetaData(final String directory, final String doi) {
 		BufferedReader bufferedReader = null;
 		String line = "";
 		final List<String> doiList = new LinkedList<>();
@@ -283,8 +316,8 @@ public class RepositoryManager {
 
 	}
 
-	public static void writeMetadata(String directory, String doi, String title, String date, List<String> authorList,
-			boolean isCompletePaper) {
+	public static void writeMetadata(final String directory, final String doi, final String title, final String date,
+			final List<String> authorList, final boolean isCompletePaper) {
 		try (FileWriter metadataFile = new FileWriter(directory + File.separator + METADATA_FILE, true)) {
 			final String type = isCompletePaper ? "full" : "abstract";
 			String authors = "";

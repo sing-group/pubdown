@@ -2,13 +2,10 @@ package es.uvigo.ei.sing.pubdown.web.entities;
 
 import static es.uvigo.ei.sing.pubdown.web.entities.Role.ADMIN;
 import static es.uvigo.ei.sing.pubdown.web.entities.Role.USER;
-import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -43,7 +40,7 @@ public class User implements Cloneable, Comparable<User> {
 	private Role role;
 
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
-	private Set<RepositoryQuery> repositoryQuerys;
+	private List<Repository> repositories;
 
 	@Column(nullable = false)
 	private boolean locked;
@@ -54,7 +51,7 @@ public class User implements Cloneable, Comparable<User> {
 	 */
 	public User() {
 		this.role = USER;
-		this.repositoryQuerys = new HashSet<>();
+		this.repositories = new LinkedList<>();
 		this.locked = false;
 	}
 
@@ -77,7 +74,7 @@ public class User implements Cloneable, Comparable<User> {
 		this.apiKey = login;
 		this.email = email;
 		this.role = USER;
-		this.repositoryQuerys = new HashSet<>();
+		this.repositories = new LinkedList<>();
 		this.locked = false;
 	}
 
@@ -103,7 +100,7 @@ public class User implements Cloneable, Comparable<User> {
 		this.apiKey = apiKey;
 		this.email = email;
 		this.role = role;
-		this.repositoryQuerys = new HashSet<>();
+		this.repositories = new LinkedList<>();
 		this.locked = false;
 	}
 
@@ -120,18 +117,18 @@ public class User implements Cloneable, Comparable<User> {
 	 *            the {@link User} email
 	 * @param role
 	 *            the {@link User} {@link Role}
-	 * @param repositoryQuerys
-	 *            the {@link User} {@link RepositoryQuery}
+	 * @param repositoryQueries
+	 *            the {@link User} {@link Repository}
 	 */
 	public User(final String login, final String password, final String apiKey, final String email, final Role role,
-			final Set<RepositoryQuery> repositoryQuerys) {
+			final List<Repository> repositoryQueries) {
 		super();
 		this.login = login;
 		this.password = password;
 		this.apiKey = apiKey;
 		this.email = email;
 		this.role = role;
-		this.repositoryQuerys = repositoryQuerys;
+		this.repositories = repositoryQueries;
 		this.locked = false;
 	}
 
@@ -148,20 +145,20 @@ public class User implements Cloneable, Comparable<User> {
 	 *            the {@link User} email
 	 * @param role
 	 *            the {@link User} {@link Role}
-	 * @param repositoryQuerys
-	 *            the {@link User} {@link RepositoryQuery}
+	 * @param repositoryQueries
+	 *            the {@link User} {@link Repository}
 	 * @param locked
 	 *            indicates if the {@link User} is locked
 	 */
 	public User(final String login, final String password, final String apiKey, final String email, final Role role,
-			final Set<RepositoryQuery> repositoryQuerys, final boolean locked) {
+			final List<Repository> repositoryQueries, final boolean locked) {
 		super();
 		this.login = login;
 		this.password = password;
 		this.apiKey = apiKey;
 		this.email = email;
 		this.role = role;
-		this.repositoryQuerys = repositoryQuerys;
+		this.repositories = repositoryQueries;
 		this.locked = locked;
 	}
 
@@ -311,20 +308,8 @@ public class User implements Cloneable, Comparable<User> {
 	 * 
 	 * @return the number of robots
 	 */
-	public String getRepositoryQueryNumber() {
-		// long publicRobots = this.getRepositoryQuerys().size();
-		// publicRobots = this.getRepositoryQuerys().stream().filter(r ->
-		// r.isPublicAccess()).count();
-		return String.valueOf(this.getRepositoryQuerys().size());
-	}
-
-	/**
-	 * Gets all the {@link User} {@link RepositoryQuery} sorted by category
-	 * 
-	 * @return the {@link User} {@link RepositoryQuery} sorted by category
-	 */
-	public Map<String, List<RepositoryQuery>> getRepositoriesQueryByRepository() {
-		return this.getRepositoryQuerys().stream().collect(groupingBy(RepositoryQuery::getRepository));
+	public String getRepositoryNumber() {
+		return String.valueOf(this.getRepositories().size());
 	}
 
 	/**
@@ -332,21 +317,23 @@ public class User implements Cloneable, Comparable<User> {
 	 * 
 	 * @return the {@link User} {@link RepositoryQuery}
 	 */
-	public Set<RepositoryQuery> getRepositoryQuerys() {
-		return Collections.unmodifiableSet(repositoryQuerys);
+	public List<Repository> getRepositories() {
+		return repositories.stream()
+				.sorted((repository1, repository2) -> repository1.getName().compareTo(repository2.getName()))
+				.collect(toList());
 	}
 
 	/**
-	 * Adds a {@link RepositoryQuery} from his {@link User}
+	 * Adds a {@link Repository} from his {@link User}
 	 * 
-	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery} to remove
-	 * @return <code>true</code> if the {@link RepositoryQuery} has been
-	 *         removed, <code>false</code> otherwise
+	 * @param Repository
+	 *            the {@link Repository} to remove
+	 * @return <code>true</code> if the {@link Repository} has been removed,
+	 *         <code>false</code> otherwise
 	 */
-	public boolean addRepositoryQuery(final RepositoryQuery repositoryQuery) {
-		if (this.repositoryQuerys.add(repositoryQuery)) {
-			repositoryQuery.packageSetUser(this);
+	public boolean addRepository(final Repository repository) {
+		if (this.repositories.add(repository)) {
+			repository.packageSetUser(this);
 			return true;
 		} else {
 			return false;
@@ -354,16 +341,16 @@ public class User implements Cloneable, Comparable<User> {
 	}
 
 	/**
-	 * Removes a {@link RepositoryQuery} from his {@link User}
+	 * Removes a {@link Repository} from his {@link User}
 	 * 
 	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery} to remove
-	 * @return <code>true</code> if the {@link RepositoryQuery} has been
-	 *         removed, <code>false</code> otherwise
+	 *            the {@link Repository} to remove
+	 * @return <code>true</code> if the {@link Repository} has been removed,
+	 *         <code>false</code> otherwise
 	 */
-	public boolean removeRepositoryQuery(final RepositoryQuery repositoryQuery) {
-		if (this.repositoryQuerys.remove(repositoryQuery)) {
-			repositoryQuery.packageSetUser(null);
+	public boolean removeRepository(final Repository repository) {
+		if (this.repositories.remove(repository)) {
+			repository.packageSetUser(null);
 			return true;
 		} else {
 			return false;
@@ -378,8 +365,8 @@ public class User implements Cloneable, Comparable<User> {
 	 * @return <code>true</code> if the {@link RepositoryQuery} belongs to the
 	 *         {@link User}, <code>false</code> otherwise
 	 */
-	public boolean containsRepositoryQuery(final RepositoryQuery repositoryQuery) {
-		return this.getRepositoryQuerys().contains(repositoryQuery);
+	public boolean containsRepository(final Repository repository) {
+		return this.getRepositories().contains(repository);
 	}
 
 	/**
@@ -389,8 +376,7 @@ public class User implements Cloneable, Comparable<User> {
 	 */
 	@Override
 	public User clone() {
-		return new User(this.login, this.password, this.apiKey, this.email, this.role, this.repositoryQuerys,
-				this.locked);
+		return new User(this.login, this.password, this.apiKey, this.email, this.role, this.repositories, this.locked);
 	}
 
 	/**

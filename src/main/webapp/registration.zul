@@ -1,6 +1,6 @@
 <zk>
 	<style src="css/pubdown.css" />
-	<window title="Pubdown Registration" border="normal" width="350px"
+	<window title="PubDown" border="normal" width="350px"
 		style="margin: 0 auto;"
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.RegistrationViewModel')"
 		validationMessages="@id('vmsgs')">

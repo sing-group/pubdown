@@ -43,16 +43,16 @@ public class PubMedDownloader implements Searcher {
 	private String directory;
 	private String query;
 	private final List<DownloadListener> downloadListeners = new CopyOnWriteArrayList<>();
-	
+
 	private String doi = "";
 	private String paperTitle = "";
 	private String date = "";
-	private List<String> authorList = new LinkedList<>();
+	private final List<String> authorList = new LinkedList<>();
 
 	public PubMedDownloader() {
 	}
 
-	public PubMedDownloader(String query, String directory) {
+	public PubMedDownloader(final String query, final String directory) {
 		this.query = query;
 		this.directory = directory;
 		final RequestConfig globalConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
@@ -64,14 +64,14 @@ public class PubMedDownloader implements Searcher {
 		return directory;
 	}
 
-	public void setDirectory(String directory) {
+	public void setDirectory(final String directory) {
 		this.directory = directory;
 	}
 
 	@Override
-	public void downloadPapers(boolean isCompletePaper, boolean convertPDFtoTXT, boolean keepPDF, boolean directoryType,
-			int downloadFrom, int downloadTo) {
-		
+	public void downloadPapers(final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
+			final boolean directoryType, final int downloadFrom, final int downloadTo) {
+
 		int aux = downloadTo;
 		int searchIncrease = 1;
 		final int resultNumber = getResultSize();
@@ -139,14 +139,14 @@ public class PubMedDownloader implements Searcher {
 	}
 
 	@Override
-	public void addDownloadListener(DownloadListener downloadListener) {
+	public void addDownloadListener(final DownloadListener downloadListener) {
 		if (!this.downloadListeners.contains(downloadListener)) {
 			this.downloadListeners.add(downloadListener);
 		}
 	}
 
 	@Override
-	public void removeDownloadListener(DownloadListener downloadListener) {
+	public void removeDownloadListener(final DownloadListener downloadListener) {
 		if (this.downloadListeners.contains(downloadListener)) {
 			this.downloadListeners.remove(downloadListener);
 		}
@@ -158,23 +158,23 @@ public class PubMedDownloader implements Searcher {
 	}
 
 	@Override
-	public boolean containsDownloadListener(DownloadListener downloadListener) {
+	public boolean containsDownloadListener(final DownloadListener downloadListener) {
 		return this.downloadListeners.contains(downloadListener);
 	}
 
-	public void notifyDownloadListeners(DownloadEvent downloadEvent) {
+	public void notifyDownloadListeners(final DownloadEvent downloadEvent) {
 		for (final DownloadListener downloadListener : downloadListeners) {
 			downloadListener.downloadComplete(downloadEvent);
 		}
 	}
 
-	private boolean checkMetadata(String id, boolean isCompletePaper) {
+	private boolean checkMetadata(final String id, final boolean isCompletePaper) {
 		final String queryURL = SEARCH_ID + id;
 		final String queryURLXML = queryURL + SEARCH_XML;
 		try {
 			final org.jsoup.nodes.Document document = Jsoup.connect(queryURL).get();
 
-//			String paperTitle = "";
+			// String paperTitle = "";
 			final Elements titlesTexts = document.select("h1");
 			for (final Element titleText : titlesTexts) {
 				if (!titleText.text().equals("PubMed")) {
@@ -183,24 +183,25 @@ public class PubMedDownloader implements Searcher {
 				}
 			}
 
-//			final List<String> authorList = new LinkedList<>();
+			// final List<String> authorList = new LinkedList<>();
 			final Elements authors = document.select("div.auths > a");
 			for (final Element author : authors) {
 				authorList.add(author.text());
 			}
 
-//			String date = "";
+			// String date = "";
 			date = getMetadataDate(queryURLXML);
 
-//			String doi = "";
+			// String doi = "";
 			final Elements links = document.select("a");
 			for (final Element link : links) {
 				if (link.attr("ref").contains("aid_type=doi")) {
 					doi = link.text();
 					final Map<String, String> doiMap = RepositoryManager.readMetadata(this.directory);
 					if (!doiMap.containsKey(doi)) {
-//						RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList,
-//								isCompletePaper);
+						// RepositoryManager.writeMetadata(this.directory, doi,
+						// paperTitle, date, authorList,
+						// isCompletePaper);
 						return true;
 					} else {
 						final Map<String, List<String>> auxMap = RepositoryManager.readDoiInMetaData(this.directory,
@@ -210,8 +211,9 @@ public class PubMedDownloader implements Searcher {
 							final String type = auxList.get(0);
 							final String paperType = isCompletePaper ? "full" : "abstract";
 							if (!paperType.equals(type)) {
-//								RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList,
-//										isCompletePaper);
+								// RepositoryManager.writeMetadata(this.directory,
+								// doi, paperTitle, date, authorList,
+								// isCompletePaper);
 								return true;
 							}
 						}
@@ -224,7 +226,7 @@ public class PubMedDownloader implements Searcher {
 		return false;
 	}
 
-	private String getMetadataDate(String queryURL) {
+	private String getMetadataDate(final String queryURL) {
 		try {
 			final org.jsoup.nodes.Document document = Jsoup.connect(queryURL).get();
 			String date = document.text();

@@ -1,7 +1,7 @@
 <?page title="Pubdown"?>
 <zk>
 	<style src="css/pubdown.css" />
-	<window title="Pubdown Login" border="normal" width="220px"
+	<window title="PubDown" border="normal" width="220px"
 		style="margin: 0 auto;"
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.UserViewModel')"
 		validationMessages="@id('vmsgs')">

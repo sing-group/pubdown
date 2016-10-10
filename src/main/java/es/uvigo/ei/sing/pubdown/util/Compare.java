@@ -31,17 +31,19 @@ public final class Compare {
 
 		private void addComparisonBy(final ToIntBiFunction<T, T> compare, final boolean reverseOrder) {
 			if (this.comparerFunction == null) {
-				if (reverseOrder)
+				if (reverseOrder) {
 					this.comparerFunction = (o1, o2) -> -compare.applyAsInt(o1, o2);
-				else
+				} else {
 					this.comparerFunction = (o1, o2) -> compare.applyAsInt(o1, o2);
+				}
 			} else {
-				if (reverseOrder)
+				if (reverseOrder) {
 					this.comparerFunction = this.comparerFunction
 							.andThen(cmp -> cmp == 0 ? -compare.applyAsInt(obj1, obj2) : cmp);
-				else
+				} else {
 					this.comparerFunction = this.comparerFunction
 							.andThen(cmp -> cmp == 0 ? compare.applyAsInt(obj1, obj2) : cmp);
+				}
 			}
 		}
 
@@ -198,8 +200,9 @@ public final class Compare {
 					final int cmp = nullSafeCompare((final C[] a) -> index < a.length ? a[index] : null,
 							(final C v1, final C v2) -> v1.compareTo(v2)).applyAsInt(a1, a2);
 
-					if (cmp != 0)
+					if (cmp != 0) {
 						return cmp;
+					}
 				}
 				return 0;
 			}), reverseOrder);
@@ -231,8 +234,9 @@ public final class Compare {
 					final int cmp = nullSafeCompare((final int[] a) -> index < a.length ? a[index] : null,
 							Integer::compare).applyAsInt(a1, a2);
 
-					if (cmp != 0)
+					if (cmp != 0) {
 						return cmp;
+					}
 				}
 				return 0;
 			}), reverseOrder);
@@ -264,8 +268,9 @@ public final class Compare {
 					final int cmp = nullSafeCompare((final long[] a) -> index < a.length ? a[index] : null,
 							Long::compare).applyAsInt(a1, a2);
 
-					if (cmp != 0)
+					if (cmp != 0) {
 						return cmp;
+					}
 				}
 				return 0;
 			}), reverseOrder);
@@ -297,8 +302,9 @@ public final class Compare {
 					final int cmp = nullSafeCompare((final double[] a) -> index < a.length ? a[index] : null,
 							Double::compare).applyAsInt(a1, a2);
 
-					if (cmp != 0)
+					if (cmp != 0) {
 						return cmp;
+					}
 				}
 				return 0;
 			}), reverseOrder);
@@ -330,8 +336,9 @@ public final class Compare {
 					final int cmp = nullSafeCompare((final float[] a) -> index < a.length ? a[index] : null,
 							Float::compare).applyAsInt(a1, a2);
 
-					if (cmp != 0)
+					if (cmp != 0) {
 						return cmp;
+					}
 				}
 				return 0;
 			}), reverseOrder);

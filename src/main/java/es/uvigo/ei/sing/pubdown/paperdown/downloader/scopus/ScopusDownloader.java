@@ -41,17 +41,17 @@ public class ScopusDownloader implements Searcher {
 	private String apiKey;
 	private String directory;
 	private final List<DownloadListener> downloadListeners = new CopyOnWriteArrayList<>();
-	
+
 	private String doi = "";
 	private String paperTitle = "";
 	private String date = "";
-	private List<String> authorList = new LinkedList<>();
+	private final List<String> authorList = new LinkedList<>();
 
 	public ScopusDownloader() {
 
 	}
 
-	public ScopusDownloader(String query, String apiKey, String directory) {
+	public ScopusDownloader(final String query, final String apiKey, final String directory) {
 		super();
 		this.query = query;
 		this.apiKey = apiKey;
@@ -65,14 +65,14 @@ public class ScopusDownloader implements Searcher {
 		return directory;
 	}
 
-	public void setDirectory(String directory) {
+	public void setDirectory(final String directory) {
 		this.directory = directory;
 	}
 
 	@Override
-	public void downloadPapers(boolean isCompletePaper, boolean convertPDFtoTXT, boolean keepPDF, boolean directoryType,
-			int downloadFrom, int downloadTo) {
-		
+	public void downloadPapers(final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
+			final boolean directoryType, final int downloadFrom, final int downloadTo) {
+
 		int aux = downloadTo;
 		int searchIncrease = 1;
 		final int resultNumber = getResultSize();
@@ -104,8 +104,7 @@ public class ScopusDownloader implements Searcher {
 				if (checkMetadata(xmlParser.getQueryURL(), isCompletePaper)) {
 					htmlParser.setUrlsWithTitle(urlsWithTitle);
 					downloadCompleteOrAbstract(isCompletePaper, htmlParser, convertPDFtoTXT, keepPDF, directoryType);
-					RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date,
-							authorList, isCompletePaper);
+					RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList, isCompletePaper);
 				} else {
 					System.out.println("Scopus does not download");
 				}
@@ -146,25 +145,25 @@ public class ScopusDownloader implements Searcher {
 	}
 
 	@Override
-	public void addDownloadListener(DownloadListener downloadEvent) {
+	public void addDownloadListener(final DownloadListener downloadEvent) {
 		if (!this.downloadListeners.contains(downloadEvent)) {
 			this.downloadListeners.add(downloadEvent);
 		}
 	}
 
 	@Override
-	public void removeDownloadListener(DownloadListener downloadListener) {
+	public void removeDownloadListener(final DownloadListener downloadListener) {
 		if (this.downloadListeners.contains(downloadListener)) {
 			this.downloadListeners.remove(downloadListener);
 		}
 	}
 
 	@Override
-	public boolean containsDownloadListener(DownloadListener downloadListener) {
+	public boolean containsDownloadListener(final DownloadListener downloadListener) {
 		return this.downloadListeners.contains(downloadListener);
 	}
 
-	public void notifyDownloadListeners(DownloadEvent downloadEvent) {
+	public void notifyDownloadListeners(final DownloadEvent downloadEvent) {
 		for (final DownloadListener downloadListener : downloadListeners) {
 			downloadListener.downloadComplete(downloadEvent);
 		}
@@ -175,7 +174,7 @@ public class ScopusDownloader implements Searcher {
 		this.downloadListeners.clear();
 	}
 
-	private boolean checkMetadata(String query, boolean isCompletePaper) {
+	private boolean checkMetadata(final String query, final boolean isCompletePaper) {
 		try {
 
 			final HttpGet httpget = new HttpGet(query);
@@ -194,8 +193,8 @@ public class ScopusDownloader implements Searcher {
 				for (int i = 0; i < entryElements.getLength(); i++) {
 					final NodeList entryChildrens = entryElements.item(i).getChildNodes();
 
-//					final List<String> authorList = new LinkedList<>();
-//					String date = "";
+					// final List<String> authorList = new LinkedList<>();
+					// String date = "";
 					for (int j = 0; j < entryChildrens.getLength(); j++) {
 						final Node child = entryChildrens.item(j);
 						if (child.getNodeName().equals("authors")) {
@@ -216,7 +215,7 @@ public class ScopusDownloader implements Searcher {
 						}
 					}
 
-//					String paperTitle = "";
+					// String paperTitle = "";
 					for (int j = 0; j < entryChildrens.getLength(); j++) {
 						final Node child = entryChildrens.item(j);
 
@@ -230,13 +229,14 @@ public class ScopusDownloader implements Searcher {
 							}
 						}
 
-//						String doi = "";
+						// String doi = "";
 						if (child.getNodeName().equals("prism:doi")) {
 							doi = child.getFirstChild().getTextContent();
 							final Map<String, String> doiMap = RepositoryManager.readMetadata(this.directory);
 							if (!doiMap.containsKey(doi)) {
-//								RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList,
-//										isCompletePaper);
+								// RepositoryManager.writeMetadata(this.directory,
+								// doi, paperTitle, date, authorList,
+								// isCompletePaper);
 								return true;
 							} else {
 								final Map<String, List<String>> auxMap = RepositoryManager
@@ -246,8 +246,9 @@ public class ScopusDownloader implements Searcher {
 									final String type = auxList.get(0);
 									final String paperType = isCompletePaper ? "full" : "abstract";
 									if (!paperType.equals(type)) {
-//										RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date,
-//												authorList, isCompletePaper);
+										// RepositoryManager.writeMetadata(this.directory,
+										// doi, paperTitle, date,
+										// authorList, isCompletePaper);
 										return true;
 									}
 								}
@@ -262,8 +263,8 @@ public class ScopusDownloader implements Searcher {
 		return false;
 	}
 
-	private void downloadCompleteOrAbstract(boolean isCompletePaper, ScopusHTMLParser htmlParser,
-			boolean convertPDFtoTXT, boolean keepPDF, boolean directoryType) {
+	private void downloadCompleteOrAbstract(final boolean isCompletePaper, final ScopusHTMLParser htmlParser,
+			final boolean convertPDFtoTXT, final boolean keepPDF, final boolean directoryType) {
 		if (isCompletePaper) {
 			htmlParser.downloadCompletePDFs(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
 		} else {

@@ -27,11 +27,10 @@ public class UserGlobalEventListener implements EventListener<Event> {
 	@Override
 	public void onEvent(final Event event) throws Exception {
 		final String eventName = event.getName();
-
 		final Map<String, Object> params = new HashMap<>();
 
-		if (event.getData() instanceof EventTaskData) {
-			final EventTaskData etData = (EventTaskData) event.getData();
+		if (event.getData() instanceof EventRepositoryQuery) {
+			final EventRepositoryQuery etData = (EventRepositoryQuery) event.getData();
 
 			if (etData.getData() != null) {
 				params.put(UserGlobalEventListener.KEY_DATA, etData.getData());
@@ -48,7 +47,6 @@ public class UserGlobalEventListener implements EventListener<Event> {
 		}
 
 		for (final String globalCommand : GlobalEvents.getEventGlobalCommands(eventName)) {
-			// BindUtils.postGlobalCommand(null, null, globalCommand, params);
 			BindUtils.postGlobalCommand(EventQueueUtils.QUEUE_NAME, null, globalCommand, params);
 		}
 	}

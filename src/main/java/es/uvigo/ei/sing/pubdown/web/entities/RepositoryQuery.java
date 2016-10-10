@@ -1,7 +1,5 @@
 package es.uvigo.ei.sing.pubdown.web.entities;
 
-import static java.util.Objects.requireNonNull;
-
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -21,10 +19,6 @@ import es.uvigo.ei.sing.pubdown.util.Compare;
 @Entity(name = "RepositoryQuery")
 public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 
-	private static final String FREQUENCY_DAILY = "daily";
-
-	private static final String FREQUENCY_WEEKLY = "weekly";
-
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
@@ -34,12 +28,6 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 
 	@Basic
 	private String query;
-
-	@Basic
-	private String repository;
-
-	@Basic
-	private String directory;
 
 	@Basic
 	private boolean scopus = false;
@@ -69,39 +57,34 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	private boolean groupBy = false;
 
 	@Basic
-	private boolean daily = true;
-
-	@Basic
 	private boolean checked = false;
 
 	@Basic
 	private boolean running = false;
 
 	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "userId")
-	private User user;
+	@JoinColumn(name = "repositoryId")
+	private Repository repository;
 
 	@OneToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "taskId")
-	private Task task;
+	private RepositoryQueryTask task;
 
 	/**
 	 * Empty Constructor
 	 */
 	public RepositoryQuery() {
-		this.task = new Task();
+		this.repository = new Repository();
+		this.task = new RepositoryQueryTask();
 	}
 
-	public RepositoryQuery(final User user, final String name, final String query, final String repository,
-			final String directory, final boolean scopus, final boolean pubmed, final int scopusDownloadTo,
-			final int pubmedDownloadTo, final boolean abstractPaper, final boolean fulltextPaper,
-			final boolean pdfToText, final boolean keepPdf, final boolean groupBy, final boolean daily,
-			final boolean checked, final boolean running, final Task task) {
-		this.user = user;
+	public RepositoryQuery(final String name, final String query, final Repository repository, final boolean scopus,
+			final boolean pubmed, final int scopusDownloadTo, final int pubmedDownloadTo, final boolean abstractPaper,
+			final boolean fulltextPaper, final boolean pdfToText, final boolean keepPdf, final boolean groupBy,
+			final boolean checked, final boolean running, final RepositoryQueryTask task) {
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
-		this.directory = directory;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
 		this.scopusDownloadTo = scopusDownloadTo;
@@ -111,22 +94,19 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.pdfToText = pdfToText;
 		this.keepPdf = keepPdf;
 		this.groupBy = groupBy;
-		this.daily = daily;
 		this.checked = checked;
 		this.running = running;
-		this.task = new Task();
+		this.task = new RepositoryQueryTask();
 	}
 
-	private RepositoryQuery(final Integer id, final String name, final String query, final String repository,
-			final String directory, final boolean scopus, final boolean pubmed, final int scopusDownloadTo,
-			final int pubmedDownloadTo, final boolean abstractPaper, final boolean fulltextPaper,
-			final boolean pdfToText, final boolean keepPdf, final boolean groupBy, final boolean daily,
-			final boolean checked, final boolean running, final Task task) {
+	private RepositoryQuery(final Integer id, final String name, final String query, final Repository repository,
+			final boolean scopus, final boolean pubmed, final int scopusDownloadTo, final int pubmedDownloadTo,
+			final boolean abstractPaper, final boolean fulltextPaper, final boolean pdfToText, final boolean keepPdf,
+			final boolean groupBy, final boolean checked, final boolean running, final RepositoryQueryTask task) {
 		this.id = id;
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
-		this.directory = directory;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
 		this.scopusDownloadTo = scopusDownloadTo;
@@ -136,7 +116,6 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.pdfToText = pdfToText;
 		this.keepPdf = keepPdf;
 		this.groupBy = groupBy;
-		this.daily = daily;
 		this.checked = checked;
 		this.running = running;
 		this.task = task;
@@ -175,28 +154,21 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	 * 
 	 * @return the value of the repository global variable
 	 */
-	public String getRepository() {
+	public Repository getRepository() {
 		return repository;
 	}
 
-	/**
-	 * Setter method of the repository global variable
-	 * 
-	 * @param repository
-	 *            the value of the repository global variable
-	 */
-	public void setRepository(final String repository) {
-		requireNonNull(repository, "repository can't be null");
-
-		this.repository = repository.trim();
+	public void setRepository(final Repository repository) {
+		if (this.repository != null) {
+			this.repository.removeRepositoryQuery(this);
+		}
+		if (repository != null) {
+			repository.addRepository(this);
+		}
 	}
 
-	public String getDirectory() {
-		return directory;
-	}
-
-	public void setDirectory(final String directory) {
-		this.directory = directory;
+	void packageSetRepository(final Repository repository) {
+		this.repository = repository;
 	}
 
 	public String getQuery() {
@@ -278,37 +250,12 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public void setGroupBy(final String groupBy) {
 		this.groupBy = Boolean.parseBoolean(groupBy);
 	}
-	
-	public void setExecutionFrequency(String frequency) {
-		switch (frequency) {
-		case FREQUENCY_DAILY:
-			this.setDaily(true);
-			break;
-		case FREQUENCY_WEEKLY:
-			this.setDaily(false);
-			break;
-		default:
-			throw new IllegalArgumentException("Valid frequencies are 'daily' and 'weekly'");
-		}
-	}
-	
-	public String getExecutionFrequency() {
-		return this.isDaily() ? FREQUENCY_DAILY : FREQUENCY_WEEKLY;
-	}
-
-	public boolean isDaily() {
-		return daily;
-	}
-
-	public void setDaily(final boolean daily) {
-		this.daily = daily;
-	}
 
 	public boolean isChecked() {
 		return checked;
 	}
 
-	public void setChecked(boolean checked) {
+	public void setChecked(final boolean checked) {
 		this.checked = checked;
 	}
 
@@ -316,61 +263,16 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		return running;
 	}
 
-	public void setRunning(boolean running) {
+	public void setRunning(final boolean running) {
 		this.running = running;
 	}
 
-	public Task getTask() {
+	public RepositoryQueryTask getTask() {
 		return task;
 	}
 
-	public void setTask(Task task) {
+	public void setTask(final RepositoryQueryTask task) {
 		this.task = task;
-	}
-
-	/**
-	 * Getter method of the user global variable
-	 * 
-	 * @return the value of the user global variable
-	 */
-	public User getUser() {
-		return user;
-	}
-
-	/**
-	 * Setter method of the user global variable
-	 * 
-	 * @param user
-	 *            the value of the user global variable
-	 */
-	public void setUser(final User user) {
-		if (this.user != null) {
-			this.user.removeRepositoryQuery(this);
-		}
-		if (user != null) {
-			user.addRepositoryQuery(this);
-		}
-	}
-
-	/**
-	 * Assigns the {@link RepositoryQuery} owner
-	 * 
-	 * @param user
-	 *            indicates the {@link User} who owns the
-	 *            {@link RepositoryQuery}
-	 */
-	void packageSetUser(final User user) {
-		this.user = user;
-	}
-
-	/**
-	 * Gets the {@link RepositoryQuery} name
-	 * 
-	 * @return the {@link RepositoryQuery} name
-	 */
-	@Override
-	public String toString() {
-		return this.getName();
 	}
 
 	/**
@@ -416,9 +318,9 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	 */
 	@Override
 	public RepositoryQuery clone() {
-		return new RepositoryQuery(this.id, this.name, this.query, this.repository, this.directory, this.scopus,
-				this.pubmed, this.scopusDownloadTo, this.pubmedDownloadTo, this.abstractPaper, this.fulltextPaper,
-				this.pdfToText, this.keepPdf, this.groupBy, this.daily, this.checked, this.running, this.task.clone());
+		return new RepositoryQuery(this.id, this.name, this.query, this.repository.clone(), this.scopus, this.pubmed,
+				this.scopusDownloadTo, this.pubmedDownloadTo, this.abstractPaper, this.fulltextPaper, this.pdfToText,
+				this.keepPdf, this.groupBy, this.checked, this.running, this.task.clone());
 	}
 
 	/**
@@ -429,22 +331,12 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	 */
 	@Override
 	public int compareTo(final RepositoryQuery obj) {
-		return Compare.objects(this, obj)
-			.by(RepositoryQuery::getId)
-			.thenBy(RepositoryQuery::getName)
-			.thenBy(RepositoryQuery::getQuery)
-			.thenBy(RepositoryQuery::getRepository)
-			.thenBy(RepositoryQuery::getDirectory)
-			.thenBy(RepositoryQuery::isScopus)
-			.thenBy(RepositoryQuery::isPubmed)
-			.thenBy(RepositoryQuery::isAbstractPaper)
-			.thenBy(RepositoryQuery::isFulltextPaper)
-			.thenBy(RepositoryQuery::isPdfToText)
-			.thenBy(RepositoryQuery::isKeepPdf)
-			.thenBy(RepositoryQuery::getGroupBy)
-			.thenBy(RepositoryQuery::isDaily)
-			.thenBy(RepositoryQuery::getTask)
-		.andGet();
+		return Compare.objects(this, obj).by(RepositoryQuery::getId).thenBy(RepositoryQuery::getName)
+				.thenBy(RepositoryQuery::getQuery).thenBy(RepositoryQuery::getRepository)
+				.thenBy(RepositoryQuery::isScopus).thenBy(RepositoryQuery::isPubmed)
+				.thenBy(RepositoryQuery::isAbstractPaper).thenBy(RepositoryQuery::isFulltextPaper)
+				.thenBy(RepositoryQuery::isPdfToText).thenBy(RepositoryQuery::isKeepPdf)
+				.thenBy(RepositoryQuery::getGroupBy).thenBy(RepositoryQuery::getTask).andGet();
 	}
 
 }

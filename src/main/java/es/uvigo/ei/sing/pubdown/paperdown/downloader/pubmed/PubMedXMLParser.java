@@ -25,7 +25,8 @@ public class PubMedXMLParser {
 	private final HttpClientContext context;
 	private String queryURL;
 
-	public PubMedXMLParser(CloseableHttpClient httpclient, HttpClientContext context, String queryURL) {
+	public PubMedXMLParser(final CloseableHttpClient httpclient, final HttpClientContext context,
+			final String queryURL) {
 		super();
 		this.httpClient = httpclient;
 		this.context = context;
@@ -36,7 +37,7 @@ public class PubMedXMLParser {
 		return queryURL;
 	}
 
-	public void setQueryURL(String queryURL) {
+	public void setQueryURL(final String queryURL) {
 		this.queryURL = queryURL;
 	}
 

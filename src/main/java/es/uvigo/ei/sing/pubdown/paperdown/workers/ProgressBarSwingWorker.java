@@ -19,8 +19,9 @@ public class ProgressBarSwingWorker extends SwingWorker<Void, Integer> {
 
 	}
 
-	public ProgressBarSwingWorker(Searcher downloader, boolean isCompletePaper, boolean converPDFToTXT, boolean keepPDF,
-			boolean directoryType, int downloadFrom, int downloadTo, DownloadListener downloadListener) {
+	public ProgressBarSwingWorker(final Searcher downloader, final boolean isCompletePaper,
+			final boolean converPDFToTXT, final boolean keepPDF, final boolean directoryType, final int downloadFrom,
+			final int downloadTo, final DownloadListener downloadListener) {
 		super();
 		this.downloader = downloader;
 		this.isCompletePaper = isCompletePaper;

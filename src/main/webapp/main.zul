@@ -8,262 +8,215 @@
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.MainViewModel')"
 		onClose="@command('closeSession')"
 		validationMessages="@id('vmsgs')">
-		<borderlayout height="600px">
+		<borderlayout height="650px">
 			<west title="Repositories" collapsible="true"
 				width="200px">
 				<vlayout vflex="true" hflex="true" spacing="0">
 					<menubar>
+						<menuitem image="./images/plus16x16.png"
+							onClick="@command('addRepository')" tooltiptext="Add Repository" />
 						<menuitem image="./images/trashCan16x16.png"
-							onClick="@command('deleteRepositoryQuery')"
-							tooltiptext="Delete query"
-							disabled="@load(vm.selected)" />
+							onClick="@command('removeRepository')"
+							tooltiptext="Delete Repository" />
+						<menuitem label="SCHEDULER"
+							onClick="@command('schedulerSize')" />
 					</menubar>
-					<tree id="repositoryQueryTree" vflex="true"
-						model="@load(vm.repositoryModel)"
-						onSelect="@command('selectRepositoryQuery')">
-						<template name="model" var="node">
-							<treeitem value="@load(node)"
-								draggable="@load(!node.repository)">
-								<treerow>
-									<treecell label="@load(node.label)"
-										droppable="@load(node.repository)"
-										onDrop="@command('moveRepositoryQueryTo', repositoryQuery = event.dragged.value.repositoryQuery, repository = event.target.parent.parent.value.label)" />
-								</treerow>
-							</treeitem>
+					<listbox vflex="true" model="@load(vm.repositories)"
+						selectedItem="@bind(vm.repository)" onSelect="@command('updateRepositoryQueries')">
+						<listhead>
+							<listheader />
+						</listhead>
+						<template name="model" var="repository">
+							<listitem>
+								<listcell
+									label="@load(repository.name)" />
+							</listitem>
 						</template>
-					</tree>
+					</listbox>
 				</vlayout>
 			</west>
 			<center>
 				<tabbox>
 					<tabs>
-						<tab label="Edit query" />
-						<tab label="Scheduled queries" />
+						<tab label="Repository" />
+						<tab label="Queries" />
 						<tab label="Settings" />
 					</tabs>
 					<tabpanels>
 						<tabpanel>
-							<groupbox vflex="true" mold="3d" contentStyle="padding: 0">
+							<groupbox vflex="true" mold="3d"
+								contentStyle="padding: 0">
 								<vlayout hflex="true" vflex="true">
 									<toolbar>
 										<toolbarbutton
-											label="New Query" onClick="@command('newRepositoryQuery')" />
-										<toolbarbutton
 											label="Discard Changes"
-											onClick="@command('refreshRepositoryQuery')" />
+											onClick="@command('refreshRepository')" />
 										<toolbarbutton
-											label="Save Query"
-											onClick="@command('persistRepositoryQuery')"
-											disabled="@load(not vm.validRepositoryQuery or not empty vmsgs)" />
-										<separator
-											orient="vertical" bar="true">
-										</separator>
-										<toolbarbutton
-											label="Prepare for launch"
-											onClick="@command('checkRepositoryQueryResult')"
-											disabled="@load(not vm.queryReadyToCheckResult or not empty vmsgs)" />
+											label="Save Repository"
+											disabled="@load(not vm.validRepository or not empty vmsgs)"
+											onClick="@command('persistRepository')" />
 									</toolbar>
-									<vlayout vflex="true" style="padding: 6px">
+									<vlayout vflex="true"
+										style="padding: 6px">
 										<hlayout valign="middle">
-											<label value="Query Name"/>
+											<label value="Name" />
 											<textbox id="rbName"
-												hflex="true"
-												value="@bind(vm.repositoryQuery.name) @validator(vm.nameValidator)"
-												onChange="@command('checkData')" />
-											<label value="@load(vmsgs[rbName])" sclass="error" />
-										</hlayout>
-										<hlayout valign="middle">
-											<label value="Repository"/>
-											<combobox
-												id="rbRepository"
-												hflex="true"
-												autodrop="true"
-												model="@load(vm.repositories)" buttonVisible="false"
-												autocomplete="true"
-												value="@bind(vm.repositoryQuery.repository) @validator(vm.repositoryValidator)"
-												onChange="@command('checkData')" />
+												width="400px" onChange="@command('checkRepository')"
+												value="@bind(vm.repository.name) @validator(vm.nameValidator)" />
 											<label
-												value="@load(vmsgs[rbRepository])" sclass="error" />
+												value="@load(vmsgs[rbName])" sclass="error" />
 										</hlayout>
 										<hlayout valign="middle">
-											<label value="Query"/>
-											<textbox
-												id="rbQuery" hflex="true"
-												value="@bind(vm.repositoryQuery.query) @validator(vm.queryValidator)"
-												onChange="@command('checkData')" />
+											<label value="Path" />
+											<textbox id="rbPath"
+												width="400px" onChange="@command('checkRepository')"
+												value="@bind(vm.repository.path) @validator(vm.pathValidator)" />
 											<label
-												value="@load(vmsgs[rbQuery])" sclass="error" />
+												value="@load(vmsgs[rbPath])" sclass="error" />
 										</hlayout>
 										<hlayout valign="middle">
-											<label value="Source: "/>
-											<checkbox
-												label="Scopus" checked="@bind(vm.repositoryQuery.scopus)"
-												onCheck="@command('checkData')"
-												disabled="@load(not vm.userApiKeyValid)" />
-											<checkbox
-												label="PubMed" checked="@bind(vm.repositoryQuery.pubmed)"
-												onCheck="@command('checkData')" />
+											<label
+												value="Number of papers: " />
+											<label
+												value="@bind(vm.repository.numberOfPapers)" />
 										</hlayout>
 										<hlayout valign="middle">
-											<label value="Download: "/>
-											<checkbox
-												label="abstract"
-												checked="@bind(vm.repositoryQuery.abstractPaper)"
-												onCheck="@command('checkData')" />
-											<checkbox
-												label="full text"
-												checked="@bind(vm.repositoryQuery.fulltextPaper)"
-												onCheck="@command('checkData')" />
+											<label
+												value="Last update: " />
+											<label
+												value="@bind(vm.repository.lastUpdate)" />
 										</hlayout>
 										<hlayout valign="middle">
-											<label value="PDF: "/>
-											<checkbox
-												label="extract text"
-												checked="@bind(vm.repositoryQuery.pdfToText)"
-												onCheck="@command('checkData')" />
-											<checkbox
-												label="delete after processing"
-												disabled="@load(not vm.repositoryQuery.pdfToText)"
-												checked="@bind(vm.repositoryQuery.keepPdf)"
-												onCheck="@command('checkData')" />
+											<label
+												value="Next update: " />
+											<label
+												value="@bind(vm.repository.nextUpdate)" />
 										</hlayout>
 										<hlayout valign="middle">
-											<label value="Group by "/>
-											<radiogroup
-												onCheck="@command('checkData')"
-												selectedItem="@bind(vm.repositoryQuery.groupBy)">
-												<radio
-													label="paper" value="false" />
-												<radio
-													label="abstract/full text" value="true" />
-											</radiogroup>
+											<button
+												label="Download papers" onClick="@command('downloadPapers')"
+												disabled="@load(not vm.repositoryReadyToCompress)"/>
 										</hlayout>
-										<groupbox closable="false">
-											<caption>Schedule</caption>
-											<vlayout hflex="true" vflex="true" spacing="10px">
-												<hlayout valign="middle">
-													<label value="Execute "/>
-													<radiogroup
-														onCheck="@command('checkData')"
-														selectedItem="@bind(vm.repositoryQuery.executionFrequency)">
-														<radio
-															label="daily" value="daily" />
-														<radio
-															label="weekly" value="weekly" />
-													</radiogroup>
-												</hlayout>
-												<hlayout valign="middle">
-													<label value="Time: " />
-													<label value="Hour" />
-													<textbox id="rbHour"
-														constraint="/[01]?[0-9]|2[0-3]/: Hour must be between 0 and 23"
-														maxlength="2" width="30px"
-														value="@bind(vm.repositoryQuery.task.hour)"
-														onChange="@command('checkData')" />
-													<label
-														value="@load(vmsgs[rbHour])" sclass="error" />
-													<label
-														value="Minutes" />
-													<textbox
-														id="rbMinutes" width="30px" maxlength="2"
-														constraint="/[0-5]|[0-5]?[0-9]/: Minutes must be between 0 and 59"
-														value="@bind(vm.repositoryQuery.task.minutes)"
-														onChange="@command('checkData')" />
-													<label
-														value="@load(vmsgs[rbMinutes])" sclass="error" />
-												</hlayout>
-												<hlayout valign="middle">
-													<checkbox
-														label="Monday"
-														checked="@bind(vm.repositoryQuery.task.monday)"
-														onCheck="@command('checkData')"
-														disabled="@load(vm.repositoryQuery.daily)" />
-													<checkbox
-														label="Tuesday"
-														checked="@bind(vm.repositoryQuery.task.tuesday)"
-														onCheck="@command('checkData')"
-														disabled="@load(vm.repositoryQuery.daily)" />
-													<checkbox
-														label="Wednesday"
-														checked="@bind(vm.repositoryQuery.task.wednesday)"
-														onCheck="@command('checkData')"
-														disabled="@load(vm.repositoryQuery.daily)" />
-													<checkbox
-														label="Thursday"
-														checked="@bind(vm.repositoryQuery.task.thursday)"
-														onCheck="@command('checkData')"
-														disabled="@load(vm.repositoryQuery.daily)" />
-													<checkbox
-														label="Friday"
-														checked="@bind(vm.repositoryQuery.task.friday)"
-														onCheck="@command('checkData')"
-														disabled="@load(vm.repositoryQuery.daily)" />
-													<checkbox
-														label="Saturday"
-														checked="@bind(vm.repositoryQuery.task.saturday)"
-														onCheck="@command('checkData')"
-														disabled="@load(vm.repositoryQuery.daily)" />
-													<checkbox
-														label="Sunday"
-														checked="@bind(vm.repositoryQuery.task.sunday)"
-														onCheck="@command('checkData')"
-														disabled="@load(vm.repositoryQuery.daily)" />
-												</hlayout>
-											</vlayout>
-										</groupbox>
+										<hlayout hflex="true"
+											vflex="true">
+											<grid
+												model="@load(vm.repositoryQueries)" autopaging="true"
+												pagingPosition="bottom" mold="paging" hflex="true"
+												pageSize="4" height="200px">
+												<columns>
+													<column
+														align="center" label="Repository name" />
+													<column
+														align="center" label="Query name" />
+													<column
+														align="center" label="Options" width="400px" />
+												</columns>
+												<template name="model"
+													var="repositoryQuery">
+													<row>
+														<label
+															value="@load(repositoryQuery.repository.name)" />
+														<label
+															value="@load(repositoryQuery.name)" />
+														<cell>
+															<button
+																style="margin-right: 10px" label="Schedule"
+																tooltiptext="Schedule query"
+																disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+																onClick="@command('launchExecution',current=repositoryQuery)" />
+															<button
+																style="margin-right: 10px" label="Stop"
+																tooltiptext="Stop query"
+																disabled="@load(not repositoryQuery.running)"
+																onClick="@command('abortExecution',current=repositoryQuery)" />
+															<button
+																style="margin-right: 10px" label="Edit"
+																tooltiptext="Edit query"
+																disabled="@load(repositoryQuery.running)"
+																onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
+															<button
+																label="Remove" tooltiptext="Remove Query"
+																disabled="@load(repositoryQuery.running)"
+																onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
+														</cell>
+													</row>
+												</template>
+											</grid>
+										</hlayout>
 									</vlayout>
 								</vlayout>
 							</groupbox>
 						</tabpanel>
 						<tabpanel>
 							<groupbox contentStyle="padding: 0">
-								<vlayout>
+								<vlayout hflex="true" vflex="true">
 									<toolbar>
-										<toolbarbutton
-											label="Abort All Executions"
-											tooltiptext="Abort all executions"
-											onClick="@command('abortAllExecutions')" />
+										<toolbarbutton label="New Query"
+											tooltiptext="Create a new query"
+											onClick="@command('newRepositoryQuery')" />
+										<separator orient="vertical" />
+										<label value="Filter" />
+										<textbox
+											value="@bind(vm.repositoryQueryFilterByRepositoryName)"
+											onChange="@command('searchRepositoryQueryByRepositoryName')"
+											instant="true" placeholder="repository name" />
+										<textbox
+											value="@bind(vm.repositoryQueryFilterByName)"
+											onChange="@command('searchRepositoryQueryByName')"
+											instant="true" placeholder="query name" />
 									</toolbar>
 									<hlayout hflex="true"
 										vflex="true">
-										<listbox
-											selectedItem="@bind(vm.repositoryQuery)"
-											model="@load(vm.runningRepositoryQuery)" mold="paging"
-											height="200px" pageSize="4">
-											<listhead>
-												<listheader
-													label="Query name" align="center" />
-												<listheader
-													label="Options" align="center" />
-											</listhead>
+										<grid
+											model="@load(vm.queries)" autopaging="true"
+											pagingPosition="bottom" mold="paging" hflex="true"
+											height="490px">
+											<columns>
+												<column align="center"
+													label="Repository name" />
+												<column align="center"
+													label="Query name" />
+												<column align="center"
+													label="Options" width="400px" />
+											</columns>
 											<template name="model"
-												var="templateRepositoryQuery">
-												<listitem>
-													<listcell
-														label="@load(templateRepositoryQuery.name)" />
-													<listcell>
+												var="repositoryQuery">
+												<row>
+													<label
+														value="@load(repositoryQuery.repository.name)" />
+													<label
+														value="@load(repositoryQuery.name)" />
+													<cell>
 														<button
-															label="Launch" tooltiptext="Launch Execution"
-															visible="@load(not templateRepositoryQuery.running)"
-															onClick="@command('launchExecution',current=templateRepositoryQuery)" />
+															style="margin-right: 10px" label="Schedule"
+															tooltiptext="Schedule query"
+															disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+															onClick="@command('launchExecution',current=repositoryQuery)" />
 														<button
-															label="Remove" tooltiptext="Remove Execution"
-															visible="@load(not templateRepositoryQuery.running)"
-															onClick="@command('abortOrRemoveExecution',current=templateRepositoryQuery)" />
+															style="margin-right: 10px" label="Stop"
+															tooltiptext="Stop query"
+															disabled="@load(not repositoryQuery.running)"
+															onClick="@command('abortExecution',current=repositoryQuery)" />
 														<button
-															label="Stop" tooltiptext="Stop Execution"
-															visible="@load(templateRepositoryQuery.running)"
-															onClick="@command('abortOrRemoveExecution',current=templateRepositoryQuery)" />
-													</listcell>
-												</listitem>
+															style="margin-right: 10px" label="Edit"
+															tooltiptext="Edit query"
+															disabled="@load(repositoryQuery.running)"
+															onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
+														<button
+															label="Remove" tooltiptext="Remove Query"
+															disabled="@load(repositoryQuery.running)"
+															onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
+													</cell>
+												</row>
 											</template>
-										</listbox>
+										</grid>
 									</hlayout>
 								</vlayout>
 							</groupbox>
 						</tabpanel>
 						<tabpanel>
-							<groupbox mold="3d" closable="false" contentStyle="padding: 0px;">
+							<groupbox mold="3d" closable="false"
+								contentStyle="padding: 0px;">
 								<vlayout>
 									<toolbar>
 										<toolbarbutton
@@ -277,8 +230,7 @@
 										</columns>
 										<rows>
 											<row>
-												<label
-													value="Login" />
+												<label value="Login" />
 												<hlayout>
 													<textbox
 														width="250px" readonly="true"
@@ -286,8 +238,7 @@
 												</hlayout>
 											</row>
 											<row>
-												<label
-													value="Email" />
+												<label value="Email" />
 												<hlayout>
 													<textbox
 														width="250px" readonly="true"
@@ -295,11 +246,11 @@
 												</hlayout>
 											</row>
 											<row>
-												<label
-													value="ApiKey" />
+												<label value="ApiKey" />
 												<hlayout>
-													<textbox onChange="@command('checkUserApiKey')"
-														width="250px" value="@bind(vm.currentUser.apiKey)" />
+													<textbox
+														onChange="@command('checkUserApiKey')" width="250px"
+														value="@bind(vm.currentUser.apiKey)" />
 												</hlayout>
 											</row>
 										</rows>

@@ -681,38 +681,43 @@ public final class Checks {
 
 	private static <T> T check(final T value, final Function<T, Boolean> validator,
 			final Supplier<RuntimeException> exceptionProvider) {
-		if (validator.apply(value))
+		if (validator.apply(value)) {
 			return value;
-		else
+		} else {
 			throw exceptionProvider.get();
+		}
 	}
 
 	private static <T> T check(final T value, final Function<T, Boolean> validator, final String message) {
-		if (validator.apply(value))
+		if (validator.apply(value)) {
 			return value;
-		else
+		} else {
 			throw new IllegalArgumentException(message);
+		}
 	}
 
 	private static double check(final double value, final DoubleFunction<Boolean> validator, final String message) {
-		if (validator.apply(value))
+		if (validator.apply(value)) {
 			return value;
-		else
+		} else {
 			throw new IllegalArgumentException(message);
+		}
 	}
 
 	private static int check(final int value, final DoubleFunction<Boolean> validator, final String message) {
-		if (validator.apply(value))
+		if (validator.apply(value)) {
 			return value;
-		else
+		} else {
 			throw new IllegalArgumentException(message);
+		}
 	}
 
 	private static long check(final long value, final DoubleFunction<Boolean> validator, final String message) {
-		if (validator.apply(value))
+		if (validator.apply(value)) {
 			return value;
-		else
+		} else {
 			throw new IllegalArgumentException(message);
+		}
 	}
 
 	private static <T> Function<T, Boolean> not(final Function<T, Boolean> function) {

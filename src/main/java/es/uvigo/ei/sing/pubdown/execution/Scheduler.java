@@ -1,5 +1,7 @@
 package es.uvigo.ei.sing.pubdown.execution;
 
+import static es.uvigo.ei.sing.pubdown.execution.GlobalEvents.EVENT_REPOSITORY_QUERY;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,11 +11,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.zkoss.zk.ui.event.Event;
+import org.zkoss.zk.ui.event.EventQueue;
+
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
-import es.uvigo.ei.sing.pubdown.web.entities.Task;
+import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQueryTask;
+import es.uvigo.ei.sing.pubdown.web.entities.User;
 
 public class Scheduler {
-	
+
 	private static final int SCHEDULED_THREAD_POOL_SIZE = 30;
 
 	private static final int WEEK_DAYS = 7;
@@ -37,69 +43,77 @@ public class Scheduler {
 		this.executor = Executors.newScheduledThreadPool(SCHEDULED_THREAD_POOL_SIZE);
 	}
 
-	// scheduled execution
-//	synchronized public void scheduleTask(final String directoryPath, final Task task) {
-//		final Integer taskId = task.getId();
-//
-//		if (taskReadyToBeScheduled(task) && !scheduledTasks.containsKey(taskId)) {
-//
-//			scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
-//
-//			if (Boolean.valueOf(task.getRepositoryQuery().getDaily())) {
-//				final Runnable toRun = schedulerExecutor.getRunnableQuery(directoryPath, task);
-//				final long initialDelay = schedulerExecutor.getDailyInitialDelay(task);
-//				final ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(toRun, initialDelay,
-//						DAILY_PERIOD_MINUTES, TimeUnit.MINUTES);
-//				final List<ScheduledFuture<?>> scheduledFutures = scheduledTasks.get(taskId);
-//				scheduledFutures.add(scheduledFuture);
-//				this.scheduledTasks.put(taskId, scheduledFutures);
-//				taskNumber++;
-//			} else {
-//				if (taskReadyToBeScheduled(task)) {
-//					final List<Long> initialDelays = schedulerExecutor.getWeeklyInitialDelay(task);
-//					initialDelays.forEach((initialDelay) -> {
-//						final Runnable toRun = schedulerExecutor.getRunnableQuery(directoryPath, task);
-//						final ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(toRun, initialDelay,
-//								WEEKLY_PERIOD_IN_MINUTES, TimeUnit.MINUTES);
-//
-//						final List<ScheduledFuture<?>> scheduledFutures = scheduledTasks.get(taskId);
-//						scheduledFutures.add(scheduledFuture);
-//						this.scheduledTasks.put(taskId, scheduledFutures);
-//						taskNumber++;
-//					});
-//				}
-//			}
-//			System.out.println("Task scheduled");
-//		} else {
-//			System.out.println("task not scheduled");
-//		}
-//
-//		System.out.println("SCHEDULE TASK");
-//		System.out.println("Scheduled tasks: " + taskNumber);
-//	}
-	
-	synchronized public void scheduleTask(final Runnable runnable, final Task task) {
-		final Integer taskId = task.getId();
+	// synchronized public void scheduleTask(final Runnable runnable, final
+	// RepositoryQueryTask task) {
+	// final Integer taskId = task.getId();
+	//
+	// if (taskReadyToBeScheduled(task) && !scheduledTasks.containsKey(taskId))
+	// {
+	//
+	// scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
+	//
+	// if (task.isDaily()) {
+	// final long initialDelay = schedulerExecutor.getDailyInitialDelay(task);
+	// System.out.println("MINUTES TO START: " + initialDelay);
+	// final ScheduledFuture<?> scheduledFuture =
+	// executor.scheduleAtFixedRate(runnable, initialDelay,
+	// DAILY_PERIOD_MINUTES, TimeUnit.MINUTES);
+	// final List<ScheduledFuture<?>> scheduledFutures =
+	// scheduledTasks.get(taskId);
+	// scheduledFutures.add(scheduledFuture);
+	// this.scheduledTasks.put(taskId, scheduledFutures);
+	// taskNumber++;
+	// } else {
+	// if (taskReadyToBeScheduled(task)) {
+	// final List<Long> initialDelays =
+	// schedulerExecutor.getWeeklyInitialDelay(task);
+	// initialDelays.forEach((initialDelay) -> {
+	// final ScheduledFuture<?> scheduledFuture =
+	// executor.scheduleAtFixedRate(runnable, initialDelay,
+	// WEEKLY_PERIOD_IN_MINUTES, TimeUnit.MINUTES);
+	//
+	// final List<ScheduledFuture<?>> scheduledFutures =
+	// scheduledTasks.get(taskId);
+	// scheduledFutures.add(scheduledFuture);
+	// this.scheduledTasks.put(taskId, scheduledFutures);
+	// taskNumber++;
+	// });
+	// }
+	// }
+	// System.out.println("TASK SCHEDULED");
+	// } else {
+	// System.out.println("TASK NOT SCHEDULED");
+	// }
+	//
+	// System.out.println("Scheduled tasks: " + taskNumber);
+	// }
 
-		if (taskReadyToBeScheduled(task) && !scheduledTasks.containsKey(taskId)) {
+	synchronized public void scheduleTask(final RepositoryQueryScheduled repositoryQueryScheduled) {
+		final RepositoryQuery repositoryQuery = repositoryQueryScheduled.getRepositoryQuery();
+		final RepositoryQueryTask task = repositoryQuery.getTask();
+		final Integer taskId = task.getId();
+		final TaskExecutor taskExecutor = new TaskExecutor(repositoryQueryScheduled);
+
+		if (taskReadyToBeScheduled(repositoryQuery) && !scheduledTasks.containsKey(taskId)) {
 
 			scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
 
-			if (Boolean.valueOf(task.getRepositoryQuery().isDaily())) {
+			if (task.isDaily()) {
 				final long initialDelay = schedulerExecutor.getDailyInitialDelay(task);
-				System.out.println(initialDelay);
-				final ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(runnable, initialDelay,
+				System.out.println("Daily - minutes to start: " + initialDelay);
+				final ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(taskExecutor, initialDelay,
 						DAILY_PERIOD_MINUTES, TimeUnit.MINUTES);
 				final List<ScheduledFuture<?>> scheduledFutures = scheduledTasks.get(taskId);
 				scheduledFutures.add(scheduledFuture);
 				this.scheduledTasks.put(taskId, scheduledFutures);
 				taskNumber++;
 			} else {
-				if (taskReadyToBeScheduled(task)) {
+				if (taskReadyToBeScheduled(repositoryQuery)) {
 					final List<Long> initialDelays = schedulerExecutor.getWeeklyInitialDelay(task);
 					initialDelays.forEach((initialDelay) -> {
-						final ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(runnable, initialDelay,
-								WEEKLY_PERIOD_IN_MINUTES, TimeUnit.MINUTES);
+						System.out.println("Weekly - minutes to start: " + initialDelay);
+						final ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(taskExecutor,
+								initialDelay, WEEKLY_PERIOD_IN_MINUTES, TimeUnit.MINUTES);
 
 						final List<ScheduledFuture<?>> scheduledFutures = scheduledTasks.get(taskId);
 						scheduledFutures.add(scheduledFuture);
@@ -108,121 +122,49 @@ public class Scheduler {
 					});
 				}
 			}
-			System.out.println("Task scheduled");
+			System.out.println("TASK SCHEDULED");
 		} else {
-			System.out.println("task not scheduled");
+			System.out.println("TASK NOT SCHEDULED");
 		}
 
-		System.out.println("SCHEDULE TASK");
 		System.out.println("Scheduled tasks: " + taskNumber);
 	}
 
-	synchronized public void removeTask(final Task task) {
-		final List<ScheduledFuture<?>> scheduledFutures = this.scheduledTasks.remove(task.getId());
-		scheduledFutures.forEach((scheduledFuture) -> {
-			scheduledFuture.cancel(true);
-			taskNumber--;
-		});
+	synchronized public void removeTask(final RepositoryQueryScheduled repositoryQueryScheduled) {
+		final RepositoryQueryTask task = repositoryQueryScheduled.getRepositoryQuery().getTask();
+		if (scheduledTasks.containsKey(task.getId())) {
+			final List<ScheduledFuture<?>> scheduledFutures = this.scheduledTasks.remove(task.getId());
+			scheduledFutures.forEach((scheduledFuture) -> {
+				scheduledFuture.cancel(true);
+				taskNumber--;
+			});
 
-		System.out.println("REMOVE TASK");
-		System.out.println("Scheduled tasks: " + taskNumber);
+			System.out.println("TASK REMOVED");
+			System.out.println("Scheduled tasks: " + taskNumber);
+		}
 	}
 
-	
-
-	// synchronized public void executeTask(final String directoryPath, final
-	// Task task, final boolean isQueryResult) {
-	// final Integer taskId = task.getId();
-	// if (!scheduledTasks.containsKey(taskId)) {
-	// scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
-	// taskNumber++;
-	//
-	// } else {
-	// removeTask(task);
-	// scheduledTasks.remove(taskId);
-	// scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
-	// }
-	//
-	// final Runnable toRun = isQueryResult ?
-	// schedulerExecutor.getRepositoryQueryResult(directoryPath, task)
-	// : schedulerExecutor.getRunnableQuery(directoryPath, task);
-	//
-	// final ScheduledFuture<?> scheduledFuture = executor.schedule(toRun, 0,
-	// TimeUnit.SECONDS);
-	//
-	// final List<ScheduledFuture<?>> scheduledFutures =
-	// scheduledTasks.get(taskId);
-	// scheduledFutures.add(scheduledFuture);
-	// this.scheduledTasks.put(taskId, scheduledFutures);
-	//
-	// System.out.println("EXECUTE TASK");
-	// System.out.println("Scheduled tasks: " + taskNumber);
+	// synchronized public void executeTask(final Runnable runnable, final
+	// RepositoryQueryTask task) {
+	// executor.submit(runnable);
 	// }
 
-	synchronized public void executeTask(final Runnable runnable, final Task task) {
-		executor.schedule(runnable, 0, TimeUnit.SECONDS);
-		
-		// final Integer taskId = task.getId();
-		// if (!scheduledTasks.containsKey(taskId)) {
-		// scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
-		//
-		// } else {
-		// removeTask(task);
-		// scheduledTasks.remove(taskId);
-		// scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
-		// }
-		// taskNumber++;
-
-		// final Runnable toRun = isQueryResult ?
-		// schedulerExecutor.getRepositoryQueryResult(directoryPath, task)
-		// : schedulerExecutor.getRunnableQuery(directoryPath, task);
-
-		// final ScheduledFuture<?> scheduledFuture =
-		// executor.schedule(runnable, 0, TimeUnit.SECONDS);
-
-		// final List<ScheduledFuture<?>> scheduledFutures =
-		// scheduledTasks.get(taskId);
-		// scheduledFutures.add(scheduledFuture);
-		// this.scheduledTasks.put(taskId, scheduledFutures);
-		//
-		// System.out.println("EXECUTE TASK");
-		// System.out.println("Scheduled tasks: " + taskNumber);
+	synchronized public void executeTask(final RepositoryQueryScheduled repositoryQueryScheduled) {
+		final TaskExecutor taskExecutor = new TaskExecutor(repositoryQueryScheduled);
+		executor.submit(taskExecutor);
 	}
 
-	// // execute right now
-	// synchronized public void executeTask(final String directoryPath, final
-	// Task task) {
-	// final Integer taskId = task.getId();
-	// if (taskReadyToBeScheduled(task) && !scheduledTasks.containsKey(taskId))
-	// {
-	//
-	// scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
-	//
-	// final Runnable toRun = schedulerExecutor.getRunnableQuery(directoryPath,
-	// task);
-	// final ScheduledFuture<?> scheduledFuture = executor.schedule(toRun, 0,
-	// TimeUnit.SECONDS);
-	//
-	// final List<ScheduledFuture<?>> scheduledFutures =
-	// scheduledTasks.get(taskId);
-	// scheduledFutures.add(scheduledFuture);
-	// this.scheduledTasks.put(taskId, scheduledFutures);
-	// }
-	// }
-	//
-	// //execute right now the
-	// synchronized public void executeQueryResultSize(final String
-	// directoryPath, final Task task) {
-	// this.executor.submit(schedulerExecutor.getRepositoryQueryResult(directoryPath,
-	// task));
-	// }
-
-	synchronized public boolean isScheduled(final Task task) {
+	synchronized public boolean isScheduled(final RepositoryQueryScheduled repositoryQueryScheduled) {
+		final RepositoryQueryTask task = repositoryQueryScheduled.getRepositoryQuery().getTask();
 		return scheduledTasks.containsKey(task.getId());
 	}
 
 	public Map<Integer, List<ScheduledFuture<?>>> getScheduledTasks() {
 		return scheduledTasks;
+	}
+	
+	public int getTaskNumber() {
+		return taskNumber;
 	}
 
 	public void shutdown() {
@@ -236,12 +178,49 @@ public class Scheduler {
 		}
 	}
 
-	private boolean taskReadyToBeScheduled(final Task task) {
-		final RepositoryQuery repositoryQuery = task.getRepositoryQuery();
+	private boolean taskReadyToBeScheduled(final RepositoryQuery repositoryQuery) {
 		return (repositoryQuery.getPubmedDownloadTo() != 0
 				&& repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE)
 				|| (repositoryQuery.getScopusDownloadTo() != 0
 						&& repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE);
+	}
+
+	private final static void publishEvent(final RepositoryQueryScheduled repositoryQueryScheduled, final String suffix,
+			final Object value) {
+		final User user = repositoryQueryScheduled.getRepositoryQuery().getRepository().getUser();
+		final EventQueue<Event> queue = EventQueueUtils.getUserQueue(user);
+
+		if (suffix == null) {
+			queue.publish(
+					new Event(EVENT_REPOSITORY_QUERY, null, new EventRepositoryQuery(repositoryQueryScheduled, value)));
+		} else {
+			queue.publish(new Event(EVENT_REPOSITORY_QUERY + suffix, null,
+					new EventRepositoryQuery(repositoryQueryScheduled, value)));
+		}
+	}
+
+	private final class TaskExecutor implements Runnable {
+
+		private RepositoryQueryScheduled repositoryQueryScheduled;
+
+		public TaskExecutor(RepositoryQueryScheduled repositoryQueryScheduled) {
+			this.repositoryQueryScheduled = repositoryQueryScheduled;
+		}
+
+		@Override
+		public void run() {
+			final boolean toCheck = repositoryQueryScheduled.isToCheck();
+			publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_STARTED, toCheck);
+			if (toCheck) {
+				System.out.println("EXECUTING RESULT SIZE");
+				repositoryQueryScheduled.getResultSize();
+			} else {
+				System.out.println("EXECUTING GET PAPERS");
+				repositoryQueryScheduled.getPapers();
+			}
+			publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_FINISHED, toCheck);
+		}
+
 	}
 
 }

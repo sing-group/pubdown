@@ -29,7 +29,8 @@ public class ScopusXMLParser {
 	private String lastLink;
 	private String nextLink;
 
-	public ScopusXMLParser(CloseableHttpClient httpclient, HttpClientContext context, String queryURL) {
+	public ScopusXMLParser(final CloseableHttpClient httpclient, final HttpClientContext context,
+			final String queryURL) {
 		super();
 		this.httpClient = httpclient;
 		this.context = context;
@@ -43,7 +44,7 @@ public class ScopusXMLParser {
 		return selfLink;
 	}
 
-	public void setSelfLink(String selfLink) {
+	public void setSelfLink(final String selfLink) {
 		this.selfLink = selfLink;
 	}
 
@@ -51,7 +52,7 @@ public class ScopusXMLParser {
 		return lastLink;
 	}
 
-	public void setLastLink(String lastLink) {
+	public void setLastLink(final String lastLink) {
 		this.lastLink = lastLink;
 	}
 
@@ -59,7 +60,7 @@ public class ScopusXMLParser {
 		return nextLink;
 	}
 
-	public void setNextLink(String nextLink) {
+	public void setNextLink(final String nextLink) {
 		this.nextLink = nextLink;
 	}
 
@@ -67,7 +68,7 @@ public class ScopusXMLParser {
 		return queryURL;
 	}
 
-	public void setQueryURL(String queryURL) {
+	public void setQueryURL(final String queryURL) {
 		this.queryURL = queryURL;
 	}
 
@@ -122,7 +123,7 @@ public class ScopusXMLParser {
 		return null;
 	}
 
-	public Map<String, String> getAbstractPaperPDFURLs(String apiKey) {
+	public Map<String, String> getAbstractPaperPDFURLs(final String apiKey) {
 		try {
 			final Map<String, String> urlsWithTitle = new HashMap<>();
 			final HttpGet httpget = new HttpGet(this.queryURL);

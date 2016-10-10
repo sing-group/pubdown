@@ -104,8 +104,9 @@ public class EventQueueUtils {
 	}
 
 	private static void addListener(final EventListener<Event> listener) {
-		if (!EventQueueUtils.getUserQueue().isSubscribed(listener))
+		if (!EventQueueUtils.getUserQueue().isSubscribed(listener)) {
 			EventQueueUtils.getUserQueue().subscribe(listener);
+		}
 	}
 
 	private static void removeListener(final EventListener<Event> listener) {

@@ -32,7 +32,8 @@ public class PubMedHTMLParser {
 	private final HttpClientContext context;
 	private List<String> idList;
 
-	public PubMedHTMLParser(CloseableHttpClient httpClient, HttpClientContext context, List<String> idList) {
+	public PubMedHTMLParser(final CloseableHttpClient httpClient, final HttpClientContext context,
+			final List<String> idList) {
 		super();
 		this.httpClient = httpClient;
 		this.context = context;
@@ -43,12 +44,12 @@ public class PubMedHTMLParser {
 		return idList;
 	}
 
-	public void setIdList(List<String> idList) {
+	public void setIdList(final List<String> idList) {
 		this.idList = idList;
 	}
 
-	public void download(String directory, boolean isCompletePaper, boolean convertPDFtoTXT, boolean keepPDF,
-			boolean directoryType) {
+	public void download(final String directory, final boolean isCompletePaper, final boolean convertPDFtoTXT,
+			final boolean keepPDF, final boolean directoryType) {
 		for (final String id : this.idList) {
 			final String queryURL = SEARCH_ID + id;
 			String paperTitle = "PUBMED_DEFAULT_NAME";

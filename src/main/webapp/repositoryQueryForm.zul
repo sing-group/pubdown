@@ -7,60 +7,139 @@
 		width="550px" height="auto" border="normal" minimizable="false"
 		mode="modal" maximizable="false" closable="false"
 		onClose="self.detach()" validationMessages="@id('vmsgs')">
-		<vlayout hflex="true" vflex="true">
-			<grid>
-				<columns>
-					<column width="80px" />
-					<column />
-					<column width="180px" />
-				</columns>
-				<rows>
-					<row>
-						<label value="Name" />
-						<textbox id="tbName"
-							value="@bind(vm.repositoryQuery.name) @validator(vm.nameValidator)"
-							onChange="@command('checkData')" hflex="true" />
-						<label value="@load(vmsgs[tbName])"
-							sclass="error" />
-					</row>
-					<row>
-						<label value="Repository" />
-						<combobox autodrop="true"
-							model="@load(vm.repositories)" buttonVisible="false"
-							autocomplete="true" value="@bind(vm.repositoryQuery.repository)"
-							hflex="true" />
-					</row>
-					<row>
-						<label value="Content-Type" />
-						<textbox
-							value="@bind(vm.repositoryQuery.contentType)" hflex="true" />
-					</row>
-					<row>
-						<label value="Is public?" />
-						<cell colspan="2">
-							<checkbox
-								checked="@bind(vm.repositoryQuery.publicAccess)" hflex="true" />
-						</cell>
-					</row>
-					<row>
-						<label value="Description" />
-						<textbox rows="3"
-							value="@bind(vm.repositoryQuery.description)" hflex="true" />
-					</row>
-					<row>
-						<cell colspan="3" align="center">
-							<button label="Save"
-								onClick="@command('confirm')"
-								forward="repositoryQueryForm.onClose"
-								disabled="@load(not vm.valid or not empty vmsgs)" />
-							<button label="Cancel"
-								forward="repositoryQueryForm.onClose" />
-							<button label="Reset Form"
-								onClick="@command('refresh')" />
-						</cell>
-					</row>
-				</rows>
-			</grid>
-		</vlayout>
+		<groupbox vflex="true" mold="3d" contentStyle="padding: 0">
+			<vlayout vflex="true" style="padding: 6px">
+				<hlayout valign="middle">
+					<label value="Query Name" />
+					<textbox id="rbName" hflex="true"
+						value="@bind(vm.repositoryQuery.name) @validator(vm.nameValidator)"
+						onChange="@command('checkData')" />
+					<label value="@load(vmsgs[rbName])" sclass="error" />
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="Repository" />
+					<combobox model="@load(vm.repositories)"
+						buttonVisible="true" autocomplete="true" autodrop="true"
+						onChange="@command('checkData')" mold="rounded"
+						selectedItem="@bind(vm.repositoryQuery.repository)"
+						readonly="true">
+						<template name="model" var="repo">
+							<comboitem label="@load(repo.name)" />
+						</template>
+					</combobox>
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="Query" />
+					<textbox id="rbQuery" hflex="true"
+						value="@bind(vm.repositoryQuery.query) @validator(vm.queryValidator)"
+						onChange="@command('checkData')" />
+					<label value="@load(vmsgs[rbQuery])" sclass="error" />
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="Source: " />
+					<checkbox label="Scopus"
+						checked="@bind(vm.repositoryQuery.scopus)"
+						onCheck="@command('checkData')"
+						disabled="@load(not vm.userApiKeyValid)" />
+					<checkbox label="PubMed"
+						checked="@bind(vm.repositoryQuery.pubmed)"
+						onCheck="@command('checkData')" />
+					<label value="*You must select at least one" style="color: red;" />
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="Download: " />
+					<checkbox label="abstract"
+						checked="@bind(vm.repositoryQuery.abstractPaper)"
+						onCheck="@command('checkData')" />
+					<checkbox label="full text"
+						checked="@bind(vm.repositoryQuery.fulltextPaper)"
+						onCheck="@command('checkData')" />
+					<label value="*You must select at least one" style="color: red;"/>
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="PDF: " />
+					<checkbox label="extract text"
+						checked="@bind(vm.repositoryQuery.pdfToText)"
+						onCheck="@command('checkData')" />
+					<checkbox label="delete after processing"
+						disabled="@load(not vm.repositoryQuery.pdfToText)"
+						checked="@bind(vm.repositoryQuery.keepPdf)"
+						onCheck="@command('checkData')" />
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="Group by " />
+					<radiogroup onCheck="@command('checkData')"
+						selectedItem="@bind(vm.repositoryQuery.groupBy)">
+						<radio label="paper" value="false" />
+						<radio label="abstract/full text" value="true" />
+					</radiogroup>
+				</hlayout>
+				<groupbox closable="false">
+					<caption>Schedule</caption>
+					<vlayout hflex="true" vflex="true" spacing="10px">
+						<hlayout valign="middle">
+							<label value="Execute " />
+							<radiogroup onCheck="@command('checkData')"
+								selectedItem="@bind(vm.repositoryQuery.task.executionFrequency)">
+								<radio label="daily" value="daily" />
+								<radio label="weekly" value="weekly" />
+							</radiogroup>
+						</hlayout>
+						<hlayout valign="middle">
+							<label value="Time: " />
+							<label value="Hour" />
+							<textbox id="rbHour"
+								constraint="/[01]?[0-9]|2[0-3]/: Hour must be between 0 and 23"
+								maxlength="2" width="30px"
+								value="@bind(vm.repositoryQuery.task.hour)"
+								onChange="@command('checkData')" />
+							<label value="@load(vmsgs[rbHour])"
+								sclass="error" />
+							<label value="Minutes" />
+							<textbox id="rbMinutes" width="30px"
+								maxlength="2"
+								constraint="/[0-5]|[0-5]?[0-9]/: Minutes must be between 0 and 59"
+								value="@bind(vm.repositoryQuery.task.minutes)"
+								onChange="@command('checkData')" />
+							<label value="@load(vmsgs[rbMinutes])"
+								sclass="error" />
+						</hlayout>
+						<hlayout valign="middle">
+							<checkbox label="Monday"
+								checked="@bind(vm.repositoryQuery.task.monday)"
+								onCheck="@command('checkData')" disabled="@load(vm.daily)" />
+							<checkbox label="Tuesday"
+								checked="@bind(vm.repositoryQuery.task.tuesday)"
+								onCheck="@command('checkData')" disabled="@load(vm.daily)" />
+							<checkbox label="Wednesday"
+								checked="@bind(vm.repositoryQuery.task.wednesday)"
+								onCheck="@command('checkData')" disabled="@load(vm.daily)" />
+							<checkbox label="Thursday"
+								checked="@bind(vm.repositoryQuery.task.thursday)"
+								onCheck="@command('checkData')" disabled="@load(vm.daily)" />
+							<checkbox label="Friday"
+								checked="@bind(vm.repositoryQuery.task.friday)"
+								onCheck="@command('checkData')" disabled="@load(vm.daily)" />
+							<checkbox label="Saturday"
+								checked="@bind(vm.repositoryQuery.task.saturday)"
+								onCheck="@command('checkData')" disabled="@load(vm.daily)" />
+							<checkbox label="Sunday"
+								checked="@bind(vm.repositoryQuery.task.sunday)"
+								onCheck="@command('checkData')" disabled="@load(vm.daily)" />
+						</hlayout>
+					</vlayout>
+				</groupbox>
+				<hbox width="100%" align="center" pack="center">
+					<button label="Save Query"
+						onClick="@command('confirm')"
+						forward="repositoryQueryForm.onClose"
+						disabled="@load(not vm.validRepositoryQuery or not vm.queryReadyToCheckResult or not empty vmsgs)" />
+					<button label="Cancel" onClick="@command('refresh')"
+						forward="repositoryQueryForm.onClose" />
+					<button label="Reset form"
+						onClick="@command('refresh')" />
+				</hbox>
+			</vlayout>
+		</groupbox>
 	</window>
 </zk>

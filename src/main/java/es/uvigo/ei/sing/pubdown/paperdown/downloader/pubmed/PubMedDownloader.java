@@ -102,7 +102,7 @@ public class PubMedDownloader implements Searcher {
 					if (checkMetadata(id, isCompletePaper)) {
 						htmlParser.setIdList(idList);
 						htmlParser.download(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
-						RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList,
+						RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList,
 								isCompletePaper);
 					} else {
 						System.out.println("Pubmed does not download");
@@ -197,14 +197,14 @@ public class PubMedDownloader implements Searcher {
 			for (final Element link : links) {
 				if (link.attr("ref").contains("aid_type=doi")) {
 					doi = link.text();
-					final Map<String, String> doiMap = RepositoryManager.readMetadata(this.directory);
+					final Map<String, String> doiMap = RepositoryManager.readMetaData(this.directory);
 					if (!doiMap.containsKey(doi)) {
 						// RepositoryManager.writeMetadata(this.directory, doi,
 						// paperTitle, date, authorList,
 						// isCompletePaper);
 						return true;
 					} else {
-						final Map<String, List<String>> auxMap = RepositoryManager.readDoiInMetaData(this.directory,
+						final Map<String, List<String>> auxMap = RepositoryManager.readDOIInMetaData(this.directory,
 								doi);
 						final List<String> auxList = auxMap.get(doi);
 						if (auxList.size() == 1) {

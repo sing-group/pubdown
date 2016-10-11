@@ -13,7 +13,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
 
 import org.zkoss.bind.ValidationContext;
 import org.zkoss.bind.Validator;
@@ -47,7 +46,7 @@ public class MainViewModel extends ViewModelFunctions {
 	private final TransactionManager tm = new DesktopTransactionManager();
 
 	private static final String GC_UPDATE_EXECUTIONS = "updateExecutions";
-	private static final String DOWNLOAD_FILE_EXTENSION = ".tar.gz";
+	private static final String DOWNLOAD_FILE_EXTENSION = ".zip";
 	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm");
 
 	static {
@@ -69,6 +68,7 @@ public class MainViewModel extends ViewModelFunctions {
 	private String repositoryPath;
 	private String repositoryQueryFilterByRepositoryName;
 	private String repositoryQueryFilterByName;
+	private List<String> repositoryPapers;
 
 	/**
 	 * Initializes variables
@@ -86,6 +86,8 @@ public class MainViewModel extends ViewModelFunctions {
 		this.repositoryQueries = new LinkedList<>();
 
 		this.setRepository(new Repository());
+
+		this.repositoryPapers = readRepositoryPapers();
 
 	}
 
@@ -107,6 +109,10 @@ public class MainViewModel extends ViewModelFunctions {
 		this.repository = repository;
 
 		this.uneditedRepository = this.repository.clone();
+
+		this.repositoryPapers = readRepositoryPapers();
+
+		postNotifyChange(this, "repositoryPapers");
 	}
 
 	public Repository getUneditedRepository() {
@@ -225,6 +231,10 @@ public class MainViewModel extends ViewModelFunctions {
 		this.repositoryQueryFilterByName = repositoryQueryFilterByName;
 	}
 
+	public List<String> getRepositoryPapers() {
+		return repositoryPapers;
+	}
+
 	@DependsOn("repository")
 	public boolean isRepositoryReadyToCompress() {
 		return this.repository.getNumberOfPapers() > 0;
@@ -310,14 +320,19 @@ public class MainViewModel extends ViewModelFunctions {
 
 	@Command
 	public void downloadPapers() {
-		final String compressedFileName = UUID.randomUUID().toString() + DOWNLOAD_FILE_EXTENSION;
-		final String userLogin = this.repository.getUser().getLogin() + File.separator;
-		final String basePath = RepositoryManager.getRepositoryPath() + File.separator + userLogin;
-		final String repositoryPath = this.repository.getPath() + File.separator;
 		final String suggestedDownloadName = this.repository.getName() + DOWNLOAD_FILE_EXTENSION;
 
-		RepositoryManager.compressAndDownloadPapers(compressedFileName, basePath, repositoryPath,
-				suggestedDownloadName);
+		final String basePath = RepositoryManager.getRepositoryPath() + File.separator;
+		final String userLogin = this.repository.getUser().getLogin() + File.separator;
+		final String repositoryPath = this.repository.getPath() + File.separator;
+
+		final String finalPath = basePath + userLogin + repositoryPath;
+
+		try {
+			RepositoryManager.zipDirectory(suggestedDownloadName, finalPath);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void discardRepositoryChanges() {
@@ -575,6 +590,7 @@ public class MainViewModel extends ViewModelFunctions {
 	@Command
 	public void launchExecution(@BindingParam("current") final RepositoryQuery repositoryQuery) {
 		findRepositoryQuery(repositoryQuery);
+
 		final String basePath = RepositoryManager.getRepositoryPath() + File.separator;
 		final String userLogin = repositoryQuery.getRepository().getUser().getLogin();
 		final String repositoryPath = this.repositoryQuery.getRepository().getPath() + File.separator;
@@ -592,17 +608,7 @@ public class MainViewModel extends ViewModelFunctions {
 		this.setRepositoryQuery(this.repositoryQuery);
 		this.queries.add(indexOf, this.repositoryQuery);
 
-		postNotifyChange(this, "repositoryQuery", "queries");
-	}
-
-	private void findRepositoryQuery(RepositoryQuery repositoryQuery) {
-		tm.runInTransaction(em -> {
-			if (!em.contains(repositoryQuery)) {
-				this.repositoryQuery = em.find(RepositoryQuery.class, repositoryQuery.getId());
-			} else {
-				this.repositoryQuery = repositoryQuery;
-			}
-		});
+		postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
 	}
 
 	private void findRepository(Repository repository) {
@@ -611,6 +617,16 @@ public class MainViewModel extends ViewModelFunctions {
 				this.repository = em.find(Repository.class, repository.getId());
 			} else {
 				this.repository = repository;
+			}
+		});
+	}
+
+	private void findRepositoryQuery(RepositoryQuery repositoryQuery) {
+		tm.runInTransaction(em -> {
+			if (!em.contains(repositoryQuery)) {
+				this.repositoryQuery = em.find(RepositoryQuery.class, repositoryQuery.getId());
+			} else {
+				this.repositoryQuery = repositoryQuery;
 			}
 		});
 	}
@@ -704,6 +720,8 @@ public class MainViewModel extends ViewModelFunctions {
 
 			break;
 		default:
+			findRepositoryQuery(this.repositoryQuery);
+
 			if (toCheck) {
 				synchronized (this.repositoryQuery) {
 					this.repositoryQuery.setChecked(false);
@@ -771,5 +789,17 @@ public class MainViewModel extends ViewModelFunctions {
 				}
 			}
 		}
+	}
+
+	private List<String> readRepositoryPapers() {
+		if (isRepositoryReadyToCompress()) {
+			final String userLogin = this.repository.getUser().getLogin() + File.separator;
+			final String basePath = RepositoryManager.getRepositoryPath() + File.separator + userLogin;
+			final String repositoryPath = this.repository.getPath() + File.separator;
+			final String finalPath = basePath + repositoryPath;
+
+			return RepositoryManager.readPaperTitleFromLog(finalPath);
+		}
+		return new LinkedList<>();
 	}
 }

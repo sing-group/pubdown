@@ -18,7 +18,7 @@
 						<menuitem image="./images/trashCan16x16.png"
 							onClick="@command('removeRepository')"
 							tooltiptext="Delete Repository" />
-						<menuitem label="SCHEDULER"
+						<menuitem label="Scheduler"
 							onClick="@command('schedulerSize')" />
 					</menubar>
 					<listbox vflex="true" model="@load(vm.repositories)"
@@ -40,6 +40,7 @@
 				<tabbox>
 					<tabs>
 						<tab label="Repository" />
+						<tab label="Papers" />
 						<tab label="Queries" />
 						<tab label="Settings" />
 					</tabs>
@@ -92,11 +93,6 @@
 												value="Next update: " />
 											<label
 												value="@bind(vm.repository.nextUpdate)" />
-										</hlayout>
-										<hlayout valign="middle">
-											<button
-												label="Download papers" onClick="@command('downloadPapers')"
-												disabled="@load(not vm.repositoryReadyToCompress)" />
 										</hlayout>
 										<groupbox
 											contentStyle="padding: 0">
@@ -160,6 +156,34 @@
 							</groupbox>
 						</tabpanel>
 						<tabpanel>
+							<groupbox mold="3d" closable="false"
+								contentStyle="padding: 0px;">
+								<vlayout>
+									<toolbar>
+										<toolbarbutton
+											label="Download papers" onClick="@command('downloadPapers')"
+											disabled="@load(not vm.repositoryReadyToCompress)" />
+									</toolbar>
+									<grid
+										model="@load(vm.repositoryPapers)" autopaging="true"
+										pagingPosition="bottom" mold="paging" hflex="true"
+										height="575px">
+										<columns>
+											<column align="left"
+												label="Paper Title" />
+										</columns>
+										<template name="model"
+											var="paper">
+											<row>
+												<label
+													value="@load(paper)" />
+											</row>
+										</template>
+									</grid>
+								</vlayout>
+							</groupbox>
+						</tabpanel>
+						<tabpanel>
 							<groupbox contentStyle="padding: 0">
 								<vlayout hflex="true" vflex="true">
 									<toolbar>
@@ -181,7 +205,7 @@
 										vflex="true">
 										<grid model="@load(vm.queries)"
 											autopaging="true" pagingPosition="bottom" mold="paging"
-											hflex="true" height="490px">
+											hflex="true" height="538px">
 											<columns>
 												<column align="center"
 													label="Repository name" />
@@ -231,7 +255,7 @@
 								<vlayout>
 									<toolbar>
 										<toolbarbutton
-											label="Save changes"
+											label="Save Changes"
 											onClick="@command('persistUserChanges')" />
 									</toolbar>
 									<grid>

@@ -1,6 +1,7 @@
 package es.uvigo.ei.sing.pubdown.paperdown.downloader;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -12,6 +13,8 @@ import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,8 +22,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.activation.MimetypesFileTypeMap;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.io.RandomAccessFile;
@@ -40,16 +44,17 @@ public class RepositoryManager {
 	private static final String PDF_FILE_EXTENSION = ".pdf";
 	private static final String TXT_FILE_EXTENSION = ".txt";
 	private static final String LOG_FILE = "log.csv";
-
 	private static final String SEMICOLON_DELIMITER = ";";
 	private static final String METADATA_FILE = "metadata.csv";
+	private static final String ZIP_CONTENT_TYPE = "application/zip";
+
 	private static String repositoryPath;
 
 	public static String getRepositoryPath() {
 		tm.runInTransaction(em -> {
 			em.clear();
 			repositoryPath = em
-					.createQuery("SELECT g FROM GlobalConfiguration g WHERE	 g.configurationKey = :path",
+					.createQuery("SELECT g FROM GlobalConfiguration g WHERE	g.configurationKey = :path",
 							GlobalConfiguration.class)
 					.setParameter("path", "repositoryPath").getSingleResult().getConfigurationValue();
 		});
@@ -60,34 +65,6 @@ public class RepositoryManager {
 		tm.runInTransaction(em -> {
 			em.merge(repositoryQuery);
 		});
-	}
-
-	public static void compressAndDownloadPapers(final String compressedFileName, final String basePath,
-			final String repositoryPath, final String suggestedDownloadName) {
-		try {
-			String command = "tar -czvf " + compressedFileName + " " + repositoryPath;
-			String[] commandsToExecute = { "/bin/sh", "-c", command };
-
-			Process process = Runtime.getRuntime().exec(commandsToExecute, null, new File(basePath));
-			process.waitFor();
-
-			FileInputStream inputStream;
-			final String fileToDownload = basePath + compressedFileName;
-			final File file = new File(fileToDownload);
-			if (file.exists()) {
-				inputStream = new FileInputStream(file);
-
-				Filedownload.save(inputStream, new MimetypesFileTypeMap().getContentType(file), suggestedDownloadName);
-			}
-
-			command = "rm " + compressedFileName;
-			commandsToExecute[2] = command;
-			process = Runtime.getRuntime().exec(commandsToExecute, null, new File(basePath));
-			process.waitFor();
-
-		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public static void generatePDFFile(final String pdfURL, final String fileName, final String directory,
@@ -256,7 +233,7 @@ public class RepositoryManager {
 		}
 	}
 
-	public static Map<String, String> readMetadata(final String directory) {
+	public static Map<String, String> readMetaData(final String directory) {
 		BufferedReader bufferedReader = null;
 		String line = "";
 		final Map<String, String> doiMap = new HashMap<>();
@@ -285,7 +262,7 @@ public class RepositoryManager {
 
 	}
 
-	public static Map<String, List<String>> readDoiInMetaData(final String directory, final String doi) {
+	public static Map<String, List<String>> readDOIInMetaData(final String directory, final String doi) {
 		BufferedReader bufferedReader = null;
 		String line = "";
 		final List<String> doiList = new LinkedList<>();
@@ -316,9 +293,9 @@ public class RepositoryManager {
 
 	}
 
-	public static void writeMetadata(final String directory, final String doi, final String title, final String date,
+	public static void writeMetaData(final String directory, final String doi, final String title, final String date,
 			final List<String> authorList, final boolean isCompletePaper) {
-		try (FileWriter metadataFile = new FileWriter(directory + File.separator + METADATA_FILE, true)) {
+		try (FileWriter metaDataFile = new FileWriter(directory + File.separator + METADATA_FILE, true)) {
 			final String type = isCompletePaper ? "full" : "abstract";
 			String authors = "";
 			for (int i = 0; i < authorList.size(); i++) {
@@ -328,10 +305,73 @@ public class RepositoryManager {
 					authors = authors + authorList.get(i);
 				}
 			}
-			metadataFile.write(doi + SEMICOLON_DELIMITER + type + SEMICOLON_DELIMITER + title + SEMICOLON_DELIMITER
+			metaDataFile.write(doi + SEMICOLON_DELIMITER + type + SEMICOLON_DELIMITER + title + SEMICOLON_DELIMITER
 					+ date + SEMICOLON_DELIMITER + authors + "\n");
 		} catch (final IOException e) {
 		}
+	}
+
+	public static void zipDirectory(String zipFileName, String directoryPath) {
+		try {
+			File dirObj = new File(directoryPath);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ZipOutputStream zos = new ZipOutputStream(baos);
+			System.out.println("Creating : " + zipFileName);
+			addDir(dirObj, zos);
+			zos.close();
+			Filedownload.save(baos.toByteArray(), ZIP_CONTENT_TYPE, zipFileName);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	static void addDir(File dirObj, ZipOutputStream zos) {
+		File[] files = dirObj.listFiles();
+		byte[] tmpBuf = new byte[1024];
+
+		for (int i = 0; i < files.length; i++) {
+			try {
+				if (files[i].isDirectory()) {
+					addDir(files[i], zos);
+					continue;
+				}
+				FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
+				System.out.println(" Adding: " + files[i].getAbsolutePath());
+
+				// zos.putNextEntry(new ZipEntry(files[i].getAbsolutePath()));
+
+				final String relativePath = dirObj.toURI().relativize(files[i].toURI()).getPath();
+
+				if (!relativePath.equals(LOG_FILE) && !relativePath.equals(METADATA_FILE)) {
+					zos.putNextEntry(new ZipEntry(relativePath));
+					int len;
+					while ((len = in.read(tmpBuf)) > 0) {
+						zos.write(tmpBuf, 0, len);
+					}
+					zos.closeEntry();
+				}
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public static List<String> readPaperTitleFromLog(final String csvPath) {
+		Stream<String> stream = null;
+		try {
+			stream = Files.lines(Paths.get(csvPath + LOG_FILE));
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
+
+		final List<String> titles = new LinkedList<>();
+		stream.forEach((line) -> {
+			final String[] doi = line.split(SEMICOLON_DELIMITER);
+			final String paperTitle = doi[1];
+			titles.add(paperTitle);
+		});
+		return titles;
 	}
 
 }

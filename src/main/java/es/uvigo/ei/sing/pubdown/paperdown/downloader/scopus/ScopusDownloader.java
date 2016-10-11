@@ -104,7 +104,7 @@ public class ScopusDownloader implements Searcher {
 				if (checkMetadata(xmlParser.getQueryURL(), isCompletePaper)) {
 					htmlParser.setUrlsWithTitle(urlsWithTitle);
 					downloadCompleteOrAbstract(isCompletePaper, htmlParser, convertPDFtoTXT, keepPDF, directoryType);
-					RepositoryManager.writeMetadata(this.directory, doi, paperTitle, date, authorList, isCompletePaper);
+					RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList, isCompletePaper);
 				} else {
 					System.out.println("Scopus does not download");
 				}
@@ -232,7 +232,7 @@ public class ScopusDownloader implements Searcher {
 						// String doi = "";
 						if (child.getNodeName().equals("prism:doi")) {
 							doi = child.getFirstChild().getTextContent();
-							final Map<String, String> doiMap = RepositoryManager.readMetadata(this.directory);
+							final Map<String, String> doiMap = RepositoryManager.readMetaData(this.directory);
 							if (!doiMap.containsKey(doi)) {
 								// RepositoryManager.writeMetadata(this.directory,
 								// doi, paperTitle, date, authorList,
@@ -240,7 +240,7 @@ public class ScopusDownloader implements Searcher {
 								return true;
 							} else {
 								final Map<String, List<String>> auxMap = RepositoryManager
-										.readDoiInMetaData(this.directory, doi);
+										.readDOIInMetaData(this.directory, doi);
 								final List<String> auxList = auxMap.get(doi);
 								if (auxList.size() == 1) {
 									final String type = auxList.get(0);

@@ -5,7 +5,7 @@
 	version="3.0">
 
 	<description>PubDown</description>
-	<display-name>pubdown</display-name>
+	<display-name>PubDown</display-name>
 
 	<welcome-file-list>
 		<welcome-file>index.zul</welcome-file>
@@ -14,6 +14,13 @@
 		<welcome-file>index.htm</welcome-file>
 	</welcome-file-list>
 
+	<servlet>
+		<servlet-name>ContextListener</servlet-name>
+		<servlet-class>
+			es.uvigo.ei.sing.pubdown.web.zk.initiators.ContextListenerServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	
 	<resource-ref>
 		<description>
 			Resource reference to a factory for javax.mail.Session

@@ -22,7 +22,7 @@
 							onClick="@command('schedulerSize')" />
 					</menubar>
 					<listbox id="repositories" vflex="true"
-						model="@load(vm.repositories)">
+						model="@load(vm.repositories)" selectedItem="@load(vm.repository)">
 						<listhead>
 							<listheader />
 						</listhead>
@@ -30,7 +30,7 @@
 							<listitem>
 								<listcell
 									onClick="@command('selectRepository',current=repository)"
-									label="@load(repository.name)" />
+									label="@load(repository.name)"/>
 							</listitem>
 						</template>
 					</listbox>

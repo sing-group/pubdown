@@ -331,7 +331,7 @@ public class MainViewModel extends ViewModelFunctions {
 			setRepository(this.repository);
 
 			this.queries = getAllQueries();
-			
+
 			this.repositoryQueries = getRepositoryQueries();
 
 			postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
@@ -347,7 +347,6 @@ public class MainViewModel extends ViewModelFunctions {
 		final Repository selectedRepository = repository;
 		if (selectedRepository != null) {
 			if (!this.repository.equals(selectedRepository) && isRepositoryModified()) {
-				System.out.println("Ha sido modificado");
 				Messagebox.show("Do you want to save?", "Save Repository",
 						new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL,
 								Messagebox.Button.NO },
@@ -367,11 +366,13 @@ public class MainViewModel extends ViewModelFunctions {
 
 								break;
 							case Messagebox.ON_NO:
+								setRepository(this.repository);
+
+								postNotifyChange(this, "repository");
 							default:
 							}
 						}, singletonMap("width", "500"));
 			} else {
-				System.out.println("No ha sido modificado");
 				setRepository(selectedRepository);
 				postNotifyChange(this, "repository");
 			}

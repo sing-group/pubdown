@@ -61,7 +61,8 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	}
 
 	private Repository(final Integer id, final String name, final String path, final int numberOfPapers,
-			final String lastUpdate, final String nextUpdate, final List<RepositoryQuery> repositoryQueries, final User user) {
+			final String lastUpdate, final String nextUpdate, final List<RepositoryQuery> repositoryQueries,
+			final User user) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -172,6 +173,31 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	}
 
 	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Repository other = (Repository) obj;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
+		return true;
+	}
+
+	@Override
 	public Repository clone() {
 		return new Repository(this.id, this.name, this.path, this.numberOfPapers, this.lastUpdate, this.nextUpdate,
 				this.repositoryQueries, this.user);
@@ -180,8 +206,7 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	@Override
 	public int compareTo(final Repository obj) {
 		return Compare.objects(this, obj).by(Repository::getId).thenBy(Repository::getName).thenBy(Repository::getPath)
-				.thenBy(Repository::getNumberOfPapers).thenBy(Repository::getLastUpdate)
-				.thenBy(Repository::getNextUpdate).andGet();
+				.andGet();
 	}
 
 	@Override

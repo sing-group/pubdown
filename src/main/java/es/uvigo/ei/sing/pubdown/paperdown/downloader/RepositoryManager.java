@@ -316,7 +316,7 @@ public class RepositoryManager {
 			File dirObj = new File(directoryPath);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ZipOutputStream zos = new ZipOutputStream(baos);
-			System.out.println("Creating : " + zipFileName);
+			// System.out.println("Creating : " + zipFileName);
 			addDir(dirObj, zos);
 			zos.close();
 			Filedownload.save(baos.toByteArray(), ZIP_CONTENT_TYPE, zipFileName);
@@ -336,7 +336,7 @@ public class RepositoryManager {
 					continue;
 				}
 				FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
-				System.out.println(" Adding: " + files[i].getAbsolutePath());
+				// System.out.println(" Adding: " + files[i].getAbsolutePath());
 
 				// zos.putNextEntry(new ZipEntry(files[i].getAbsolutePath()));
 
@@ -366,11 +366,13 @@ public class RepositoryManager {
 		}
 
 		final List<String> titles = new LinkedList<>();
-		stream.forEach((line) -> {
-			final String[] doi = line.split(SEMICOLON_DELIMITER);
-			final String paperTitle = doi[1];
-			titles.add(paperTitle);
-		});
+		if(stream!=null){
+			stream.forEach((line) -> {
+				final String[] doi = line.split(SEMICOLON_DELIMITER);
+				final String paperTitle = doi[1];
+				titles.add(paperTitle);
+			});
+		}
 		return titles;
 	}
 

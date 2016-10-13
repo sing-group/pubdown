@@ -68,7 +68,6 @@ public class MainViewModel extends ViewModelFunctions {
 	private String repositoryPath;
 	private String repositoryQueryFilterByRepositoryName;
 	private String repositoryQueryFilterByName;
-	private List<String> repositoryPapers;
 
 	/**
 	 * Initializes variables
@@ -81,13 +80,11 @@ public class MainViewModel extends ViewModelFunctions {
 
 		this.queries = getAllQueries();
 
-		sortQueries();
+		sortQueries(this.queries);
 
 		this.repositoryQueries = new LinkedList<>();
 
 		this.setRepository(new Repository());
-
-		this.repositoryPapers = readRepositoryPapers();
 
 	}
 
@@ -109,10 +106,6 @@ public class MainViewModel extends ViewModelFunctions {
 		this.repository = repository;
 
 		this.uneditedRepository = this.repository.clone();
-
-		this.repositoryPapers = readRepositoryPapers();
-
-		postNotifyChange(this, "repositoryPapers");
 	}
 
 	public Repository getUneditedRepository() {
@@ -145,8 +138,8 @@ public class MainViewModel extends ViewModelFunctions {
 		this.uneditedRepositoryQueryTask = this.repositoryQuery.getTask();
 	}
 
-	private void sortQueries() {
-		this.queries.sort((rq1, rq2) -> {
+	private void sortQueries(List<RepositoryQuery> queries) {
+		queries.sort((rq1, rq2) -> {
 			if (rq1.getRepository().getName().compareTo(rq2.getRepository().getName()) == 0) {
 				return rq1.getName().compareTo(rq2.getName());
 			} else {
@@ -156,7 +149,7 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	public List<RepositoryQuery> getQueries() {
-		sortQueries();
+		sortQueries(queries);
 		return queries;
 	}
 
@@ -173,7 +166,11 @@ public class MainViewModel extends ViewModelFunctions {
 		return queries;
 	}
 
+	@DependsOn("repository")
 	public List<RepositoryQuery> getRepositoryQueries() {
+		this.repositoryQueries = this.queries.stream()
+				.filter(repositoryQuery -> repositoryQuery.getRepository().getName().equals(this.repository.getName()))
+				.collect(toList());
 		return repositoryQueries;
 	}
 
@@ -209,12 +206,6 @@ public class MainViewModel extends ViewModelFunctions {
 		return uneditedRepositoryQueryTask;
 	}
 
-	// public List<String> getSortedRepositories() {
-	// return
-	// getCurrentUser(tm).getRepositories().stream().sorted(Comparator.comparing(Repository::getName))
-	// .map(Repository::getName).collect(Collectors.toList());
-	// }
-
 	public String getRepositoryQueryFilterByRepositoryName() {
 		return repositoryQueryFilterByRepositoryName;
 	}
@@ -231,12 +222,13 @@ public class MainViewModel extends ViewModelFunctions {
 		this.repositoryQueryFilterByName = repositoryQueryFilterByName;
 	}
 
+	@DependsOn("repository")
 	public List<String> getRepositoryPapers() {
-		return repositoryPapers;
+		return readRepositoryPapers();
 	}
 
 	@DependsOn("repository")
-	public boolean isRepositoryReadyToCompress() {
+	public boolean isRepositoryReadyToDownload() {
 		return this.repository.getNumberOfPapers() > 0;
 	}
 
@@ -296,14 +288,6 @@ public class MainViewModel extends ViewModelFunctions {
 	public void checkRepository() {
 	}
 
-	@Command
-	@NotifyChange("repositoryQueries")
-	public void updateRepositoryQueries() {
-		this.repositoryQueries = this.queries.stream()
-				.filter(repositoryQuery -> repositoryQuery.getRepository().getName().equals(this.repository.getName()))
-				.collect(toList());
-	}
-
 	/**
 	 * Closes the current {@link User} session
 	 */
@@ -343,16 +327,58 @@ public class MainViewModel extends ViewModelFunctions {
 				}
 
 				em.refresh(this.repository);
-
-				this.uneditedRepository = this.repository.clone();
 			});
+			setRepository(this.repository);
+
+			this.queries = getAllQueries();
+			
+			this.repositoryQueries = getRepositoryQueries();
+
+			postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
+			// postNotifyChange(this, "repository", "repositories");
+
 		} else {
 			this.setRepository(new Repository());
 		}
 	}
 
 	@Command
-	@NotifyChange({ "repository", "repositoryQueries" })
+	public void selectRepository(@BindingParam("current") Repository repository) {
+		final Repository selectedRepository = repository;
+		if (selectedRepository != null) {
+			if (!this.repository.equals(selectedRepository) && isRepositoryModified()) {
+				System.out.println("Ha sido modificado");
+				Messagebox.show("Do you want to save?", "Save Repository",
+						new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL,
+								Messagebox.Button.NO },
+						new String[] { "Save & Continue", "Discard Changes", "Continue Editing" }, Messagebox.QUESTION,
+						null, event -> {
+							switch (event.getName()) {
+							case Messagebox.ON_OK:
+								persistRepository();
+
+								setRepository(selectedRepository);
+
+								break;
+							case Messagebox.ON_CANCEL:
+								discardRepositoryChanges();
+
+								setRepository(selectedRepository);
+
+								break;
+							case Messagebox.ON_NO:
+							default:
+							}
+						}, singletonMap("width", "500"));
+			} else {
+				System.out.println("No ha sido modificado");
+				setRepository(selectedRepository);
+				postNotifyChange(this, "repository");
+			}
+		}
+	}
+
+	@Command
 	public void addRepository() {
 		if (isRepositoryModified()) {
 			Messagebox.show("Do you want to save?", "Save Repository",
@@ -364,7 +390,7 @@ public class MainViewModel extends ViewModelFunctions {
 							persistRepository();
 
 							setRepository(this.repository);
-							postNotifyChange(this, "repository", "repositories");
+							postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
 
 							break;
 						case Messagebox.ON_CANCEL:
@@ -372,7 +398,7 @@ public class MainViewModel extends ViewModelFunctions {
 
 							setRepository(new Repository());
 
-							postNotifyChange(this, "repository", "repositories");
+							postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
 							break;
 						case Messagebox.ON_NO:
 						default:
@@ -381,7 +407,7 @@ public class MainViewModel extends ViewModelFunctions {
 		} else {
 			this.setRepository(new Repository());
 			this.repositoryQueries = new LinkedList<>();
-			postNotifyChange(this, "repository", "repositories", "repositoryQueries");
+			postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
 		}
 	}
 
@@ -414,7 +440,7 @@ public class MainViewModel extends ViewModelFunctions {
 
 							this.repositories = getRepositories();
 							this.queries = getAllQueries();
-							updateRepositoryQueries();
+
 							postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
 
 							break;
@@ -428,9 +454,8 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	@Command
-	@NotifyChange("repository")
 	public void persistRepository() {
-		final Repository repository = this.getRepository();
+		final Repository repository = this.repository;
 
 		if (repository.getPath().charAt(0) == File.separatorChar) {
 			repository.setPath(repository.getPath().substring(1));
@@ -450,53 +475,12 @@ public class MainViewModel extends ViewModelFunctions {
 		} else {
 			tm.runInTransaction(em -> em.merge(repository));
 		}
-		this.uneditedRepository = repository.clone();
+		setRepository(repository);
 
 		this.repositories = getRepositories();
 		this.queries = getAllQueries();
 
-		postNotifyChange(this, "repositories", "queries", "repositoryQueries");
-	}
-
-	/**
-	 * If the {@link RepositoryQuery} clicked by an user is a
-	 * {@link RepositoryQueryTreeNode}, sets the {@link RepositoryQuery} as
-	 * selected
-	 */
-	@Command
-	@NotifyChange({ "repository" })
-	public void selectRepository() {
-		final Repository selectedRepository = this.repository;
-		if (selectedRepository != null) {
-			if (!this.repository.equals(selectedRepository) && isRepositoryModified()) {
-				Messagebox.show("Do you want to save?", "Save Repository",
-						new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL,
-								Messagebox.Button.NO },
-						new String[] { "Save & Continue", "Discard Changes", "Continue Editing" }, Messagebox.QUESTION,
-						null, event -> {
-							switch (event.getName()) {
-							case Messagebox.ON_OK:
-								persistRepository();
-
-								setRepository(selectedRepository);
-
-								postNotifyChange(this, "repositoryQuery");
-								break;
-							case Messagebox.ON_CANCEL:
-								discardRepositoryChanges();
-
-								setRepository(selectedRepository);
-
-								postNotifyChange(this, "repositoryQuery");
-								break;
-							case Messagebox.ON_NO:
-							default:
-							}
-						}, singletonMap("width", "500"));
-			} else {
-				setRepository(selectedRepository);
-			}
-		}
+		postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
 	}
 
 	@Command
@@ -517,8 +501,8 @@ public class MainViewModel extends ViewModelFunctions {
 	public void addRepositoryQuery(@BindingParam("repositoryQuery") final RepositoryQuery repositoryQuery) {
 		this.queries.add(repositoryQuery);
 
-		sortQueries();
-		updateRepositoryQueries();
+		sortQueries(this.queries);
+
 		postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
 		checkRepositoryQueryResult(repositoryQuery);
 	}
@@ -530,8 +514,7 @@ public class MainViewModel extends ViewModelFunctions {
 		this.setRepositoryQuery(repositoryQuery);
 		this.queries.add(indexOf, repositoryQuery);
 
-		sortQueries();
-		updateRepositoryQueries();
+		sortQueries(this.queries);
 
 		postNotifyChange(this, "queries", "repositoryQueries");
 		checkRepositoryQueryResult(repositoryQuery);
@@ -554,7 +537,7 @@ public class MainViewModel extends ViewModelFunctions {
 							this.queries.remove(this.repositoryQuery);
 
 							this.queries = getAllQueries();
-							updateRepositoryQueries();
+
 							postNotifyChange(this, "queries", "repositoryQueries");
 
 							break;
@@ -570,7 +553,6 @@ public class MainViewModel extends ViewModelFunctions {
 	 * Refresh the current {@link Repository}
 	 */
 	@Command
-	@NotifyChange("repository")
 	public void refreshRepository() {
 		discardRepositoryChanges();
 	}
@@ -792,7 +774,7 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	private List<String> readRepositoryPapers() {
-		if (isRepositoryReadyToCompress()) {
+		if (isRepositoryReadyToDownload()) {
 			final String userLogin = this.repository.getUser().getLogin() + File.separator;
 			final String basePath = RepositoryManager.getRepositoryPath() + File.separator + userLogin;
 			final String repositoryPath = this.repository.getPath() + File.separator;

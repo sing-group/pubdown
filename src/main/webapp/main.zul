@@ -21,15 +21,15 @@
 						<menuitem label="Scheduler"
 							onClick="@command('schedulerSize')" />
 					</menubar>
-					<listbox vflex="true" model="@load(vm.repositories)"
-						selectedItem="@bind(vm.repository)"
-						onSelect="@command('updateRepositoryQueries')">
+					<listbox id="repositories" vflex="true"
+						model="@load(vm.repositories)">
 						<listhead>
 							<listheader />
 						</listhead>
 						<template name="model" var="repository">
 							<listitem>
 								<listcell
+									onClick="@command('selectRepository',current=repository)"
 									label="@load(repository.name)" />
 							</listitem>
 						</template>
@@ -87,12 +87,6 @@
 												value="Last update: " />
 											<label
 												value="@bind(vm.repository.lastUpdate)" />
-										</hlayout>
-										<hlayout valign="middle">
-											<label
-												value="Next update: " />
-											<label
-												value="@bind(vm.repository.nextUpdate)" />
 										</hlayout>
 										<groupbox
 											contentStyle="padding: 0">
@@ -162,7 +156,7 @@
 									<toolbar>
 										<toolbarbutton
 											label="Download papers" onClick="@command('downloadPapers')"
-											disabled="@load(not vm.repositoryReadyToCompress)" />
+											disabled="@load(not vm.repositoryReadyToDownload)" />
 									</toolbar>
 									<grid
 										model="@load(vm.repositoryPapers)" autopaging="true"

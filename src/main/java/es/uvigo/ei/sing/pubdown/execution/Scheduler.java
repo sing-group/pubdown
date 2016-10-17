@@ -16,9 +16,14 @@ import org.zkoss.zk.ui.event.EventQueue;
 
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQueryTask;
+import es.uvigo.ei.sing.pubdown.web.entities.Role;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
+import es.uvigo.ei.sing.pubdown.web.zk.util.CleanEntityManagerTransactionManager;
+import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
 
 public class Scheduler {
+
+	private static TransactionManager tm = new CleanEntityManagerTransactionManager();
 
 	private static final int SCHEDULED_THREAD_POOL_SIZE = 30;
 
@@ -42,51 +47,6 @@ public class Scheduler {
 	private Scheduler() {
 		this.executor = Executors.newScheduledThreadPool(SCHEDULED_THREAD_POOL_SIZE);
 	}
-
-	// synchronized public void scheduleTask(final Runnable runnable, final
-	// RepositoryQueryTask task) {
-	// final Integer taskId = task.getId();
-	//
-	// if (taskReadyToBeScheduled(task) && !scheduledTasks.containsKey(taskId))
-	// {
-	//
-	// scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
-	//
-	// if (task.isDaily()) {
-	// final long initialDelay = schedulerExecutor.getDailyInitialDelay(task);
-	// System.out.println("MINUTES TO START: " + initialDelay);
-	// final ScheduledFuture<?> scheduledFuture =
-	// executor.scheduleAtFixedRate(runnable, initialDelay,
-	// DAILY_PERIOD_MINUTES, TimeUnit.MINUTES);
-	// final List<ScheduledFuture<?>> scheduledFutures =
-	// scheduledTasks.get(taskId);
-	// scheduledFutures.add(scheduledFuture);
-	// this.scheduledTasks.put(taskId, scheduledFutures);
-	// taskNumber++;
-	// } else {
-	// if (taskReadyToBeScheduled(task)) {
-	// final List<Long> initialDelays =
-	// schedulerExecutor.getWeeklyInitialDelay(task);
-	// initialDelays.forEach((initialDelay) -> {
-	// final ScheduledFuture<?> scheduledFuture =
-	// executor.scheduleAtFixedRate(runnable, initialDelay,
-	// WEEKLY_PERIOD_IN_MINUTES, TimeUnit.MINUTES);
-	//
-	// final List<ScheduledFuture<?>> scheduledFutures =
-	// scheduledTasks.get(taskId);
-	// scheduledFutures.add(scheduledFuture);
-	// this.scheduledTasks.put(taskId, scheduledFutures);
-	// taskNumber++;
-	// });
-	// }
-	// }
-	// System.out.println("TASK SCHEDULED");
-	// } else {
-	// System.out.println("TASK NOT SCHEDULED");
-	// }
-	//
-	// System.out.println("Scheduled tasks: " + taskNumber);
-	// }
 
 	synchronized public void scheduleTask(final RepositoryQueryScheduled repositoryQueryScheduled) {
 		final RepositoryQuery repositoryQuery = repositoryQueryScheduled.getRepositoryQuery();
@@ -123,9 +83,13 @@ public class Scheduler {
 				}
 			}
 			System.out.println("TASK SCHEDULED");
+
 		} else {
 			System.out.println("TASK NOT SCHEDULED");
 		}
+
+		final boolean toCheck = repositoryQueryScheduled.isToCheck();
+		publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_SCHEDULED, toCheck);
 
 		System.out.println("Scheduled tasks: " + taskNumber);
 	}
@@ -139,15 +103,13 @@ public class Scheduler {
 				taskNumber--;
 			});
 
+			final boolean toCheck = repositoryQueryScheduled.isToCheck();
+			publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_ABORTED, toCheck);
+
 			System.out.println("TASK REMOVED");
 			System.out.println("Scheduled tasks: " + taskNumber);
 		}
 	}
-
-	// synchronized public void executeTask(final Runnable runnable, final
-	// RepositoryQueryTask task) {
-	// executor.submit(runnable);
-	// }
 
 	synchronized public void executeTask(final RepositoryQueryScheduled repositoryQueryScheduled) {
 		final TaskExecutor taskExecutor = new TaskExecutor(repositoryQueryScheduled);
@@ -162,7 +124,7 @@ public class Scheduler {
 	public Map<Integer, List<ScheduledFuture<?>>> getScheduledTasks() {
 		return scheduledTasks;
 	}
-	
+
 	public int getTaskNumber() {
 		return taskNumber;
 	}
@@ -187,7 +149,9 @@ public class Scheduler {
 
 	private final static void publishEvent(final RepositoryQueryScheduled repositoryQueryScheduled, final String suffix,
 			final Object value) {
+
 		final User user = repositoryQueryScheduled.getRepositoryQuery().getRepository().getUser();
+		System.out.println("scheduled query - user: "+user.getLogin());
 		final EventQueue<Event> queue = EventQueueUtils.getUserQueue(user);
 
 		if (suffix == null) {
@@ -197,6 +161,25 @@ public class Scheduler {
 			queue.publish(new Event(EVENT_REPOSITORY_QUERY + suffix, null,
 					new EventRepositoryQuery(repositoryQueryScheduled, value)));
 		}
+
+		for (User admin : getUserAdmins()) {
+			EventQueue<Event> adminQueue = EventQueueUtils.getUserQueue(admin);
+			if (adminQueue != null) {
+				System.out.println("Notifico admin: " + admin.getLogin());
+				if (suffix == null) {
+					adminQueue.publish(new Event(EVENT_REPOSITORY_QUERY, null,
+							new EventRepositoryQuery(repositoryQueryScheduled, value)));
+				} else {
+					adminQueue.publish(new Event(EVENT_REPOSITORY_QUERY + suffix, null,
+							new EventRepositoryQuery(repositoryQueryScheduled, value)));
+				}
+			}
+		}
+	}
+
+	private static List<User> getUserAdmins() {
+		return tm.get(em -> em.createQuery("SELECT u FROM User u WHERE u.role =:role", User.class)
+				.setParameter("role", Role.ADMIN).getResultList());
 	}
 
 	private final class TaskExecutor implements Runnable {

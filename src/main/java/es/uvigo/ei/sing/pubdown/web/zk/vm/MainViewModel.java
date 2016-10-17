@@ -583,15 +583,6 @@ public class MainViewModel extends ViewModelFunctions {
 				directoryPath, false);
 		Scheduler.getSingleton().scheduleTask(repositoryQueryScheduled);
 
-		this.repositoryQuery.setRunning(true);
-		tm.runInTransaction(em -> em.merge(this.repositoryQuery));
-
-		final int indexOf = this.queries.indexOf(this.repositoryQuery);
-		this.queries.remove(indexOf);
-		this.setRepositoryQuery(this.repositoryQuery);
-		this.queries.add(indexOf, this.repositoryQuery);
-
-		postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
 	}
 
 	private void findRepository(Repository repository) {
@@ -633,10 +624,6 @@ public class MainViewModel extends ViewModelFunctions {
 
 	private void stopRepositoryQueryExecution(final RepositoryQueryScheduled repositoryQueryScheduled) {
 		Scheduler.getSingleton().removeTask(repositoryQueryScheduled);
-		findRepositoryQuery(repositoryQueryScheduled.getRepositoryQuery());
-		this.repositoryQuery.setRunning(false);
-		tm.runInTransaction(em -> em.merge(this.repositoryQuery));
-		queries.set(this.queries.indexOf(this.repositoryQuery), this.repositoryQuery);
 	}
 
 	@Command
@@ -659,7 +646,11 @@ public class MainViewModel extends ViewModelFunctions {
 	public void updateExecutions(@BindingParam("task") final RepositoryQueryScheduled repositoryQueryScheduled,
 			@BindingParam("action") final String action, @BindingParam("data") boolean toCheck) {
 
+		System.out.println("ENTRO EN UPDATE USER : " + action);
+
 		this.repositoryQuery = repositoryQueryScheduled.getRepositoryQuery();
+		System.out.println("query - "+repositoryQuery.getName());
+		
 		Repository repository = this.repositoryQuery.getRepository();
 
 		switch (action) {
@@ -688,21 +679,48 @@ public class MainViewModel extends ViewModelFunctions {
 				final String directoryPath = repositoryQueryScheduled.getDirectoryPath();
 				final long filesInDirectory = numberOfFilesInDirectory(directoryPath);
 
-				final int numberOfPapers = (int) (repository.getNumberOfPapers() + filesInDirectory);
+				synchronized (repository) {
 
-				repository.setNumberOfPapers((int) (numberOfPapers));
-				repository.setLastUpdate(SIMPLE_DATE_FORMAT.format(new Date()));
+					final int numberOfPapers = (int) (repository.getNumberOfPapers() + filesInDirectory);
 
-				tm.runInTransaction(em -> em.merge(repository));
+					repository.setNumberOfPapers((int) (numberOfPapers));
+					repository.setLastUpdate(SIMPLE_DATE_FORMAT.format(new Date()));
+
+					tm.runInTransaction(em -> em.merge(repository));
+				}
 
 				setRepository(repository);
 				this.repositories = getRepositories();
 
 				postNotifyChange(this, "repository", "repositories", "repositoryReadyToCompress");
 			}
-
+			break;
+		case GlobalEvents.ACTION_SCHEDULED:
+			synchronized (this.repositoryQuery) {
+				this.repositoryQuery.setRunning(true);
+				tm.runInTransaction(em -> em.merge(this.repositoryQuery));
+			}
+			synchronized (this.queries) {
+				final int indexOf = this.queries.indexOf(this.repositoryQuery);
+				this.queries.remove(indexOf);
+				this.setRepositoryQuery(this.repositoryQuery);
+				this.queries.add(indexOf, this.repositoryQuery);
+			}
+			postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
+			break;
+		case GlobalEvents.ACTION_ABORTED:
+			synchronized (this.repositoryQuery) {
+				this.repositoryQuery.setRunning(false);
+				tm.runInTransaction(em -> em.merge(this.repositoryQuery));
+			}
+			synchronized (this.queries) {
+				this.queries.set(this.queries.indexOf(this.repositoryQuery), this.repositoryQuery);
+			}
+			postNotifyChange(this, "repositoryQuery", "queries");
 			break;
 		default:
+			// Case STARTED
+
 			findRepositoryQuery(this.repositoryQuery);
 
 			if (toCheck) {

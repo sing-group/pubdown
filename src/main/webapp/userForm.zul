@@ -6,98 +6,73 @@
 		width="550px" height="auto" border="normal" minimizable="false"
 		mode="modal" maximizable="false" closable="false"
 		onClose="self.detach()" validationMessages="@id('vmsgs')">
-		<vlayout hflex="true" vflex="true">
-			<grid>
-				<columns>
-					<column width="80px" />
-					<column />
-					<column width="180px" />
-				</columns>
-				<rows>
-					<row>
-						<label value="Login" />
-						<textbox id="tbLogin"
-							readonly="@load(vm.registered)"
-							value="@bind(vm.user.login) @validator(vm.loginValidator)"
-							onChange="@command('checkData')" hflex="true" />
-						<label value="@load(vmsgs[tbLogin])"
-							sclass="error" />
-					</row>
-					<row>
-						<label value="Email" />
-						<textbox id="tbEmail"
-							value="@bind(vm.user.email) @validator(vm.emailValidator)"
-							onChange="@command('checkData')" hflex="true" />
-						<label value="@load(vmsgs[tbEmail])"
-							sclass="error" />
-					</row>
-					<row>
-						<label value="Is admin?" />
-						<cell colspan="2">
-							<checkbox checked="@bind(vm.user.admin)"
-								hflex="true" />
-						</cell>
-					</row>
-					<row>
-						<label value="API key" />
-						<hlayout>
-							<textbox id="tbApiKey"
-								value="@bind(vm.user.apiKey) @validator(vm.apiKeyValidator)"
+		<groupbox contentStyle="padding: 0">
+			<vlayout hflex="true" vflex="true">
+				<grid>
+					<columns>
+						<column width="80px" />
+						<column />
+						<column width="180px" />
+					</columns>
+					<rows>
+						<row>
+							<label value="Login" />
+							<textbox id="tbLogin"
+								readonly="@load(vm.registered)"
+								value="@bind(vm.user.login) @validator(vm.loginValidator)"
 								onChange="@command('checkData')" hflex="true" />
-							<button label="Generate"
-								onClick="@command('generateRandomUUID')" />
-						</hlayout>
-						<label value="@load(vmsgs[tbApiKey])"
-							sclass="error" />
-					</row>
-					<row>
-						<label value="Password" />
-						<textbox id="tbPassword" type="password"
-							value="@bind(vm.user.password) @validator(vm.passwordValidator)"
-							onChange="@command('checkData')" hflex="true" />
-						<label value="@load(vmsgs[tbPassword])"
-							sclass="error" />
-					</row>
-					<row>
-						<cell colspan="3" align="center">
-							<button label="Save"
-								onClick="@command('confirm')" forward="userForm.onClose"
-								disabled="@load(not vm.valid or not empty vmsgs)" />
-							<button label="Cancel"
-								forward="userForm.onClose" />
-							<button label="Reset Form"
-								onClick="@command('refresh')" />
-						</cell>
-					</row>
-				</rows>
-			</grid>
-			<grid autopaging="true" pagingPosition="bottom"
-				visible="@load(vm.registered)" mold="paging" height="200px"
-				model="@load(vm.user.robots)">
-				<columns>
-					<column align="center" width="160px" label="Name" />
-					<column align="center" width="100px"
-						label="Category" />
-					<column align="center" width="160px"
-						label="Description" />
-					<column align="center" label="Options" />
-				</columns>
-				<template name="model" var="robot">
-					<row>
-						<label value="@load(robot.name)" />
-						<label value="@load(robot.category)" />
-						<label value="@load(robot.description)" />
-						<cell>
-							<button image="./images/editRobot16x16.png"
-								tooltiptext="Edit Robot"
-								onClick="@command('editRobot', currentRobot=robot )" />
-							<button
-								image="./images/deleteRobot16x16.png" tooltiptext="Delete Robot"
-								onClick="@command('deleteRobot', currentRobot=robot )" />
-						</cell>
-					</row>
-				</template>
-			</grid>
-		</vlayout>
+							<label value="@load(vmsgs[tbLogin])"
+								sclass="error" />
+						</row>
+						<row>
+							<label value="Email" />
+							<textbox id="tbEmail"
+								value="@bind(vm.user.email) @validator(vm.emailValidator)"
+								onChange="@command('checkData')" hflex="true" />
+							<label value="@load(vmsgs[tbEmail])"
+								sclass="error" />
+						</row>
+						<row>
+							<label value="Is admin?" />
+							<cell colspan="2">
+								<checkbox checked="@bind(vm.user.admin)"
+									hflex="true" />
+							</cell>
+						</row>
+						<row>
+							<label value="API key" />
+							<hlayout>
+								<textbox id="tbApiKey"
+									value="@bind(vm.user.apiKey)" onChange="@command('checkData')"
+									hflex="true" />
+								<button label="Generate"
+									onClick="@command('generateRandomUUID')" />
+							</hlayout>
+							<label value="@load(vmsgs[tbApiKey])"
+								sclass="error" />
+						</row>
+						<row>
+							<label value="Password" />
+							<textbox id="tbPassword" type="password"
+								value="@bind(vm.user.password) @validator(vm.passwordValidator)"
+								onChange="@command('checkData')" hflex="true" />
+							<label value="@load(vmsgs[tbPassword])"
+								sclass="error" />
+						</row>
+						<row>
+							<cell colspan="3" align="center">
+								<button label="Save"
+									onClick="@command('confirm')" forward="userForm.onClose"
+									disabled="@load(not vm.valid or not empty vmsgs)" />
+								<button label="Cancel"
+									forward="userForm.onClose" />
+								<button label="Reset Form"
+									onClick="@command('refresh')" />
+							</cell>
+						</row>
+					</rows>
+				</grid>
+			</vlayout>
+		</groupbox>
 	</window>
 </zk>

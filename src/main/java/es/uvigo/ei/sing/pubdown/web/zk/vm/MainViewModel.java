@@ -861,7 +861,6 @@ public class MainViewModel extends ViewModelUtils {
 
 			final EventQueue<Event> adminQueue = EventQueueUtils.getAdminQueue();
 			if (adminQueue != null) {
-				System.out.println("PUBLICO DE USER PARA ADMIN:" + suffix);
 				adminQueue.publish(new Event(EVENT_REFRESH_DATA + event, null, new EventRepositoryQuery(null, suffix)));
 			}
 		}

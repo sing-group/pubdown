@@ -61,6 +61,9 @@ public class AdministrationViewModel extends ViewModelUtils {
 
 	private static final String PASSWORD_RECOVERY_URL = "/recovery?uuid=";
 
+	private Repository repository;
+	private RepositoryQuery repositoryQuery;
+	
 	private List<User> users;
 	private List<Repository> repositories;
 	private List<RepositoryQuery> queries;
@@ -428,27 +431,48 @@ public class AdministrationViewModel extends ViewModelUtils {
 		users.set(users.indexOf(user), user);
 		postNotifyChangeAdmins(this, "users");
 	}
+	
+	private void findRepository(Repository repository) {
+		tm.runInTransaction(em -> {
+			if (!em.contains(repository)) {
+				this.repository = em.find(Repository.class, repository.getId());
+			} else {
+				this.repository = repository;
+			}
+		});
+	}
+
+	private void findRepositoryQuery(RepositoryQuery repositoryQuery) {
+		tm.runInTransaction(em -> {
+			if (!em.contains(repositoryQuery)) {
+				this.repositoryQuery = em.find(RepositoryQuery.class, repositoryQuery.getId());
+			} else {
+				this.repositoryQuery = repositoryQuery;
+			}
+		});
+	}
 
 	@Command
 	public void removeRepository(@BindingParam("current") final Repository repository) {
-		if (repository != null) {
+		findRepository(repository);
+		if (this.repository != null) {
 			Messagebox.show("Do you want to delete the repository?", "Delete Repository",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
 						switch (event.getName()) {
 						case Messagebox.ON_OK:
-							for (RepositoryQuery repositoryQuery : repository.getRepositoryQueries()) {
+							for (RepositoryQuery repositoryQuery : this.repository.getRepositoryQueries()) {
 								if (repositoryQuery.isRunning()) {
 									final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(
 											repositoryQuery);
 									stopRepositoryQueryExecution(repositoryQueryScheduled);
 								}
 							}
-							final User userToNotify = repository.getUser();
+							final User userToNotify = this.repository.getUser();
 							tm.runInTransaction(em -> {
 								em.refresh(getCurrentUser(tm));
 
-								repository.setUser(null);
+								this.repository.setUser(null);
 							});
 
 							this.repositories.remove(repository);
@@ -498,18 +522,19 @@ public class AdministrationViewModel extends ViewModelUtils {
 
 	@Command
 	public void removeRepositoryQuery(@BindingParam("current") final RepositoryQuery repositoryQuery) {
-		if (repositoryQuery != null) {
+		findRepositoryQuery(repositoryQuery);
+		if (this.repositoryQuery != null) {
 			Messagebox.show("Do you want to delete the Query?", "Delete Query",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
 						switch (event.getName()) {
 						case Messagebox.ON_OK:
-							final User userToNotify = repositoryQuery.getRepository().getUser();
+							final User userToNotify = this.repositoryQuery.getRepository().getUser();
 
 							tm.runInTransaction(em -> {
-								repositoryQuery.setRepository(null);
+								this.repositoryQuery.setRepository(null);
 							});
-							this.queries.remove(repositoryQuery);
+							this.queries.remove(this.repositoryQuery);
 
 							this.users = getAllUsers();
 							this.queries = getAllQueries();
@@ -743,8 +768,11 @@ public class AdministrationViewModel extends ViewModelUtils {
 
 			final EventQueue<Event> userQueue = EventQueueUtils.getUserQueue(user);
 			if (userQueue != null) {
-				System.out.println("PUBLICO DE ADMIN PARA USER:" + suffix);
 				userQueue.publish(new Event(EVENT_REFRESH_DATA + event, null, new EventRepositoryQuery(null, suffix)));
+			}
+			final EventQueue<Event> adminQueue = EventQueueUtils.getAdminQueue();
+			if (adminQueue != null) {
+				adminQueue.publish(new Event(EVENT_REFRESH_DATA + event, null, new EventRepositoryQuery(null, suffix)));
 			}
 		}
 	}

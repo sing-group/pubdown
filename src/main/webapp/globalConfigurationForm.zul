@@ -1,0 +1,52 @@
+<zk>
+	<style src="css/pubdown.css" />
+	<window title="Parameters Form" id="globalConfigurationForm"
+		binder="@init(queueName='adminpubdown')"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.GlobalConfigurationFormViewModel')"
+		width="550px" height="auto" border="normal" minimizable="false"
+		mode="modal" maximizable="false" closable="false"
+		onClose="self.detach()" validationMessages="@id('vmsgs')">
+		<groupbox contentStyle="padding: 0">
+			<vlayout hflex="true" vflex="true">
+				<grid>
+					<columns>
+						<column width="80px" />
+						<column />
+						<column width="180px" />
+					</columns>
+					<rows>
+						<row>
+							<label value="Parameter" />
+							<textbox id="tbParameter"
+								readonly="@load(!vm.newGlobalConfiguration)"
+								value="@bind(vm.globalConfiguration.configurationKey) @validator(vm.parameterValidator)"
+								onChange="@command('checkData')" hflex="true" />
+							<label value="@load(vmsgs[tbParameter])"
+								sclass="error" />
+						</row>
+						<row>
+							<label value="Value" />
+							<textbox id="tbValue"
+								value="@bind(vm.globalConfiguration.configurationValue) @validator(vm.valueValidator)"
+								onChange="@command('checkData')" hflex="true" />
+							<label value="@load(vmsgs[tbValue])"
+								sclass="error" />
+						</row>
+						<row>
+							<cell colspan="3" align="center">
+								<button label="Save"
+									onClick="@command('confirm')"
+									forward="globalConfigurationForm.onClose"
+									disabled="@load(not vm.valid or not empty vmsgs)" />
+								<button label="Cancel" onClick="@command('refresh')"
+									forward="globalConfigurationForm.onClose" />
+								<button label="Reset Form"
+									onClick="@command('refresh')" />
+							</cell>
+						</row>
+					</rows>
+				</grid>
+			</vlayout>
+		</groupbox>
+	</window>
+</zk>

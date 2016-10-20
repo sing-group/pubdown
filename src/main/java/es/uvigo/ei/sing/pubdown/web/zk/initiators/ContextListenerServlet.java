@@ -7,7 +7,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
 import es.uvigo.ei.sing.pubdown.execution.RepositoryQueryScheduled;
-import es.uvigo.ei.sing.pubdown.execution.Scheduler;
+import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
 import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.zk.util.CleanEntityManagerTransactionManager;
@@ -38,7 +38,7 @@ public class ContextListenerServlet extends HttpServlet {
 
 			final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(repositoryQuery,
 					directoryPath, false);
-			Scheduler.getSingleton().scheduleTask(repositoryQueryScheduled);
+			ExecutionEngine.getSingleton().scheduleTask(repositoryQueryScheduled);
 		}
 
 	}

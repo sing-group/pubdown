@@ -1,5 +1,6 @@
 package es.uvigo.ei.sing.pubdown.web.zk.vm;
 
+import static es.uvigo.ei.sing.pubdown.execution.GlobalEvents.EVENT_REFRESH_DATA;
 import static es.uvigo.ei.sing.pubdown.execution.GlobalEvents.EVENT_REPOSITORY_QUERY;
 import static es.uvigo.ei.sing.pubdown.util.Checks.isEmpty;
 import static java.util.Collections.singletonMap;
@@ -24,11 +25,15 @@ import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 import org.zkoss.bind.validator.AbstractValidator;
 import org.zkoss.zk.ui.Executions;
+import org.zkoss.zk.ui.event.Event;
+import org.zkoss.zk.ui.event.EventQueue;
 import org.zkoss.zul.Messagebox;
 
+import es.uvigo.ei.sing.pubdown.execution.EventQueueUtils;
+import es.uvigo.ei.sing.pubdown.execution.EventRepositoryQuery;
+import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
 import es.uvigo.ei.sing.pubdown.execution.GlobalEvents;
 import es.uvigo.ei.sing.pubdown.execution.RepositoryQueryScheduled;
-import es.uvigo.ei.sing.pubdown.execution.Scheduler;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.Repository;
@@ -37,20 +42,23 @@ import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQueryTask;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
 import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
-import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
+import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelUtils;
 
 /**
  * ViewModel to manage the user panel
  */
-public class MainViewModel extends ViewModelFunctions {
+public class MainViewModel extends ViewModelUtils {
 	private final TransactionManager tm = new DesktopTransactionManager();
 
-	private static final String GC_UPDATE_EXECUTIONS = "updateExecutions";
 	private static final String DOWNLOAD_FILE_EXTENSION = ".zip";
 	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm");
 
+	private static final String GC_UPDATE_EXECUTIONS = "updateExecutions";
+	private static final String GC_REFRESH_DATA = "resfreshData";
+
 	static {
 		GlobalEvents.fullStatesRegisterGlobalCommand(EVENT_REPOSITORY_QUERY, GC_UPDATE_EXECUTIONS);
+		GlobalEvents.fullStatesRegisterGlobalCommand(EVENT_REFRESH_DATA, GC_REFRESH_DATA);
 	}
 
 	private User currentUser;
@@ -300,6 +308,8 @@ public class MainViewModel extends ViewModelFunctions {
 	public void persistUserChanges() {
 		final User user = this.getCurrentUser();
 		tm.runInTransaction(em -> em.merge(user));
+		
+		publishRefreshData("users");
 	}
 
 	@Command
@@ -335,7 +345,6 @@ public class MainViewModel extends ViewModelFunctions {
 			this.repositoryQueries = getRepositoryQueries();
 
 			postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
-			// postNotifyChange(this, "repository", "repositories");
 
 		} else {
 			this.setRepository(new Repository());
@@ -380,7 +389,7 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	@Command
-	public void addRepository() {
+	public void newRepository() {
 		if (isRepositoryModified()) {
 			Messagebox.show("Do you want to save?", "Save Repository",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL, Messagebox.Button.NO },
@@ -444,6 +453,8 @@ public class MainViewModel extends ViewModelFunctions {
 
 							postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
 
+							publishRefreshData("repositories");
+
 							break;
 						case Messagebox.ON_CANCEL:
 						default:
@@ -452,6 +463,16 @@ public class MainViewModel extends ViewModelFunctions {
 						}
 					}, singletonMap("width", "500"));
 		}
+	}
+
+	@GlobalCommand
+	public void updateRepository(@BindingParam("repository") final Repository repository) {
+		final int indexOf = this.repositories.indexOf(repository);
+		this.repositories.remove(indexOf);
+		this.repositories.add(indexOf, repository);
+		postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
+
+		publishRefreshData("repositories");
 	}
 
 	@Command
@@ -476,12 +497,15 @@ public class MainViewModel extends ViewModelFunctions {
 		} else {
 			tm.runInTransaction(em -> em.merge(repository));
 		}
-		setRepository(repository);
+
+		this.setRepository(repository);
 
 		this.repositories = getRepositories();
 		this.queries = getAllQueries();
 
 		postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
+
+		publishRefreshData("repositories");
 	}
 
 	@Command
@@ -500,29 +524,31 @@ public class MainViewModel extends ViewModelFunctions {
 
 	@GlobalCommand
 	public void addRepositoryQuery(@BindingParam("repositoryQuery") final RepositoryQuery repositoryQuery) {
+
 		this.queries.add(repositoryQuery);
 
 		sortQueries(this.queries);
 
 		postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
+
 		checkRepositoryQueryResult(repositoryQuery);
 	}
 
 	@GlobalCommand
 	public void updateRepositoryQuery(@BindingParam("repositoryQuery") final RepositoryQuery repositoryQuery) {
-		final int indexOf = this.queries.indexOf(repositoryQuery);
+		findRepositoryQuery(repositoryQuery);
+		final int indexOf = this.queries.indexOf(this.repositoryQuery);
 		this.queries.remove(indexOf);
-		this.setRepositoryQuery(repositoryQuery);
-		this.queries.add(indexOf, repositoryQuery);
+		this.setRepositoryQuery(this.repositoryQuery);
+		this.queries.add(indexOf, this.repositoryQuery);
 
 		sortQueries(this.queries);
 
 		postNotifyChange(this, "queries", "repositoryQueries");
-		checkRepositoryQueryResult(repositoryQuery);
+		checkRepositoryQueryResult(this.repositoryQuery);
 	}
 
 	@Command
-	@NotifyChange({ "queries", "repositoryQueries" })
 	public void removeRepositoryQuery(@BindingParam("current") final RepositoryQuery repositoryQuery) {
 		findRepositoryQuery(repositoryQuery);
 		if (this.repositoryQuery != null) {
@@ -540,6 +566,8 @@ public class MainViewModel extends ViewModelFunctions {
 							this.queries = getAllQueries();
 
 							postNotifyChange(this, "queries", "repositoryQueries");
+
+							publishRefreshData("queries");
 
 							break;
 						case Messagebox.ON_CANCEL:
@@ -567,7 +595,7 @@ public class MainViewModel extends ViewModelFunctions {
 		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(repositoryQuery,
 				directoryPath, true);
 
-		Scheduler.getSingleton().executeTask(repositoryQueryScheduled);
+		ExecutionEngine.getSingleton().executeTask(repositoryQueryScheduled);
 	}
 
 	@Command
@@ -581,7 +609,7 @@ public class MainViewModel extends ViewModelFunctions {
 
 		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery,
 				directoryPath, false);
-		Scheduler.getSingleton().scheduleTask(repositoryQueryScheduled);
+		ExecutionEngine.getSingleton().scheduleTask(repositoryQueryScheduled);
 
 	}
 
@@ -623,7 +651,7 @@ public class MainViewModel extends ViewModelFunctions {
 	}
 
 	private void stopRepositoryQueryExecution(final RepositoryQueryScheduled repositoryQueryScheduled) {
-		Scheduler.getSingleton().removeTask(repositoryQueryScheduled);
+		ExecutionEngine.getSingleton().removeTask(repositoryQueryScheduled);
 	}
 
 	@Command
@@ -645,12 +673,8 @@ public class MainViewModel extends ViewModelFunctions {
 	@GlobalCommand(MainViewModel.GC_UPDATE_EXECUTIONS)
 	public void updateExecutions(@BindingParam("task") final RepositoryQueryScheduled repositoryQueryScheduled,
 			@BindingParam("action") final String action, @BindingParam("data") boolean toCheck) {
-
-		System.out.println("ENTRO EN UPDATE USER : " + action);
-
 		this.repositoryQuery = repositoryQueryScheduled.getRepositoryQuery();
-		System.out.println("query - "+repositoryQuery.getName());
-		
+
 		Repository repository = this.repositoryQuery.getRepository();
 
 		switch (action) {
@@ -672,6 +696,8 @@ public class MainViewModel extends ViewModelFunctions {
 						this.queries.add(this.repositoryQuery);
 					}
 					postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
+
+					publishRefreshData("queries");
 				}
 			} else {
 				System.out.println("FINISHED DOWNLOAD PAPERS");
@@ -680,7 +706,6 @@ public class MainViewModel extends ViewModelFunctions {
 				final long filesInDirectory = numberOfFilesInDirectory(directoryPath);
 
 				synchronized (repository) {
-
 					final int numberOfPapers = (int) (repository.getNumberOfPapers() + filesInDirectory);
 
 					repository.setNumberOfPapers((int) (numberOfPapers));
@@ -712,15 +737,14 @@ public class MainViewModel extends ViewModelFunctions {
 			synchronized (this.repositoryQuery) {
 				this.repositoryQuery.setRunning(false);
 				tm.runInTransaction(em -> em.merge(this.repositoryQuery));
+
 			}
 			synchronized (this.queries) {
 				this.queries.set(this.queries.indexOf(this.repositoryQuery), this.repositoryQuery);
 			}
 			postNotifyChange(this, "repositoryQuery", "queries");
 			break;
-		default:
-			// Case STARTED
-
+		case GlobalEvents.ACTION_STARTED:
 			findRepositoryQuery(this.repositoryQuery);
 
 			if (toCheck) {
@@ -736,6 +760,8 @@ public class MainViewModel extends ViewModelFunctions {
 				this.queries.add(indexOf, this.repositoryQuery);
 				postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
 			}
+			break;
+		default:
 		}
 	}
 
@@ -753,7 +779,7 @@ public class MainViewModel extends ViewModelFunctions {
 
 	@Command
 	public void schedulerSize() {
-		System.out.println("SCHEDULER SIZE: " + Scheduler.getSingleton().getTaskNumber());
+		System.out.println("SCHEDULER SIZE: " + ExecutionEngine.getSingleton().getTaskNumber());
 	}
 
 	@Command
@@ -802,5 +828,42 @@ public class MainViewModel extends ViewModelFunctions {
 			return RepositoryManager.readPaperTitleFromLog(finalPath);
 		}
 		return new LinkedList<>();
+	}
+
+	@GlobalCommand(MainViewModel.GC_REFRESH_DATA)
+	public void refreshData(@BindingParam("data") String toRefresh) {
+		if (toRefresh.equals("queries")) {
+			this.queries = getAllQueries();
+			this.repositoryQueries = getRepositoryQueries();
+			postNotifyChange(this, "queries", "repositoryQueries");
+		} else {
+			this.repositories = getRepositories();
+			this.queries = getAllQueries();
+			this.repositoryQueries = getRepositoryQueries();
+			postNotifyChange(this, "repositories", "queries", "repositoryQueries");
+		}
+	}
+
+	private void publishRefreshData(final String... properties) {
+		for (String property : properties) {
+			final String suffix;
+			final String event;
+			if (property.equals("queries")) {
+				event = GlobalEvents.SUFFIX_QUERIES;
+				suffix = "queries";
+			} else if(property.equals("repositories")) {
+				event = GlobalEvents.SUFFIX_REPOSITORIES;
+				suffix = "repositories";
+			} else {
+				event = GlobalEvents.SUFFIX_USERS;
+				suffix = "users";
+			}
+
+			final EventQueue<Event> adminQueue = EventQueueUtils.getAdminQueue();
+			if (adminQueue != null) {
+				System.out.println("PUBLICO DE USER PARA ADMIN:" + suffix);
+				adminQueue.publish(new Event(EVENT_REFRESH_DATA + event, null, new EventRepositoryQuery(null, suffix)));
+			}
+		}
 	}
 }

@@ -4,8 +4,6 @@ import static es.uvigo.ei.sing.pubdown.util.Checks.isEmail;
 import static es.uvigo.ei.sing.pubdown.util.Checks.isEmpty;
 import static java.util.Collections.singletonMap;
 
-import java.util.UUID;
-
 import javax.persistence.NoResultException;
 
 import org.mindrot.jbcrypt.BCrypt;
@@ -20,20 +18,21 @@ import org.zkoss.bind.validator.AbstractValidator;
 
 import es.uvigo.ei.sing.pubdown.execution.EventQueueUtils;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
-import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
+import es.uvigo.ei.sing.pubdown.web.zk.util.CleanEntityManagerTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
-import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
+import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelUtils;
 
 /***
  * ViewModel to manage the form to create/edit{
  * 
  * @link User}
  */
-public class UserFormViewModel extends ViewModelFunctions {
-	private final TransactionManager tm = new DesktopTransactionManager();
+public class UserFormViewModel extends ViewModelUtils {
+	private final TransactionManager tm = new CleanEntityManagerTransactionManager();
 
 	private User user;
 	private User uneditedUser;
+	private boolean isNewUser;
 
 	/**
 	 * Assigns the user received as parameter to the {@link UserFormViewModel}
@@ -48,6 +47,9 @@ public class UserFormViewModel extends ViewModelFunctions {
 			tm.runInTransaction(em -> {
 				em.refresh(user);
 			});
+			this.isNewUser = false;
+		} else {
+			this.isNewUser = true;
 		}
 		this.user = user;
 		this.uneditedUser = user.clone();
@@ -80,6 +82,10 @@ public class UserFormViewModel extends ViewModelFunctions {
 	 */
 	private boolean isUserModified() {
 		return this.user.compareTo(this.uneditedUser) != 0;
+	}
+
+	private boolean isNewUser() {
+		return isNewUser;
 	}
 
 	/**
@@ -171,16 +177,6 @@ public class UserFormViewModel extends ViewModelFunctions {
 	}
 
 	/**
-	 * Generates a random UUID and assigns its value to the {@link User} apikey
-	 * global variable
-	 */
-	@Command
-	@NotifyChange("user")
-	public void generateRandomUUID() {
-		this.user.setApiKey(UUID.randomUUID().toString());
-	}
-
-	/**
 	 * Persists the {@link User} changes and notifies the changes to the
 	 * {@link AdministrationViewModel}
 	 */
@@ -193,7 +189,8 @@ public class UserFormViewModel extends ViewModelFunctions {
 				this.user.setPassword(updatePassword);
 				em.persist(this.user);
 
-				BindUtils.postGlobalCommand(EventQueueUtils.QUEUE_NAME, null, command, singletonMap("user", this.user));
+				BindUtils.postGlobalCommand(EventQueueUtils.ADMIN_QUEUE_NAME, null, command,
+						singletonMap("user", this.user));
 			});
 		}
 	}
@@ -205,10 +202,15 @@ public class UserFormViewModel extends ViewModelFunctions {
 	@NotifyChange("user")
 	public void refresh() {
 		if (isUserModified()) {
-			tm.runInTransaction(em -> {
-				em.refresh(this.user);
+			if (!isNewUser()) {
+				tm.runInTransaction(em -> {
+					em.refresh(this.user);
+					this.uneditedUser = this.user.clone();
+				});
+			} else {
+				this.user = new User();
 				this.uneditedUser = this.user.clone();
-			});
+			}
 		}
 	}
 

@@ -14,7 +14,7 @@
 				<vlayout vflex="true" hflex="true" spacing="0">
 					<menubar>
 						<menuitem image="./images/plus16x16.png"
-							onClick="@command('addRepository')" tooltiptext="Add Repository" />
+							onClick="@command('newRepository')" tooltiptext="New Repository" />
 						<menuitem image="./images/trashCan16x16.png"
 							onClick="@command('removeRepository')"
 							tooltiptext="Delete Repository" />
@@ -22,7 +22,8 @@
 							onClick="@command('schedulerSize')" />
 					</menubar>
 					<listbox id="repositories" vflex="true"
-						model="@load(vm.repositories)" selectedItem="@load(vm.repository)">
+						model="@load(vm.repositories)"
+						selectedItem="@load(vm.repository)">
 						<listhead>
 							<listheader />
 						</listhead>
@@ -30,7 +31,7 @@
 							<listitem>
 								<listcell
 									onClick="@command('selectRepository',current=repository)"
-									label="@load(repository.name)"/>
+									label="@load(repository.name)" />
 							</listitem>
 						</template>
 					</listbox>
@@ -132,11 +133,11 @@
 																	<button
 																		style="margin-right: 10px" label="Edit"
 																		tooltiptext="Edit query"
-																		disabled="@load(repositoryQuery.running)"
+																		disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
 																		onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
 																	<button
 																		label="Remove" tooltiptext="Remove Query"
-																		disabled="@load(repositoryQuery.running)"
+																		disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
 																		onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
 																</cell>
 															</row>
@@ -229,11 +230,11 @@
 														<button
 															style="margin-right: 10px" label="Edit"
 															tooltiptext="Edit query"
-															disabled="@load(repositoryQuery.running)"
+															disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
 															onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
 														<button
 															label="Remove" tooltiptext="Remove Query"
-															disabled="@load(repositoryQuery.running)"
+															disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
 															onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
 													</cell>
 												</row>

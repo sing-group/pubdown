@@ -1,5 +1,7 @@
 package es.uvigo.ei.sing.pubdown.web.zk.initiators;
 
+import static es.uvigo.ei.sing.pubdown.web.entities.Role.ADMIN;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -12,7 +14,7 @@ import org.zkoss.zk.ui.util.Initiator;
 
 import es.uvigo.ei.sing.pubdown.execution.EventQueueUtils;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
-import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
+import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelUtils;
 
 /**
  * Initiator that manages the security of the application
@@ -53,10 +55,15 @@ public class SecurityInitiator implements Initiator {
 			Executions.sendRedirect(INDEX_PAGE);
 		} else if (!IGNORE_PAGES.contains(requestPath)) {
 			final Session session = Sessions.getCurrent(false);
-			if (session == null || !session.hasAttribute(ViewModelFunctions.USER_SESSION_KEY)) {
+			if (session == null || !session.hasAttribute(ViewModelUtils.USER_SESSION_KEY)) {
 				Executions.sendRedirect(INDEX_PAGE);
 			} else {
-				EventQueueUtils.registerUserGlobalListener();
+				final User user = (User) session.getAttribute("user");
+				if(user.getRole().equals(ADMIN)){
+					EventQueueUtils.registerAdminGlobalListener();
+				} else {
+					EventQueueUtils.registerUserGlobalListener();
+				}
 			}
 		}
 	}

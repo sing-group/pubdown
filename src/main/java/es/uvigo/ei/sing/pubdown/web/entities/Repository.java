@@ -35,9 +35,6 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	@Column
 	private String lastUpdate = "";
 
-	@Column
-	private String nextUpdate = "";
-
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "repository")
 	private List<RepositoryQuery> repositoryQueries;
 
@@ -50,26 +47,23 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	}
 
 	public Repository(final String name, final String path, final int numberOfPapers, final String lastUpdate,
-			final String nextUpdate, final List<RepositoryQuery> repositoryQueries) {
+			final List<RepositoryQuery> repositoryQueries) {
 		super();
 		this.name = name;
 		this.path = path;
 		this.numberOfPapers = numberOfPapers;
 		this.lastUpdate = lastUpdate;
-		this.nextUpdate = nextUpdate;
 		this.repositoryQueries = repositoryQueries;
 	}
 
 	private Repository(final Integer id, final String name, final String path, final int numberOfPapers,
-			final String lastUpdate, final String nextUpdate, final List<RepositoryQuery> repositoryQueries,
-			final User user) {
+			final String lastUpdate, final List<RepositoryQuery> repositoryQueries, final User user) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.path = path;
 		this.numberOfPapers = numberOfPapers;
 		this.lastUpdate = lastUpdate;
-		this.nextUpdate = nextUpdate;
 		this.repositoryQueries = repositoryQueries;
 		this.user = user;
 	}
@@ -108,14 +102,6 @@ public class Repository implements Cloneable, Comparable<Repository> {
 
 	public void setLastUpdate(final String lastUpdate) {
 		this.lastUpdate = lastUpdate;
-	}
-
-	public String getNextUpdate() {
-		return nextUpdate;
-	}
-
-	public void setNextUpdate(final String nextUpdate) {
-		this.nextUpdate = nextUpdate;
 	}
 
 	public List<RepositoryQuery> getRepositoryQueries() {
@@ -199,7 +185,7 @@ public class Repository implements Cloneable, Comparable<Repository> {
 
 	@Override
 	public Repository clone() {
-		return new Repository(this.id, this.name, this.path, this.numberOfPapers, this.lastUpdate, this.nextUpdate,
+		return new Repository(this.id, this.name, this.path, this.numberOfPapers, this.lastUpdate,
 				this.repositoryQueries, this.user);
 	}
 

@@ -1,10 +1,13 @@
 package es.uvigo.ei.sing.pubdown.web.zk.vm;
 
+import static es.uvigo.ei.sing.pubdown.execution.GlobalEvents.EVENT_REFRESH_DATA;
 import static es.uvigo.ei.sing.pubdown.execution.GlobalEvents.EVENT_REPOSITORY_QUERY;
 import static es.uvigo.ei.sing.pubdown.util.Checks.isEmpty;
 import static java.util.Collections.singletonMap;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.mail.MessagingException;
@@ -16,45 +19,71 @@ import org.zkoss.bind.annotation.GlobalCommand;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 import org.zkoss.zk.ui.Executions;
+import org.zkoss.zk.ui.event.Event;
+import org.zkoss.zk.ui.event.EventQueue;
 import org.zkoss.zul.Messagebox;
 
+import es.uvigo.ei.sing.pubdown.execution.EventQueueUtils;
+import es.uvigo.ei.sing.pubdown.execution.EventRepositoryQuery;
+import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
 import es.uvigo.ei.sing.pubdown.execution.GlobalEvents;
 import es.uvigo.ei.sing.pubdown.execution.RepositoryQueryScheduled;
-import es.uvigo.ei.sing.pubdown.execution.Scheduler;
 import es.uvigo.ei.sing.pubdown.util.Mailer;
+import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.PasswordRecovery;
+import es.uvigo.ei.sing.pubdown.web.entities.Repository;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
 import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
-import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
+import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelUtils;
 
 /*** ViewModel to manage the administration panel */
 
-public class AdministrationViewModel extends ViewModelFunctions {
+public class AdministrationViewModel extends ViewModelUtils {
+
+	private static final String PARAMETER_REPOSITORY_PATH = "repositoryPath";
+	private final static Set<String> NON_REMOVABLE_GLOBAL_CONFIGURATION = new HashSet<>();
+
+	static {
+		NON_REMOVABLE_GLOBAL_CONFIGURATION.add(PARAMETER_REPOSITORY_PATH);
+	}
+
 	private final TransactionManager tm = new DesktopTransactionManager();
 
 	private static final String GC_UPDATE_EXECUTIONS = "updateExecutions";
+	private static final String GC_REFRESH_DATA = "resfreshData";
 
 	static {
 		GlobalEvents.fullStatesRegisterGlobalCommand(EVENT_REPOSITORY_QUERY, GC_UPDATE_EXECUTIONS);
+		GlobalEvents.fullStatesRegisterGlobalCommand(EVENT_REFRESH_DATA, GC_REFRESH_DATA);
 	}
 
 	private static final String PASSWORD_RECOVERY_URL = "/recovery?uuid=";
 
 	private List<User> users;
+	private List<Repository> repositories;
 	private List<RepositoryQuery> queries;
 
 	private String userFilter;
 	private String repositoryQueryFilterByRepositoryName;
 	private String repositoryQueryFilterByName;
 
+	private List<GlobalConfiguration> globalConfigurations;
+
 	private final Mailer mailer = new Mailer();
 
 	@Init
 	public void init() {
-		users = getAllUsers();
-		queries = getAllQueries();
+		this.users = getAllUsers();
+
+		this.repositories = getRepositories();
+
+		this.queries = getAllQueries();
+		sortQueries(this.queries);
+
+		this.globalConfigurations = getGlobalConfigurations();
+
 	}
 
 	/**
@@ -94,15 +123,7 @@ public class AdministrationViewModel extends ViewModelFunctions {
 		this.userFilter = userFilter;
 	}
 
-	/**
-	 * Checks if the user passed as parameter is the current {@link User}
-	 *
-	 * @param user
-	 *            the {@link User} to check
-	 * @return <code>true</code> if the user is the current {@link User},
-	 *         <code>false</code> otherwise
-	 */
-	public boolean isCurrentUser(@BindingParam("currentUser") final User user) {
+	private boolean isCurrentUser(final User user) {
 		return user.equals(getCurrentUser(tm));
 	}
 
@@ -122,14 +143,26 @@ public class AdministrationViewModel extends ViewModelFunctions {
 		this.repositoryQueryFilterByRepositoryName = repositoryQueryFilterByRepositoryName;
 	}
 
+	public List<Repository> getRepositories() {
+		tm.runInTransaction(em -> {
+			em.clear();
+			this.repositories = em.createQuery("SELECT r FROM Repository r ORDER BY r.name ASC", Repository.class)
+					.getResultList();
+		});
+		return this.repositories;
+	}
+
 	/**
 	 * Gets all the {@link User} in the DB
 	 *
 	 * @return a list with all the {@link User} in the DB sorted by login
 	 */
 	private List<User> getAllUsers() {
-		return tm.getInTransaction(
-				em -> em.createQuery("SELECT u FROM User u ORDER BY u.login ASC", User.class).getResultList());
+		tm.runInTransaction(em -> {
+			em.clear();
+			this.users = em.createQuery("SELECT u FROM User u ORDER BY u.login ASC", User.class).getResultList();
+		});
+		return this.users;
 	}
 
 	/**
@@ -139,9 +172,31 @@ public class AdministrationViewModel extends ViewModelFunctions {
 	 *         {@link User}login and {@link RepositoryQuery} name
 	 */
 	private List<RepositoryQuery> getAllQueries() {
-		return tm.getInTransaction(
-				em -> em.createQuery("SELECT rq FROM RepositoryQuery rq ORDER BY rq.repository ASC, rq.name ASC",
-						RepositoryQuery.class).getResultList());
+		tm.runInTransaction(em -> {
+			em.clear();
+			this.queries = em.createQuery("SELECT rq FROM RepositoryQuery rq ORDER BY rq.repository ASC, rq.name ASC",
+					RepositoryQuery.class).getResultList();
+		});
+		return this.queries;
+	}
+
+	private void sortQueries(List<RepositoryQuery> queries) {
+		queries.sort((rq1, rq2) -> {
+			if (rq1.getRepository().getName().compareTo(rq2.getRepository().getName()) == 0) {
+				return rq1.getName().compareTo(rq2.getName());
+			} else {
+				return rq1.getRepository().getName().compareTo(rq2.getRepository().getName());
+			}
+		});
+	}
+
+	public List<GlobalConfiguration> getGlobalConfigurations() {
+		return tm.getInTransaction(em -> em
+				.createQuery("SELECT gc FROM GlobalConfiguration gc", GlobalConfiguration.class).getResultList());
+	}
+
+	private boolean isNonRemovableGlobalConfiguration(GlobalConfiguration globalConfiguration) {
+		return NON_REMOVABLE_GLOBAL_CONFIGURATION.contains(globalConfiguration.getConfigurationKey());
 	}
 
 	/**
@@ -169,7 +224,7 @@ public class AdministrationViewModel extends ViewModelFunctions {
 	 */
 	@Command
 	@NotifyChange({ "users" })
-	public void editUser(@BindingParam("currentUser") final User user) {
+	public void editUser(@BindingParam("current") final User user) {
 		Executions.createComponents("userForm.zul", null, singletonMap("user", user));
 	}
 
@@ -180,7 +235,7 @@ public class AdministrationViewModel extends ViewModelFunctions {
 	 *            the {@link User} to delete
 	 */
 	@Command
-	public void deleteUser(@BindingParam("currentUser") final User user) {
+	public void removeUser(@BindingParam("current") final User user) {
 		if (!isCurrentUser(user)) {
 			Messagebox.show("Do you want to delete the user?", "Delete User",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
@@ -189,11 +244,22 @@ public class AdministrationViewModel extends ViewModelFunctions {
 						case Messagebox.ON_OK:
 							tm.runInTransaction(em -> {
 								em.remove(user);
-
-								users.remove(user);
 							});
-							queries = getAllQueries();
-							postNotifyChange(this, "users", "queries");
+
+							this.users.remove(user);
+							this.users = getAllUsers();
+							this.queries = getAllQueries();
+							for (Repository repository : user.getRepositories()) {
+								for (RepositoryQuery repositoryQuery : repository.getRepositoryQueries()) {
+									if (repositoryQuery.isRunning()) {
+										final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(
+												repositoryQuery);
+										stopRepositoryQueryExecution(repositoryQueryScheduled);
+									}
+								}
+							}
+
+							postNotifyChangeAdmins(this, "users", "queries");
 
 							break;
 						case Messagebox.ON_CANCEL:
@@ -217,7 +283,7 @@ public class AdministrationViewModel extends ViewModelFunctions {
 	 */
 	@Command
 	@NotifyChange("users")
-	public void resetUserPassword(@BindingParam("currentUser") final User user) {
+	public void resetUserPassword(@BindingParam("current") final User user) {
 		final String uuid = UUID.randomUUID().toString();
 		final String resetPasswordMessage = generateResetPasswordMessage(uuid);
 		final PasswordRecovery passwordRecovery = new PasswordRecovery(user.getLogin(), uuid);
@@ -241,7 +307,7 @@ public class AdministrationViewModel extends ViewModelFunctions {
 										e.printStackTrace();
 									}
 								});
-								postNotifyChange(this, "queries", "users");
+								postNotifyChangeAdmins(this, "queries", "users");
 								break;
 							case Messagebox.ON_CANCEL:
 								break;
@@ -281,8 +347,8 @@ public class AdministrationViewModel extends ViewModelFunctions {
 	 *            the {@link User} to unlock
 	 */
 	@Command
-	@NotifyChange({ "users" })
-	public void unlockUser(@BindingParam("currentUser") final User user) {
+	@NotifyChange("users")
+	public void unlockUser(@BindingParam("current") final User user) {
 		if (!isCurrentUser(user)) {
 			Messagebox.show("Do you want to unlock the user?", "Unlock User",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
@@ -302,7 +368,7 @@ public class AdministrationViewModel extends ViewModelFunctions {
 									e.printStackTrace();
 								}
 							});
-							postNotifyChange(this, "users");
+							postNotifyChangeAdmins(this, "users");
 							break;
 						case Messagebox.ON_CANCEL:
 							break;
@@ -339,57 +405,6 @@ public class AdministrationViewModel extends ViewModelFunctions {
 	}
 
 	/**
-	 * Opens a modal window with a form to create a {@link RepositoryQuery}
-	 */
-	@Command
-	@NotifyChange("queries")
-	public void newRepositoryQuery() {
-		Executions.createComponents("repositoryQueryForm.zul", null,
-				singletonMap("repositoryQuery", new RepositoryQuery()));
-	}
-
-	/**
-	 * Opens a modal window with a form to edit a {@link RepositoryQuery}
-	 *
-	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery} to edit
-	 */
-	@Command
-	@NotifyChange("queries")
-	public void editRepositoryQuery(@BindingParam("current") final RepositoryQuery repositoryQuery) {
-		Executions.createComponents("repositoryQueryForm.zul", null, singletonMap("repositoryQuery", repositoryQuery));
-	}
-
-	/**
-	 * Deletes a {@link RepositoryQuery}
-	 *
-	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery} to delete
-	 */
-	@Command
-	public void removeRepositoryQuery(@BindingParam("current") final RepositoryQuery repositoryQuery) {
-		Messagebox.show("Do you want to delete the Query?", "Delete Query",
-				new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
-				new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
-					switch (event.getName()) {
-					case Messagebox.ON_OK:
-						tm.runInTransaction(em -> {
-							repositoryQuery.setRepository(null);
-							queries.remove(repositoryQuery);
-						});
-						users = getAllUsers();
-						postNotifyChange(this, "queries", "users");
-
-						break;
-					case Messagebox.ON_CANCEL:
-						break;
-					default:
-					}
-				}, singletonMap("width", "500"));
-
-	}
-
-	/**
 	 * Updates the user list
 	 *
 	 * @param user
@@ -399,7 +414,7 @@ public class AdministrationViewModel extends ViewModelFunctions {
 	public void addUsers(@BindingParam("user") final User user) {
 		users.add(user);
 		users = getAllUsers();
-		postNotifyChange(this, "users");
+		postNotifyChangeAdmins(this, "users");
 	}
 
 	/**
@@ -411,48 +426,164 @@ public class AdministrationViewModel extends ViewModelFunctions {
 	@GlobalCommand
 	public void updateUsers(@BindingParam("user") final User user) {
 		users.set(users.indexOf(user), user);
-		postNotifyChange(this, "users");
+		postNotifyChangeAdmins(this, "users");
 	}
 
-	/**
-	 * Updates the user and queries list
-	 *
-	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery} to add in the queries list
-	 */
-	@GlobalCommand
-	public void addRepositoryQuery(@BindingParam("repositoryQuery") final RepositoryQuery repositoryQuery) {
-		queries.add(repositoryQuery);
-		queries = getAllQueries();
-		users = getAllUsers();
-		postNotifyChange(this, "queries", "users");
+	@Command
+	public void removeRepository(@BindingParam("current") final Repository repository) {
+		if (repository != null) {
+			Messagebox.show("Do you want to delete the repository?", "Delete Repository",
+					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
+					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
+						switch (event.getName()) {
+						case Messagebox.ON_OK:
+							for (RepositoryQuery repositoryQuery : repository.getRepositoryQueries()) {
+								if (repositoryQuery.isRunning()) {
+									final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(
+											repositoryQuery);
+									stopRepositoryQueryExecution(repositoryQueryScheduled);
+								}
+							}
+							final User userToNotify = repository.getUser();
+							tm.runInTransaction(em -> {
+								em.refresh(getCurrentUser(tm));
+
+								repository.setUser(null);
+							});
+
+							this.repositories.remove(repository);
+
+							this.repositories = getRepositories();
+							this.queries = getAllQueries();
+
+							postNotifyChangeAdmins(this, "repositories", "queries");
+
+							publishRefreshData(userToNotify, "repositories");
+
+							break;
+						case Messagebox.ON_CANCEL:
+						default:
+							break;
+						}
+					}, singletonMap("width", "500"));
+		}
 	}
 
-	/**
-	 * Updates the queries list
-	 *
-	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery} to update in the queries list
-	 */
-	@GlobalCommand
-	public void updateRepositoryQuery(@BindingParam("repositoryQuery") final RepositoryQuery repositoryQuery) {
-		queries.set(queries.indexOf(repositoryQuery), repositoryQuery);
-		postNotifyChange(this, "queries", "users");
+	// /**
+	// * Updates the user and queries list
+	// *
+	// * @param repositoryQuery
+	// * the {@link RepositoryQuery} to add in the queries list
+	// */
+	// @GlobalCommand
+	// public void addRepositoryQuery(@BindingParam("repositoryQuery") final
+	// RepositoryQuery repositoryQuery) {
+	// queries.add(repositoryQuery);
+	// queries = getAllQueries();
+	// users = getAllUsers();
+	// postNotifyChangeAdmins(this, "queries", "users");
+	// }
+	//
+	// @GlobalCommand
+	// public void updateRepositoryQuery(@BindingParam("repositoryQuery") final
+	// RepositoryQuery repositoryQuery) {
+	// final int indexOf = this.queries.indexOf(repositoryQuery);
+	// this.queries.remove(indexOf);
+	// this.queries.add(indexOf, repositoryQuery);
+	//
+	// sortQueries(this.queries);
+	//
+	// postNotifyChangeAdmins(this, "queries", "users");
+	// }
+
+	@Command
+	public void removeRepositoryQuery(@BindingParam("current") final RepositoryQuery repositoryQuery) {
+		if (repositoryQuery != null) {
+			Messagebox.show("Do you want to delete the Query?", "Delete Query",
+					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
+					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
+						switch (event.getName()) {
+						case Messagebox.ON_OK:
+							final User userToNotify = repositoryQuery.getRepository().getUser();
+
+							tm.runInTransaction(em -> {
+								repositoryQuery.setRepository(null);
+							});
+							this.queries.remove(repositoryQuery);
+
+							this.users = getAllUsers();
+							this.queries = getAllQueries();
+
+							postNotifyChangeAdmins(this, "queries", "users");
+
+							publishRefreshData(userToNotify, "queries");
+							break;
+						case Messagebox.ON_CANCEL:
+							break;
+						default:
+						}
+					}, singletonMap("width", "500"));
+		}
+
 	}
 
-	/**
-	 * Updates the user and queries list
-	 *
-	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery} to delete from an {@link User}
-	 */
+	@Command
+	public void newGlobalConfiguration() {
+		Executions.createComponents("globalConfigurationForm.zul", null,
+				singletonMap("globalConfiguration", new GlobalConfiguration()));
+	}
+
+	@Command
+	public void editGlobalConfiguration(@BindingParam("current") GlobalConfiguration globalConfiguration) {
+		Executions.createComponents("globalConfigurationForm.zul", null,
+				singletonMap("globalConfiguration", globalConfiguration));
+	}
+
 	@GlobalCommand
-	public void deleteRepositoryQueryFromUser(@BindingParam("repositoryQuery") final RepositoryQuery repositoryQuery) {
-		repositoryQuery.setRepository(null);
-		queries.remove(repositoryQuery);
-		queries = getAllQueries();
-		users = getAllUsers();
-		postNotifyChange(this, "queries", "users");
+	public void addGlobalConfiguration(
+			@BindingParam("globalConfiguration") final GlobalConfiguration globalConfiguration) {
+		this.globalConfigurations.add(globalConfiguration);
+		postNotifyChangeAdmins(this, "globalConfigurations");
+	}
+
+	@GlobalCommand
+	public void updateGlobalConfiguration(
+			@BindingParam("globalConfiguration") final GlobalConfiguration globalConfiguration) {
+		final int indexOf = this.globalConfigurations.indexOf(globalConfiguration);
+		this.globalConfigurations.set(indexOf, globalConfiguration);
+		postNotifyChangeAdmins(this, "globalConfigurations");
+	}
+
+	@Command
+	public void removeGlobalConfiguration(@BindingParam("current") final GlobalConfiguration globalConfiguration) {
+		if (globalConfiguration != null) {
+			if (!isNonRemovableGlobalConfiguration(globalConfiguration)) {
+				Messagebox.show("Do you want to delete the parameter?", "Delete Parameter",
+						new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
+						new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
+							switch (event.getName()) {
+							case Messagebox.ON_OK:
+								tm.runInTransaction(em -> {
+									em.remove(globalConfiguration);
+								});
+								this.globalConfigurations.remove(globalConfiguration);
+
+								postNotifyChangeAdmins(this, "globalConfigurations");
+
+								break;
+							case Messagebox.ON_CANCEL:
+							default:
+								break;
+							}
+						}, singletonMap("width", "500"));
+			} else {
+				Messagebox.show(
+						"You can't delete this parameter.\nThis would compromise the proper functioning of the system",
+						null, new Messagebox.Button[] { Messagebox.Button.OK }, new String[] { "OK" },
+						Messagebox.INFORMATION, null, null, singletonMap("width", "450"));
+			}
+
+		}
 	}
 
 	@Command
@@ -472,7 +603,6 @@ public class AdministrationViewModel extends ViewModelFunctions {
 
 	@Command
 	public void abortExecution(@BindingParam("current") RepositoryQuery repositoryQuery) {
-
 		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(repositoryQuery);
 		if (repositoryQuery.isRunning()) {
 			Messagebox.show("Do you want to stop the execution?", "Stop Execution",
@@ -480,51 +610,19 @@ public class AdministrationViewModel extends ViewModelFunctions {
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
 						if (event.getName().equals(Messagebox.ON_OK)) {
 							stopRepositoryQueryExecution(repositoryQueryScheduled);
-							postNotifyChange(this, "queries");
+							postNotifyChangeAdmins(this, "queries");
 						}
 					});
 		}
 	}
 
 	private void stopRepositoryQueryExecution(final RepositoryQueryScheduled repositoryQueryScheduled) {
-		Scheduler.getSingleton().removeTask(repositoryQueryScheduled);
-		final RepositoryQuery repositoryQuery = repositoryQueryScheduled.getRepositoryQuery();
-		repositoryQuery.setRunning(false);
-		tm.runInTransaction(em -> em.merge(repositoryQuery));
-		queries.set(this.queries.indexOf(repositoryQuery), repositoryQuery);
+		ExecutionEngine.getSingleton().removeTask(repositoryQueryScheduled);
 	}
-
-	// @GlobalCommand(AdministrationViewModel.GC_UPDATE_EXECUTIONS)
-	// public void updateExecutions(@BindingParam("task") final
-	// RobotExecutionTask task,
-	// @BindingParam("action") final String action) {
-	// final RobotExecution robotExecution = task.getRobotExecution();
-	//
-	// switch (action) {
-	// case GlobalEvents.ACTION_SCHEDULED:
-	// synchronized (this.robotExecutionList) {
-	// this.robotExecutionList.add(robotExecution);
-	// }
-	// break;
-	// default:
-	// synchronized (this.robotExecutionList) {
-	// final int indexOf = this.robotExecutionList.indexOf(robotExecution);
-	//
-	// this.robotExecutionList.remove(indexOf);
-	// this.robotExecutionList.add(indexOf, robotExecution);
-	// }
-	// }
-	//
-	// for (final String property : NAVIGATION_PROPERTIES) {
-	// postNotifyChange(this, property);
-	// }
-	// }
 
 	@GlobalCommand(AdministrationViewModel.GC_UPDATE_EXECUTIONS)
 	public void updateExecutions(@BindingParam("task") final RepositoryQueryScheduled repositoryQueryScheduled,
 			@BindingParam("action") final String action, @BindingParam("data") boolean toCheck) {
-
-		System.out.println("ENTRO EN UPDATE ADMIN : " + action);
 
 		final RepositoryQuery repositoryQuery = repositoryQueryScheduled.getRepositoryQuery();
 
@@ -532,7 +630,6 @@ public class AdministrationViewModel extends ViewModelFunctions {
 		case GlobalEvents.ACTION_SCHEDULED:
 		case GlobalEvents.ACTION_STARTED:
 		case GlobalEvents.ACTION_FINISHED:
-		case GlobalEvents.ACTION_ABORTED:
 			synchronized (this.queries) {
 				if (this.queries.contains(repositoryQuery)) {
 					final int indexOf = this.queries.indexOf(repositoryQuery);
@@ -541,8 +638,19 @@ public class AdministrationViewModel extends ViewModelFunctions {
 				} else {
 					this.queries.add(repositoryQuery);
 				}
-				postNotifyChange(this, "queries");
+				postNotifyChangeAdmins(this, "queries");
 			}
+			break;
+		case GlobalEvents.ACTION_ABORTED:
+			synchronized (repositoryQuery) {
+				repositoryQuery.setRunning(false);
+				tm.runInTransaction(em -> em.merge(repositoryQuery));
+			}
+
+			synchronized (this.queries) {
+				this.queries.set(this.queries.indexOf(repositoryQuery), repositoryQuery);
+			}
+			postNotifyChangeAdmins(this, "repositoryQuery", "queries");
 			break;
 		default:
 		}
@@ -602,6 +710,41 @@ public class AdministrationViewModel extends ViewModelFunctions {
 				if (repositoryQuery.getName().toLowerCase().contains(filterLC)) {
 					this.queries.add(repositoryQuery);
 				}
+			}
+		}
+	}
+
+	@GlobalCommand(AdministrationViewModel.GC_REFRESH_DATA)
+	public void refreshData(@BindingParam("data") String toRefresh) {
+		if (toRefresh.equals("queries")) {
+			this.queries = getAllQueries();
+			postNotifyChangeAdmins(this, "queries");
+		} else if (toRefresh.equals("repositories")) {
+			this.repositories = getRepositories();
+			this.queries = getAllQueries();
+			postNotifyChangeAdmins(this, "repositories", "queries");
+		} else {
+			this.users = getAllUsers();
+			postNotifyChangeAdmins(this, "users");
+		}
+	}
+
+	private void publishRefreshData(final User user, final String... properties) {
+		for (String property : properties) {
+			final String suffix;
+			final String event;
+			if (property.equals("queries")) {
+				event = GlobalEvents.SUFFIX_QUERIES;
+				suffix = "queries";
+			} else {
+				event = GlobalEvents.SUFFIX_REPOSITORIES;
+				suffix = "repositories";
+			}
+
+			final EventQueue<Event> userQueue = EventQueueUtils.getUserQueue(user);
+			if (userQueue != null) {
+				System.out.println("PUBLICO DE ADMIN PARA USER:" + suffix);
+				userQueue.publish(new Event(EVENT_REFRESH_DATA + event, null, new EventRepositoryQuery(null, suffix)));
 			}
 		}
 	}

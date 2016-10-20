@@ -1,7 +1,7 @@
 <zk>
 	<style src="css/pubdown.css" />
 	<window title="User Form" id="userForm"
-		binder="@init(queueName='pubdown')"
+		binder="@init(queueName='adminpubdown')"
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.UserFormViewModel')"
 		width="550px" height="auto" border="normal" minimizable="false"
 		mode="modal" maximizable="false" closable="false"
@@ -41,13 +41,9 @@
 						</row>
 						<row>
 							<label value="API key" />
-							<hlayout>
-								<textbox id="tbApiKey"
-									value="@bind(vm.user.apiKey)" onChange="@command('checkData')"
-									hflex="true" />
-								<button label="Generate"
-									onClick="@command('generateRandomUUID')" />
-							</hlayout>
+							<textbox id="tbApiKey"
+								value="@bind(vm.user.apiKey)" onChange="@command('checkData')"
+								hflex="true" />
 							<label value="@load(vmsgs[tbApiKey])"
 								sclass="error" />
 						</row>

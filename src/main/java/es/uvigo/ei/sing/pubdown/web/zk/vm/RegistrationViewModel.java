@@ -23,12 +23,12 @@ import es.uvigo.ei.sing.pubdown.web.entities.Registration;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
 import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
-import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
+import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelUtils;
 
 /**
  * ViewModel to manage the the {@link User} registration process
  */
-public class RegistrationViewModel extends ViewModelFunctions {
+public class RegistrationViewModel extends ViewModelUtils {
 	private final TransactionManager tm = new DesktopTransactionManager();
 
 	private static final String confirmationUrl = "/confirmation?uuid=";

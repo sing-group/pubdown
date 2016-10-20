@@ -18,12 +18,12 @@ import es.uvigo.ei.sing.pubdown.web.entities.Role;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
 import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
-import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
+import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelUtils;
 
 /**
  * ViewModel to manage the {@link User} login process
  */
-public class UserViewModel extends ViewModelFunctions {
+public class UserViewModel extends ViewModelUtils {
 	private final TransactionManager tm = new DesktopTransactionManager();
 
 	private String login = "";
@@ -138,7 +138,7 @@ public class UserViewModel extends ViewModelFunctions {
 		final User user = tm.get(em -> em.find(User.class, this.login));
 		if (user != null && BCrypt.checkpw(this.password, user.getPassword())) {
 			if (!user.isLocked()) {
-				Sessions.getCurrent(true).setAttribute(ViewModelFunctions.USER_SESSION_KEY, user);
+				Sessions.getCurrent(true).setAttribute(ViewModelUtils.USER_SESSION_KEY, user);
 				if (user.getRole().equals(ADMIN)) {
 					Executions.sendRedirect("administration.zul");
 				} else {

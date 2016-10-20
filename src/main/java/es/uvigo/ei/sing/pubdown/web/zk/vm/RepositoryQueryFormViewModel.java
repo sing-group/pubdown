@@ -19,28 +19,21 @@ import es.uvigo.ei.sing.pubdown.execution.EventQueueUtils;
 import es.uvigo.ei.sing.pubdown.web.entities.Repository;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQueryTask;
-import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
+import es.uvigo.ei.sing.pubdown.web.zk.util.CleanEntityManagerTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
-import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelFunctions;
+import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelUtils;
 
 /**
  * ViewModel to manage the form to create/edit {@link RepositoryQuery}
  */
-public class RepositoryQueryFormViewModel extends ViewModelFunctions {
-	private final TransactionManager tm = new DesktopTransactionManager();
+public class RepositoryQueryFormViewModel extends ViewModelUtils {
+	private final TransactionManager tm = new CleanEntityManagerTransactionManager();
 
 	private RepositoryQuery repositoryQuery;
 	private RepositoryQuery uneditedRepositoryQuery;
 	private RepositoryQueryTask repositoryQueryTask;
 	private RepositoryQueryTask uneditedRepositoryQueryTask;
 
-	/**
-	 * Assigns the robot received as parameter to the
-	 * {@link RepositoryQueryFormViewModel} global variables.
-	 * 
-	 * @param repositoryQuery
-	 *            the {@link RepositoryQuery}
-	 */
 	@Init
 	public void init(@ExecutionArgParam("repositoryQuery") final RepositoryQuery repositoryQuery) {
 		this.repositoryQuery = repositoryQuery;
@@ -49,11 +42,6 @@ public class RepositoryQueryFormViewModel extends ViewModelFunctions {
 		this.uneditedRepositoryQueryTask = this.repositoryQueryTask.clone();
 	}
 
-	/**
-	 * Getter of the robot global variable
-	 * 
-	 * @return the value of the robot global variable
-	 */
 	public RepositoryQuery getRepositoryQuery() {
 		return repositoryQuery;
 	}
@@ -182,7 +170,7 @@ public class RepositoryQueryFormViewModel extends ViewModelFunctions {
 
 		this.uneditedRepositoryQuery = repositoryQuery.clone();
 		this.uneditedRepositoryQueryTask = this.uneditedRepositoryQuery.getTask();
-		
+
 		BindUtils.postGlobalCommand(EventQueueUtils.QUEUE_NAME, null, command,
 				singletonMap("repositoryQuery", repositoryQuery));
 	}

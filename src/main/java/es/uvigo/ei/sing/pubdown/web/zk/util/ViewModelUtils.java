@@ -6,7 +6,6 @@ import org.zkoss.bind.BindUtils;
 import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.Session;
 import org.zkoss.zk.ui.Sessions;
-import org.zkoss.zk.ui.event.EventQueues;
 
 import es.uvigo.ei.sing.pubdown.execution.EventQueueUtils;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
@@ -15,7 +14,7 @@ import es.uvigo.ei.sing.pubdown.web.entities.User;
  * Implements common functions for the ViewModels
  * 
  */
-public class ViewModelFunctions {
+public class ViewModelUtils {
 	public static final String USER_SESSION_KEY = "user";
 
 	/**
@@ -46,7 +45,21 @@ public class ViewModelFunctions {
 	 */
 	public void postNotifyChange(final Object object, final String... properties) {
 		for (final String property : properties) {
-			BindUtils.postNotifyChange(EventQueueUtils.QUEUE_NAME, EventQueues.DESKTOP, object, property);
+			BindUtils.postNotifyChange(EventQueueUtils.QUEUE_NAME, null, object, property);
+		}
+	}
+	
+	/**
+	 * Notifies a bean to update its properties
+	 * 
+	 * @param object
+	 *            Bean instance
+	 * @param properties
+	 *            Name of the bean properties to notify
+	 */
+	public void postNotifyChangeAdmins(final Object object, final String... properties) {
+		for (final String property : properties) {
+			BindUtils.postNotifyChange(EventQueueUtils.ADMIN_QUEUE_NAME, null, object, property);
 		}
 	}
 

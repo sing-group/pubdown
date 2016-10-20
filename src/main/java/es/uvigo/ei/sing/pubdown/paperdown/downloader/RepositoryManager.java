@@ -358,21 +358,20 @@ public class RepositoryManager {
 	}
 
 	public static List<String> readPaperTitleFromLog(final String csvPath) {
+		final List<String> titles = new LinkedList<>();
 		Stream<String> stream = null;
 		try {
 			stream = Files.lines(Paths.get(csvPath + LOG_FILE));
+			if (stream != null) {
+				stream.forEach((line) -> {
+					final String[] doi = line.split(SEMICOLON_DELIMITER);
+					final String paperTitle = doi[1];
+					titles.add(paperTitle);
+				});
+			}
 		} catch (final IOException e) {
-			e.printStackTrace();
 		}
 
-		final List<String> titles = new LinkedList<>();
-		if(stream!=null){
-			stream.forEach((line) -> {
-				final String[] doi = line.split(SEMICOLON_DELIMITER);
-				final String paperTitle = doi[1];
-				titles.add(paperTitle);
-			});
-		}
 		return titles;
 	}
 

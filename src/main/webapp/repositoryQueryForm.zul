@@ -4,7 +4,7 @@
 	<window title="Query Form" id="repositoryQueryForm"
 		binder="@init(queueName='pubdown')"
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.RepositoryQueryFormViewModel')"
-		width="550px" height="auto" border="normal" minimizable="false"
+		width="600px" height="auto" border="normal" minimizable="false"
 		mode="modal" maximizable="false" closable="false"
 		onClose="self.detach()" validationMessages="@id('vmsgs')">
 		<groupbox vflex="true" mold="3d" contentStyle="padding: 0">

@@ -1,3 +1,4 @@
+<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
 <zk>
 	<style src="css/pubdown.css" />
 	<window title="User Form" id="userForm"

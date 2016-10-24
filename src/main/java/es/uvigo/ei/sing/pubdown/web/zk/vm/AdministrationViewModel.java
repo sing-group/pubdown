@@ -63,8 +63,10 @@ public class AdministrationViewModel extends ViewModelUtils {
 
 	private Repository repository;
 	private RepositoryQuery repositoryQuery;
-	
+	private User user;
+
 	private List<User> users;
+	private List<User> loggedUsers;
 	private List<Repository> repositories;
 	private List<RepositoryQuery> queries;
 
@@ -78,6 +80,9 @@ public class AdministrationViewModel extends ViewModelUtils {
 
 	@Init
 	public void init() {
+		getCurrentUser(tm).setLogged(true);
+		tm.runInTransaction(em -> em.merge(getCurrentUser(tm)));
+
 		this.users = getAllUsers();
 
 		this.repositories = getRepositories();
@@ -126,8 +131,26 @@ public class AdministrationViewModel extends ViewModelUtils {
 		this.userFilter = userFilter;
 	}
 
-	private boolean isCurrentUser(final User user) {
-		return user.equals(getCurrentUser(tm));
+	private List<User> getLoggedUsers() {
+		tm.runInTransaction(em -> {
+			em.clear();
+			this.loggedUsers = em.createQuery("SELECT u FROM User u WHERE u.logged=1 ORDER BY u.login ASC", User.class)
+					.getResultList();
+		});
+
+		return this.loggedUsers;
+	}
+
+	private boolean isUserLogged(final User user) {
+		boolean isLogged = false;
+
+		for (User u : getLoggedUsers()) {
+			if (u.getLogin().compareTo(user.getLogin()) == 0) {
+				isLogged = true;
+			}
+		}
+
+		return isLogged;
 	}
 
 	public String getRepositoryQueryFilterByName() {
@@ -207,6 +230,8 @@ public class AdministrationViewModel extends ViewModelUtils {
 	 */
 	@Command
 	public void closeSession() {
+		getCurrentUser(tm).setLogged(false);
+		tm.runInTransaction(em -> em.merge(getCurrentUser(tm)));
 		closeUserSession();
 	}
 
@@ -239,20 +264,21 @@ public class AdministrationViewModel extends ViewModelUtils {
 	 */
 	@Command
 	public void removeUser(@BindingParam("current") final User user) {
-		if (!isCurrentUser(user)) {
+		if (!isUserLogged(user)) {
+			findUser(user);
 			Messagebox.show("Do you want to delete the user?", "Delete User",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
 						switch (event.getName()) {
 						case Messagebox.ON_OK:
 							tm.runInTransaction(em -> {
-								em.remove(user);
+								em.remove(this.user);
 							});
 
-							this.users.remove(user);
+							this.users.remove(this.user);
 							this.users = getAllUsers();
 							this.queries = getAllQueries();
-							for (Repository repository : user.getRepositories()) {
+							for (Repository repository : this.user.getRepositories()) {
 								for (RepositoryQuery repositoryQuery : repository.getRepositoryQueries()) {
 									if (repositoryQuery.isRunning()) {
 										final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(
@@ -271,7 +297,8 @@ public class AdministrationViewModel extends ViewModelUtils {
 						}
 					}, singletonMap("width", "500"));
 		} else {
-			Messagebox.show("You can't delete the actual user", "Information", Messagebox.OK, Messagebox.INFORMATION);
+			Messagebox.show("You can't delete an user with an open session", "Information", Messagebox.OK,
+					Messagebox.INFORMATION);
 		}
 	}
 
@@ -291,8 +318,9 @@ public class AdministrationViewModel extends ViewModelUtils {
 		final String resetPasswordMessage = generateResetPasswordMessage(uuid);
 		final PasswordRecovery passwordRecovery = new PasswordRecovery(user.getLogin(), uuid);
 
-		if (!isCurrentUser(user)) {
-			if (!user.isLocked()) {
+		if (!isUserLogged(user)) {
+			findUser(user);
+			if (!this.user.isLocked()) {
 				Messagebox.show("Do you want to reset the user's password?", "Reset Password",
 						new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
 						new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
@@ -300,17 +328,18 @@ public class AdministrationViewModel extends ViewModelUtils {
 							case Messagebox.ON_OK:
 
 								tm.runInTransaction(em -> {
-									user.setLocked(true);
+									this.user.setLocked(true);
 									em.persist(passwordRecovery);
-									em.persist(user);
+									em.persist(this.user);
 									try {
-										mailer.sendEmail("no_reply@pubdown.com", user.getEmail(), "Reset  Password",
-												resetPasswordMessage);
+										mailer.sendEmail("no_reply@pubdown.com", this.user.getEmail(),
+												"Reset  Password", resetPasswordMessage);
 									} catch (final MessagingException e) {
 										e.printStackTrace();
 									}
 								});
-								postNotifyChangeAdmins(this, "queries", "users");
+								this.users = getAllUsers();
+								postNotifyChangeAdmins(this, "users");
 								break;
 							case Messagebox.ON_CANCEL:
 								break;
@@ -352,7 +381,8 @@ public class AdministrationViewModel extends ViewModelUtils {
 	@Command
 	@NotifyChange("users")
 	public void unlockUser(@BindingParam("current") final User user) {
-		if (!isCurrentUser(user)) {
+		if (!isUserLogged(user)) {
+			findUser(user);
 			Messagebox.show("Do you want to unlock the user?", "Unlock User",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
@@ -361,16 +391,17 @@ public class AdministrationViewModel extends ViewModelUtils {
 							final PasswordRecovery passwordRecovery = tm
 									.get(em -> em.find(PasswordRecovery.class, user.getLogin()));
 							tm.runInTransaction(em -> {
-								user.setLocked(false);
-								em.persist(user);
+								this.user.setLocked(false);
+								em.persist(this.user);
 								em.remove(passwordRecovery);
 								try {
-									mailer.sendEmail("no_reply@pubdown.com", user.getEmail(), "Unlock User",
+									mailer.sendEmail("no_reply@pubdown.com", this.user.getEmail(), "Unlock User",
 											generateUnlockMessage());
 								} catch (final MessagingException e) {
 									e.printStackTrace();
 								}
 							});
+							this.users = getAllUsers();
 							postNotifyChangeAdmins(this, "users");
 							break;
 						case Messagebox.ON_CANCEL:
@@ -431,7 +462,17 @@ public class AdministrationViewModel extends ViewModelUtils {
 		users.set(users.indexOf(user), user);
 		postNotifyChangeAdmins(this, "users");
 	}
-	
+
+	private void findUser(User user) {
+		tm.runInTransaction(em -> {
+			if (!em.contains(user)) {
+				this.user = em.find(User.class, user.getLogin());
+			} else {
+				this.user = user;
+			}
+		});
+	}
+
 	private void findRepository(Repository repository) {
 		tm.runInTransaction(em -> {
 			if (!em.contains(repository)) {

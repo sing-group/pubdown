@@ -100,8 +100,7 @@ public class UserFormViewModel extends ViewModelUtils {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean isValid() {
-		return isEmail(this.user.getEmail()) && !isEmpty(this.user.getLogin()) && !isEmpty(this.user.getPassword())
-				&& !isEmpty(this.user.getApiKey());
+		return isEmail(this.user.getEmail()) && !isEmpty(this.user.getLogin()) && !isEmpty(this.user.getPassword());
 	}
 
 	/**

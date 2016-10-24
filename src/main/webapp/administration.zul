@@ -1,4 +1,4 @@
-<?page title="Pubdown (Beta)" contentType="text/html;charset=UTF-8"?>
+<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
 <zk>
 	<window title="Pubdown Administration Panel" id="winAdminPubDown"
 		binder="@init(queueName='adminpubdown')" closable="true"

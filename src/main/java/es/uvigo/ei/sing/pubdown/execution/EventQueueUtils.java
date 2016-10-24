@@ -17,6 +17,7 @@ public class EventQueueUtils {
 	public static final String ADMIN_QUEUE_NAME = "adminpubdown";
 
 	private final static Map<String, EventQueue<Event>> USER_QUEUES = new HashMap<>();
+	private final static Map<String, EventQueue<Event>> ADMIN_QUEUE = new HashMap<>();
 
 	public static String getUserQueueName(final User user) {
 		return user.getLogin();
@@ -46,7 +47,7 @@ public class EventQueueUtils {
 		try {
 			return EventQueues.lookup(userId, EventQueues.APPLICATION, true);
 		} catch (final Exception e) {
-			return EventQueueUtils.USER_QUEUES.get(userId);
+			return EventQueueUtils.ADMIN_QUEUE.get(userId);
 		}
 	}
 
@@ -95,7 +96,7 @@ public class EventQueueUtils {
 
 			final EventQueue<Event> queue = EventQueues.lookup(adminQueueName, EventQueues.APPLICATION, true);
 
-			EventQueueUtils.USER_QUEUES.put(adminQueueName, queue);
+			EventQueueUtils.ADMIN_QUEUE.put(adminQueueName, queue);
 
 			return queue;
 		}

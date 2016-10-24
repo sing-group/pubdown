@@ -1,3 +1,4 @@
+<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
 <zk>
 	<window title="PubDown" border="normal" width="400px" height="100px"
 		style="margin: 0 auto;text-align: center;">

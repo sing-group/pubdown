@@ -1,3 +1,4 @@
+<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
 <zk>
 	<style src="css/pubdown.css" />
 	<window title="PubDown" border="normal" width="350px"
@@ -24,7 +25,7 @@
 				<label value="@load(vmsgs['password'])" sclass="error" />
 
 
-				<label value="Scopus Apikey   a1549163d9b16421237ec29c9bbbdf29" />
+				<label value="Scopus Apikey" />
 				<textbox id="tbApikey"
 					value="@bind(vm.registration.apiKey)"
 					hflex="true" onChange="@command('checkData')" />

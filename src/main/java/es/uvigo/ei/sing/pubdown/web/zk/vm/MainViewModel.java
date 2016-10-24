@@ -83,6 +83,9 @@ public class MainViewModel extends ViewModelUtils {
 	@Init
 	public void init() {
 		this.currentUser = getCurrentUser(tm);
+		
+		this.currentUser.setLogged(true);
+		tm.runInTransaction(em -> em.merge(this.currentUser));
 
 		this.repositories = getRepositories();
 
@@ -301,6 +304,8 @@ public class MainViewModel extends ViewModelUtils {
 	 */
 	@Command
 	public void closeSession() {
+		this.currentUser.setLogged(false);
+		tm.runInTransaction(em -> em.merge(this.currentUser));
 		closeUserSession();
 	}
 

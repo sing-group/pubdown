@@ -45,6 +45,9 @@ public class User implements Cloneable, Comparable<User> {
 	@Column(nullable = false)
 	private boolean locked;
 
+	@Column(nullable = false)
+	private boolean logged;
+
 	/**
 	 * Constructs an {@link User} with an empty set of robots, the
 	 * {@link Role#USER} {@link Role} and the locked value as false
@@ -53,6 +56,7 @@ public class User implements Cloneable, Comparable<User> {
 		this.role = USER;
 		this.repositories = new LinkedList<>();
 		this.locked = false;
+		this.logged = false;
 	}
 
 	/**
@@ -76,6 +80,7 @@ public class User implements Cloneable, Comparable<User> {
 		this.role = USER;
 		this.repositories = new LinkedList<>();
 		this.locked = false;
+		this.logged = false;
 	}
 
 	/**
@@ -102,6 +107,7 @@ public class User implements Cloneable, Comparable<User> {
 		this.role = role;
 		this.repositories = new LinkedList<>();
 		this.locked = false;
+		this.logged = false;
 	}
 
 	/**
@@ -130,6 +136,7 @@ public class User implements Cloneable, Comparable<User> {
 		this.role = role;
 		this.repositories = repositoryQueries;
 		this.locked = false;
+		this.logged = false;
 	}
 
 	/**
@@ -151,7 +158,7 @@ public class User implements Cloneable, Comparable<User> {
 	 *            indicates if the {@link User} is locked
 	 */
 	public User(final String login, final String password, final String apiKey, final String email, final Role role,
-			final List<Repository> repositoryQueries, final boolean locked) {
+			final List<Repository> repositoryQueries, final boolean locked, final boolean logged) {
 		super();
 		this.login = login;
 		this.password = password;
@@ -160,6 +167,7 @@ public class User implements Cloneable, Comparable<User> {
 		this.role = role;
 		this.repositories = repositoryQueries;
 		this.locked = locked;
+		this.logged = logged;
 	}
 
 	/**
@@ -302,6 +310,14 @@ public class User implements Cloneable, Comparable<User> {
 		this.locked = locked;
 	}
 
+	public boolean isLogged() {
+		return logged;
+	}
+
+	public void setLogged(boolean logged) {
+		this.logged = logged;
+	}
+
 	/**
 	 * Gets the number of robots. Including the total number and the
 	 * private/public number
@@ -376,7 +392,8 @@ public class User implements Cloneable, Comparable<User> {
 	 */
 	@Override
 	public User clone() {
-		return new User(this.login, this.password, this.apiKey, this.email, this.role, this.repositories, this.locked);
+		return new User(this.login, this.password, this.apiKey, this.email, this.role, this.repositories, this.locked,
+				this.logged);
 	}
 
 	/**

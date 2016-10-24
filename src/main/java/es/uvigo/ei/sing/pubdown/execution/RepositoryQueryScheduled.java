@@ -12,7 +12,7 @@ public class RepositoryQueryScheduled {
 	public RepositoryQueryScheduled() {
 
 	}
-	
+
 	public RepositoryQueryScheduled(RepositoryQuery repositoryQuery) {
 		this.repositoryQuery = repositoryQuery;
 		this.directoryPath = "";
@@ -68,7 +68,6 @@ public class RepositoryQueryScheduled {
 			if (repositoryQuery.getScopusDownloadTo() == Integer.MAX_VALUE
 					|| repositoryQuery.getScopusDownloadTo() == 0) {
 				scopusResult = scopusDownloader.getResultSize();
-				System.out.println("Scopus real result = " + scopusResult);
 				if (scopusResult != 0) {
 					if (scopusResult > 6000) {
 						scopusDownloadTo = 6000;
@@ -86,7 +85,6 @@ public class RepositoryQueryScheduled {
 			if (repositoryQuery.getPubmedDownloadTo() == Integer.MAX_VALUE
 					|| repositoryQuery.getPubmedDownloadTo() == 0) {
 				pubmedResult = pubmedDownloader.getResultSize();
-				System.out.println("PubMed real result = " + pubmedResult);
 				if (pubmedResult != 0) {
 					// limit to 3 to test
 					pubmedDownloadTo = 3;
@@ -114,7 +112,7 @@ public class RepositoryQueryScheduled {
 				scopusReady = true;
 			}
 		}
-		
+
 		if (repositoryQuery.isPubmed() && (repositoryQuery.getPubmedDownloadTo() != 0
 				|| repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE)) {
 			pubmedDownloader = new PubMedDownloader(query, directoryPath);

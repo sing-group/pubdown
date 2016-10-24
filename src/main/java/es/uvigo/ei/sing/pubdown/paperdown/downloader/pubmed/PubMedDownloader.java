@@ -35,7 +35,6 @@ import es.uvigo.ei.sing.pubdown.paperdown.downloader.Searcher;
 public class PubMedDownloader implements Searcher {
 	private static final String SEARCH_REQUEST = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?term=";
 	private static final String SEARCH_ID = "http://www.ncbi.nlm.nih.gov/pubmed/";
-	// private static final String SEARCH_XML = "?report=xml&format=text";
 	private static final String SEARCH_XML = "?report=medline&format=text";
 
 	private CloseableHttpClient httpClient;
@@ -104,8 +103,6 @@ public class PubMedDownloader implements Searcher {
 						htmlParser.download(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
 						RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList,
 								isCompletePaper);
-					} else {
-						System.out.println("Pubmed does not download");
 					}
 				}
 
@@ -174,7 +171,6 @@ public class PubMedDownloader implements Searcher {
 		try {
 			final org.jsoup.nodes.Document document = Jsoup.connect(queryURL).get();
 
-			// String paperTitle = "";
 			final Elements titlesTexts = document.select("h1");
 			for (final Element titleText : titlesTexts) {
 				if (!titleText.text().equals("PubMed")) {
@@ -183,25 +179,19 @@ public class PubMedDownloader implements Searcher {
 				}
 			}
 
-			// final List<String> authorList = new LinkedList<>();
 			final Elements authors = document.select("div.auths > a");
 			for (final Element author : authors) {
 				authorList.add(author.text());
 			}
 
-			// String date = "";
 			date = getMetadataDate(queryURLXML);
 
-			// String doi = "";
 			final Elements links = document.select("a");
 			for (final Element link : links) {
 				if (link.attr("ref").contains("aid_type=doi")) {
 					doi = link.text();
 					final Map<String, String> doiMap = RepositoryManager.readMetaData(this.directory);
 					if (!doiMap.containsKey(doi)) {
-						// RepositoryManager.writeMetadata(this.directory, doi,
-						// paperTitle, date, authorList,
-						// isCompletePaper);
 						return true;
 					} else {
 						final Map<String, List<String>> auxMap = RepositoryManager.readDOIInMetaData(this.directory,
@@ -211,9 +201,6 @@ public class PubMedDownloader implements Searcher {
 							final String type = auxList.get(0);
 							final String paperType = isCompletePaper ? "full" : "abstract";
 							if (!paperType.equals(type)) {
-								// RepositoryManager.writeMetadata(this.directory,
-								// doi, paperTitle, date, authorList,
-								// isCompletePaper);
 								return true;
 							}
 						}

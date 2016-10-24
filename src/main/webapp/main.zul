@@ -18,8 +18,6 @@
 						<menuitem image="./images/trashCan16x16.png"
 							onClick="@command('removeRepository')"
 							tooltiptext="Delete Repository" />
-						<menuitem label="Scheduler"
-							onClick="@command('schedulerSize')" />
 					</menubar>
 					<listbox id="repositories" vflex="true"
 						model="@load(vm.repositories)"

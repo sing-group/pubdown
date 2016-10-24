@@ -207,7 +207,6 @@ public class RepositoryManager {
 	}
 
 	private static File createDirectory(final String directory) {
-		System.out.println("Entro para crear directorio");
 		final File newDirectory = new File(directory);
 		if (!newDirectory.exists()) {
 			newDirectory.mkdirs();
@@ -316,7 +315,6 @@ public class RepositoryManager {
 			File dirObj = new File(directoryPath);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ZipOutputStream zos = new ZipOutputStream(baos);
-			// System.out.println("Creating : " + zipFileName);
 			addDir(dirObj, zos);
 			zos.close();
 			Filedownload.save(baos.toByteArray(), ZIP_CONTENT_TYPE, zipFileName);
@@ -336,9 +334,6 @@ public class RepositoryManager {
 					continue;
 				}
 				FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
-				// System.out.println(" Adding: " + files[i].getAbsolutePath());
-
-				// zos.putNextEntry(new ZipEntry(files[i].getAbsolutePath()));
 
 				final String relativePath = dirObj.toURI().relativize(files[i].toURI()).getPath();
 

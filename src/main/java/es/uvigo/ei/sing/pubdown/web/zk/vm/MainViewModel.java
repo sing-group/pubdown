@@ -308,7 +308,7 @@ public class MainViewModel extends ViewModelUtils {
 	public void persistUserChanges() {
 		final User user = this.getCurrentUser();
 		tm.runInTransaction(em -> em.merge(user));
-		
+
 		publishRefreshData("users");
 	}
 
@@ -680,7 +680,7 @@ public class MainViewModel extends ViewModelUtils {
 		switch (action) {
 		case GlobalEvents.ACTION_FINISHED:
 			if (toCheck) {
-				System.out.println("FINISHED RESULT SIZE");
+
 				synchronized (this.repositoryQuery) {
 					this.repositoryQuery.setChecked(true);
 					tm.runInTransaction(em -> {
@@ -700,7 +700,6 @@ public class MainViewModel extends ViewModelUtils {
 					publishRefreshData("queries");
 				}
 			} else {
-				System.out.println("FINISHED DOWNLOAD PAPERS");
 
 				final String directoryPath = repositoryQueryScheduled.getDirectoryPath();
 				final long filesInDirectory = numberOfFilesInDirectory(directoryPath);
@@ -778,11 +777,6 @@ public class MainViewModel extends ViewModelUtils {
 	}
 
 	@Command
-	public void schedulerSize() {
-		System.out.println("SCHEDULER SIZE: " + ExecutionEngine.getSingleton().getTaskNumber());
-	}
-
-	@Command
 	@NotifyChange("queries")
 	public void searchRepositoryQueryByRepositoryName() {
 		this.queries.clear();
@@ -851,7 +845,7 @@ public class MainViewModel extends ViewModelUtils {
 			if (property.equals("queries")) {
 				event = GlobalEvents.SUFFIX_QUERIES;
 				suffix = "queries";
-			} else if(property.equals("repositories")) {
+			} else if (property.equals("repositories")) {
 				event = GlobalEvents.SUFFIX_REPOSITORIES;
 				suffix = "repositories";
 			} else {

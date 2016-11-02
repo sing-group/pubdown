@@ -65,32 +65,26 @@ public class RepositoryQueryScheduled {
 		if (repositoryQuery.isScopus()) {
 			scopusDownloader = new ScopusDownloader(query, scopusApiKey, directoryPath);
 
-			if (repositoryQuery.getScopusDownloadTo() == Integer.MAX_VALUE
-					|| repositoryQuery.getScopusDownloadTo() == 0) {
-				scopusResult = scopusDownloader.getResultSize();
-				if (scopusResult != 0) {
+			scopusResult = scopusDownloader.getResultSize();
+			if (scopusResult != 0) {
 
-					scopusDownloadTo = scopusResult;
+				scopusDownloadTo = scopusResult;
 
-					if (scopusResult > 6000) {
-						scopusDownloadTo = 6000;
-					}
-
-					repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
+				if (scopusResult > 6000) {
+					scopusDownloadTo = 6000;
 				}
+
+				repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
 			}
 		}
 
 		if (repositoryQuery.isPubmed()) {
 			pubmedDownloader = new PubMedDownloader(query, directoryPath);
-			if (repositoryQuery.getPubmedDownloadTo() == Integer.MAX_VALUE
-					|| repositoryQuery.getPubmedDownloadTo() == 0) {
-				pubmedResult = pubmedDownloader.getResultSize();
-				if (pubmedResult != 0) {
-					pubmedDownloadTo = pubmedResult;
+			pubmedResult = pubmedDownloader.getResultSize();
+			if (pubmedResult != 0) {
+				pubmedDownloadTo = pubmedResult;
 
-					repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
-				}
+				repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
 			}
 		}
 	}
@@ -108,14 +102,14 @@ public class RepositoryQueryScheduled {
 
 		if (isValidApiKey(scopusApiKey)) {
 			if (repositoryQuery.isScopus() && (repositoryQuery.getScopusDownloadTo() != 0
-					|| repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE)) {
+					&& repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE)) {
 				scopusDownloader = new ScopusDownloader(query, scopusApiKey, directoryPath);
 				scopusReady = true;
 			}
 		}
 
 		if (repositoryQuery.isPubmed() && (repositoryQuery.getPubmedDownloadTo() != 0
-				|| repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE)) {
+				&& repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE)) {
 			pubmedDownloader = new PubMedDownloader(query, directoryPath);
 			pubmedReady = true;
 		}

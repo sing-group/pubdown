@@ -130,11 +130,17 @@ public class ScopusDownloader implements Searcher {
 			final Document document = builder.parse(new InputSource(new StringReader(xmlDocument)));
 			document.getDocumentElement().normalize();
 			final NodeList errorElements = document.getElementsByTagName("error");
+
 			if (errorElements.item(0) != null) {
 				return 0;
 			} else {
-				final NodeList entryElements = document.getElementsByTagName("opensearch:totalResults");
-				return Integer.parseInt(entryElements.item(0).getFirstChild().getNodeValue());
+				final NodeList statusCodeElements = document.getElementsByTagName("statusCode");
+				if (statusCodeElements.item(0) != null) {
+					return 0;
+				} else {
+					final NodeList entryElements = document.getElementsByTagName("opensearch:totalResults");
+					return Integer.parseInt(entryElements.item(0).getFirstChild().getNodeValue());
+				}
 			}
 		} catch (IOException | SAXException | ParserConfigurationException e) {
 			e.printStackTrace();

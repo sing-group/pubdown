@@ -83,7 +83,7 @@ public class MainViewModel extends ViewModelUtils {
 	@Init
 	public void init() {
 		this.currentUser = getCurrentUser(tm);
-		
+
 		this.currentUser.setLogged(true);
 		tm.runInTransaction(em -> em.merge(this.currentUser));
 
@@ -602,7 +602,14 @@ public class MainViewModel extends ViewModelUtils {
 
 		ExecutionEngine.getSingleton().executeTask(repositoryQueryScheduled);
 	}
-
+	
+	private boolean RepositoryQueryReadyToBeScheduled(final RepositoryQuery repositoryQuery) {
+		return (repositoryQuery.getPubmedDownloadTo() != 0
+				&& repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE)
+				|| (repositoryQuery.getScopusDownloadTo() != 0
+						&& repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE);
+	}
+	
 	@Command
 	public void launchExecution(@BindingParam("current") final RepositoryQuery repositoryQuery) {
 		findRepositoryQuery(repositoryQuery);
@@ -612,9 +619,13 @@ public class MainViewModel extends ViewModelUtils {
 		final String repositoryPath = this.repositoryQuery.getRepository().getPath() + File.separator;
 		final String directoryPath = basePath + userLogin + File.separator + repositoryPath;
 
-		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery,
-				directoryPath, false);
-		ExecutionEngine.getSingleton().scheduleTask(repositoryQueryScheduled);
+		if(RepositoryQueryReadyToBeScheduled(this.repositoryQuery)){
+			final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery,
+					directoryPath, false);
+			ExecutionEngine.getSingleton().scheduleTask(repositoryQueryScheduled);
+		} else {
+			Messagebox.show("The query has no results.\n Edit it and try again.");
+		}
 
 	}
 

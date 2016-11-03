@@ -8,35 +8,9 @@
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.MainViewModel')"
 		onClose="@command('closeSession')"
 		validationMessages="@id('vmsgs')">
-			<!-- 			<west title="Repositories" collapsible="true" -->
-			<!-- 				width="200px"> -->
-			<!-- 				<vlayout vflex="true" hflex="true" spacing="0"> -->
-			<!-- 					<menubar> -->
-			<!-- 						<menuitem image="./images/plus16x16.png" -->
-			<!-- 							onClick="@command('newRepository')" tooltiptext="New Repository" /> -->
-			<!-- 						<menuitem image="./images/trashCan16x16.png" -->
-			<!-- 							onClick="@command('removeRepository')" -->
-			<!-- 							tooltiptext="Delete Repository" /> -->
-			<!-- 					</menubar> -->
-			<!-- 					<listbox id="repositories" vflex="true" -->
-			<!-- 						model="@load(vm.repositories)" -->
-			<!-- 						selectedItem="@load(vm.repository)"> -->
-			<!-- 						<listhead> -->
-			<!-- 							<listheader /> -->
-			<!-- 						</listhead> -->
-			<!-- 						<template name="model" var="repository"> -->
-			<!-- 							<listitem> -->
-			<!-- 								<listcell -->
-			<!-- 									onClick="@command('selectRepository',current=repository)" -->
-			<!-- 									label="@load(repository.name)" /> -->
-			<!-- 							</listitem> -->
-			<!-- 						</template> -->
-			<!-- 					</listbox> -->
-			<!-- 				</vlayout> -->
-			<!-- 			</west> -->
 				<tabbox>
 					<tabs>
-						<tab label="Repository" />
+						<tab label="Repositories" />
 						<tab label="Papers" />
 						<tab label="Queries" />
 						<tab label="Settings" />

@@ -10,28 +10,28 @@
 			<label value="Login" />
 			<textbox id="tbLogin" hflex="true"
 				value="@bind(vm.login) @validator(vm.loginValidator)"
-				onChange="@command('checkData')" />
+				onChange="@command('checkData')" tabindex="1" />
 			<label value="@load(vmsgs[tbLogin])" sclass="error" />
 
 			<label value="Password" />
 			<textbox id="tbPassword" hflex="true"
 				value="@bind(vm.password) @validator(vm.passwordValidator)"
 				type="password" onChange="@command('checkData')"
-				onOK="@command('checkLogin')" />
+				onOK="@command('checkLogin')" tabindex="2" />
 			<label value="@load(vmsgs[tbPassword])" sclass="error" />
 
 			<hlayout style="text-align: center;">
-				<button label="Login"
-					disabled="@load(not vm.valid or not empty vmsgs)"
-					onClick="@command('checkLogin')" />
-				<button label="Sign Up" href="registration.zul" />
+				<button label="Login" onClick="@command('checkLogin')"
+					tabindex="3" />
+				<button label="Sign Up" href="registration.zul"
+					tabindex="4" />
 			</hlayout>
 			<hlayout style="text-align: center;">
 				<a label="Forgot your password?"
 					href="passwordRecoveryEmail.zul" />
 			</hlayout>
 			<hlayout style="text-align: center;">
-			<a href="#" label="About" onClick="winAbout.doModal()"/>
+				<a href="#" label="About" onClick="winAbout.doModal()" />
 				<window id="winAbout" visible="false" closable="true"
 					action="show: slideDown;hide: slideUp" position="center"
 					contentStyle="margin: 0px; padding: 0px" height="450px"

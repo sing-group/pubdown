@@ -45,7 +45,7 @@
 					<checkbox label="PubMed"
 						checked="@bind(vm.repositoryQuery.pubmed)"
 						onCheck="@command('checkData')" />
-					<label value="*You must select at least one" style="color: red;" />
+					<label value=" (You must select at least one)"/>
 				</hlayout>
 				<hlayout valign="middle">
 					<label value="Download: " />
@@ -55,7 +55,7 @@
 					<checkbox label="full text"
 						checked="@bind(vm.repositoryQuery.fulltextPaper)"
 						onCheck="@command('checkData')" />
-					<label value="*You must select at least one" style="color: red;"/>
+					<label value=" (You must select at least one)"/>
 				</hlayout>
 				<hlayout valign="middle">
 					<label value="PDF: " />

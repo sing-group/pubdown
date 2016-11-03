@@ -113,8 +113,6 @@
 																height="200px" pageSize="4">
 																<columns>
 																	<column
-																		align="center" label="Repository name" />
-																	<column
 																		align="center" label="Query name" />
 																	<column
 																		align="center" label="Options" width="400px" />
@@ -122,8 +120,6 @@
 																<template
 																	name="model" var="repositoryQuery">
 																	<row>
-																		<label
-																			value="@load(repositoryQuery.repository.name)" />
 																		<label
 																			value="@load(repositoryQuery.name)" />
 																		<cell>

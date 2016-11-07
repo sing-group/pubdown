@@ -8,292 +8,326 @@
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.MainViewModel')"
 		onClose="@command('closeSession')"
 		validationMessages="@id('vmsgs')">
-				<tabbox>
-					<tabs>
-						<tab label="Repositories" />
-						<tab label="Papers" />
-						<tab label="Queries" />
-						<tab label="Settings" />
-					</tabs>
-					<tabpanels>
-						<tabpanel>
-							<borderlayout height="600px">
-								<west width="200px">
-									<vlayout vflex="true" hflex="true"
-										spacing="0">
-										<menubar>
-											<menuitem
-												image="./images/plus16x16.png"
-												onClick="@command('newRepository')"
-												tooltiptext="New Repository" />
-											<menuitem
-												image="./images/trashCan16x16.png"
-												onClick="@command('removeRepository')"
-												tooltiptext="Delete Repository" />
-										</menubar>
-										<listbox id="repositories"
-											vflex="true" model="@load(vm.repositories)"
-											selectedItem="@load(vm.repository)">
-											<listhead>
-												<listheader />
-											</listhead>
-											<template name="model"
-												var="repository">
-												<listitem>
-													<listcell
-														onClick="@command('selectRepository',current=repository)"
-														label="@load(repository.name)" />
-												</listitem>
-											</template>
-										</listbox>
-									</vlayout>
-								</west>
-								<center>
-									<groupbox vflex="true" mold="3d"
-										contentStyle="padding: 0">
-										<vlayout hflex="true"
-											vflex="true">
-											<toolbar>
-												<toolbarbutton
-													label="Discard Changes"
-													onClick="@command('refreshRepository')" />
-												<toolbarbutton
-													label="Save Repository"
-													disabled="@load(not vm.validRepository or not empty vmsgs)"
-													onClick="@command('persistRepository')" />
-											</toolbar>
-											<vlayout vflex="true"
-												style="padding: 6px">
-												<hlayout
-													valign="middle">
-													<label value="Name" />
-													<textbox id="rbName"
-														width="400px" onChange="@command('checkRepository')"
-														value="@bind(vm.repository.name) @validator(vm.nameValidator)" />
-													<label
-														value="@load(vmsgs[rbName])" sclass="error" />
-												</hlayout>
-												<hlayout
-													valign="middle">
-													<label value="Path" />
-													<textbox id="rbPath"
-														width="400px" onChange="@command('checkRepository')"
-														value="@bind(vm.repository.path) @validator(vm.pathValidator)" />
-													<label
-														value="@load(vmsgs[rbPath])" sclass="error" />
-												</hlayout>
-												<hlayout
-													valign="middle">
-													<label
-														value="Number of papers: " />
-													<label
-														value="@bind(vm.repository.numberOfPapers)" />
-												</hlayout>
-												<hlayout
-													valign="middle">
-													<label
-														value="Last update: " />
-													<label
-														value="@bind(vm.repository.lastUpdate)" />
-												</hlayout>
-												<groupbox
-													contentStyle="padding: 0">
-													<vlayout
-														hflex="true" vflex="true">
-														<toolbar>
-															<toolbarbutton
-																label="New Query" tooltiptext="Create a new query"
-																onClick="@command('newRepositoryQuery')" />
-														</toolbar>
-														<hlayout
+		<tabbox>
+			<tabs>
+				<tab label="Repositories" />
+				<tab label="Queries" />
+				<tab label="Settings" />
+			</tabs>
+			<tabpanels>
+				<tabpanel>
+					<borderlayout height="600px">
+						<west width="200px">
+							<vlayout vflex="true" hflex="true"
+								spacing="0">
+								<menubar>
+									<menuitem
+										image="./images/plus16x16.png"
+										onClick="@command('newRepository')"
+										tooltiptext="New Repository" />
+									<menuitem
+										image="./images/trashCan16x16.png"
+										onClick="@command('removeRepository')"
+										tooltiptext="Delete Repository" />
+								</menubar>
+								<listbox id="repositories" vflex="true"
+									model="@load(vm.repositories)"
+									selectedItem="@load(vm.repository)">
+									<listhead>
+										<listheader />
+									</listhead>
+									<template name="model"
+										var="repository">
+										<listitem>
+											<listcell
+												onClick="@command('selectRepository',current=repository)"
+												label="@load(repository.name)" />
+										</listitem>
+									</template>
+								</listbox>
+							</vlayout>
+						</west>
+						<center>
+							<groupbox vflex="true" mold="3d"
+								contentStyle="padding: 0">
+								<vlayout hflex="true" vflex="true">
+									<toolbar>
+										<toolbarbutton
+											label="Discard Changes"
+											onClick="@command('refreshRepository')" />
+										<toolbarbutton
+											label="Save Repository"
+											disabled="@load(not vm.validRepository or not vm.queryReadyToCheckResult or not empty vmsgs)"
+											onClick="@command('persistRepository')" />
+									</toolbar>
+									<vlayout vflex="true"
+										style="padding: 6px">
+										<hlayout valign="middle">
+											<label value="Name" />
+											<textbox id="rbName"
+												width="400px" onChange="@command('checkRepository')"
+												value="@bind(vm.repository.name) @validator(vm.nameValidator)" />
+											<label
+												value="@load(vmsgs[rbName])" sclass="error" />
+										</hlayout>
+										<hlayout valign="middle">
+											<label value="Download: " />
+											<checkbox label="abstract"
+												checked="@bind(vm.repository.abstractPaper)"
+												onCheck="@command('checkRepository')" />
+											<checkbox label="full text"
+												checked="@bind(vm.repository.fulltextPaper)"
+												onCheck="@command('checkRepository')" />
+											<label
+												value=" (You must select at least one)" />
+										</hlayout>
+										<hlayout valign="middle">
+											<label value="PDF: " />
+											<checkbox
+												label="extract text"
+												checked="@bind(vm.repository.pdfToText)"
+												onCheck="@command('checkRepository')" />
+											<checkbox
+												label="keep after processing"
+												disabled="@load(not vm.repository.pdfToText)"
+												checked="@bind(vm.repository.keepPdf)"
+												onCheck="@command('checkRepository')" />
+										</hlayout>
+										<hlayout valign="middle">
+											<label
+												value="Number of files in repository: " />
+											<label
+												value="@bind(vm.repository.numberOffilesInRepository)" />
+										</hlayout>
+										<hlayout valign="middle">
+											<label
+												value="Last update: " />
+											<label
+												value="@bind(vm.repository.lastUpdate)" />
+										</hlayout>
+										<tabbox>
+											<tabs>
+												<tab label="Queries" />
+												<tab label="Papers" />
+											</tabs>
+											<tabpanels>
+												<tabpanel>
+													<groupbox
+														contentStyle="padding: 0">
+														<vlayout
 															hflex="true" vflex="true">
+															<toolbar>
+																<toolbarbutton
+																	label="New Query" tooltiptext="Create a new query"
+																	onClick="@command('newRepositoryQueryWithRepository')" />
+															</toolbar>
+															<hlayout
+																hflex="true" vflex="true">
+																<grid
+																	model="@load(vm.repositoryQueries)" autopaging="true"
+																	pagingPosition="bottom" mold="paging" hflex="true"
+																	height="350px">
+																	<columns>
+																		<column
+																			align="center" label="Query name" />
+																		<column
+																			align="center" label="Options" width="400px" />
+																	</columns>
+																	<template
+																		name="model" var="repositoryQuery">
+																		<row>
+																			<label
+																				value="@load(repositoryQuery.name)" />
+																			<cell>
+																				<button
+																					style="margin-right: 10px" label="Execute"
+																					tooltiptext="Execute now"
+																					disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+																					onClick="@command('launchExecutionNow',current=repositoryQuery)" />
+																				<button
+																					style="margin-right: 10px" label="Schedule"
+																					tooltiptext="Schedule query"
+																					disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+																					onClick="@command('launchExecution',current=repositoryQuery)" />
+																				<button
+																					style="margin-right: 10px" label="Stop"
+																					tooltiptext="Stop query"
+																					disabled="@load(not repositoryQuery.running)"
+																					onClick="@command('abortExecution',current=repositoryQuery)" />
+																				<button
+																					style="margin-right: 10px" label="Edit"
+																					tooltiptext="Edit query"
+																					disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+																					onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
+																				<button
+																					label="Remove" tooltiptext="Remove Query"
+																					disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+																					onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
+																			</cell>
+																		</row>
+																	</template>
+																</grid>
+															</hlayout>
+														</vlayout>
+													</groupbox>
+												</tabpanel>
+												<tabpanel>
+													<groupbox mold="3d"
+														closable="false" contentStyle="padding: 0px;">
+														<vlayout>
+															<toolbar>
+																<toolbarbutton
+																	label="Download papers"
+																	onClick="@command('downloadPapers',downloadOption='both')"
+																	disabled="@load(not vm.repositoryReadyToDownload)" />
+																<toolbarbutton
+																	label="Download Abstracts"
+																	onClick="@command('downloadPapers',downloadOption='abstract')"
+																	disabled="@load(not vm.repositoryReadyToDownload)" />
+																<toolbarbutton
+																	label="Download Full Text"
+																	onClick="@command('downloadPapers',downloadOption='fulltext')"
+																	disabled="@load(not vm.repositoryReadyToDownload)" />
+															</toolbar>
 															<grid
-																model="@load(vm.repositoryQueries)" autopaging="true"
+																model="@load(vm.repositoryPapers)" autopaging="true"
 																pagingPosition="bottom" mold="paging" hflex="true"
-																height="200px" pageSize="4">
+																height="350px">
 																<columns>
 																	<column
-																		align="center" label="Query name" />
-																	<column
-																		align="center" label="Options" width="400px" />
+																		align="left" label="Paper Title" />
 																</columns>
 																<template
-																	name="model" var="repositoryQuery">
+																	name="model" var="paper">
 																	<row>
 																		<label
-																			value="@load(repositoryQuery.name)" />
-																		<cell>
-																			<button
-																				style="margin-right: 10px" label="Schedule"
-																				tooltiptext="Schedule query"
-																				disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-																				onClick="@command('launchExecution',current=repositoryQuery)" />
-																			<button
-																				style="margin-right: 10px" label="Stop"
-																				tooltiptext="Stop query"
-																				disabled="@load(not repositoryQuery.running)"
-																				onClick="@command('abortExecution',current=repositoryQuery)" />
-																			<button
-																				style="margin-right: 10px" label="Edit"
-																				tooltiptext="Edit query"
-																				disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-																				onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
-																			<button
-																				label="Remove" tooltiptext="Remove Query"
-																				disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-																				onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
-																		</cell>
+																			value="@load(paper)" />
 																	</row>
 																</template>
 															</grid>
-														</hlayout>
-													</vlayout>
-												</groupbox>
-											</vlayout>
-										</vlayout>
-									</groupbox>
-								</center>
-							</borderlayout>
-						</tabpanel>
-						<tabpanel>
-							<groupbox mold="3d" closable="false"
-								contentStyle="padding: 0px;">
-								<vlayout>
-									<toolbar>
-										<toolbarbutton
-											label="Download papers" onClick="@command('downloadPapers')"
-											disabled="@load(not vm.repositoryReadyToDownload)" />
-									</toolbar>
-									<grid
-										model="@load(vm.repositoryPapers)" autopaging="true"
-										pagingPosition="bottom" mold="paging" hflex="true"
-										height="560px">
-										<columns>
-											<column align="left"
-												label="Paper Title" />
-										</columns>
-										<template name="model"
-											var="paper">
-											<row>
-												<label
-													value="@load(paper)" />
-											</row>
-										</template>
-									</grid>
+														</vlayout>
+													</groupbox>
+												</tabpanel>
+											</tabpanels>
+										</tabbox>
+									</vlayout>
 								</vlayout>
 							</groupbox>
-						</tabpanel>
-						<tabpanel>
-							<groupbox contentStyle="padding: 0">
-								<vlayout hflex="true" vflex="true">
-									<toolbar>
-										<toolbarbutton label="New Query"
-											tooltiptext="Create a new query"
-											onClick="@command('newRepositoryQuery')" />
-										<separator orient="vertical" />
-										<label value="Filter" />
-										<textbox
-											value="@bind(vm.repositoryQueryFilterByRepositoryName)"
-											onChange="@command('searchRepositoryQueryByRepositoryName')"
-											instant="true" placeholder="repository name" />
-										<textbox
-											value="@bind(vm.repositoryQueryFilterByName)"
-											onChange="@command('searchRepositoryQueryByName')"
-											instant="true" placeholder="query name" />
-									</toolbar>
-									<hlayout hflex="true"
-										vflex="true">
-										<grid model="@load(vm.queries)"
-											autopaging="true" pagingPosition="bottom" mold="paging"
-											hflex="true" height="560px">
-											<columns>
-												<column align="center"
-													label="Repository name" />
-												<column align="center"
-													label="Query name" />
-												<column align="center"
-													label="Options" width="400px" />
-											</columns>
-											<template name="model"
-												var="repositoryQuery">
-												<row>
-													<label
-														value="@load(repositoryQuery.repository.name)" />
-													<label
-														value="@load(repositoryQuery.name)" />
-													<cell>
-														<button
-															style="margin-right: 10px" label="Schedule"
-															tooltiptext="Schedule query"
-															disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-															onClick="@command('launchExecution',current=repositoryQuery)" />
-														<button
-															style="margin-right: 10px" label="Stop"
-															tooltiptext="Stop query"
-															disabled="@load(not repositoryQuery.running)"
-															onClick="@command('abortExecution',current=repositoryQuery)" />
-														<button
-															style="margin-right: 10px" label="Edit"
-															tooltiptext="Edit query"
-															disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-															onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
-														<button
-															label="Remove" tooltiptext="Remove Query"
-															disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-															onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
-													</cell>
-												</row>
-											</template>
-										</grid>
-									</hlayout>
-								</vlayout>
-							</groupbox>
-						</tabpanel>
-						<tabpanel>
-							<groupbox mold="3d" closable="false"
-								contentStyle="padding: 0px;">
-								<vlayout>
-									<toolbar>
-										<toolbarbutton
-											label="Save Changes"
-											onClick="@command('persistUserChanges')" />
-									</toolbar>
-									<grid>
-										<columns>
-											<column width="75px" />
-											<column />
-										</columns>
-										<rows>
-											<row>
-												<label value="Login" />
-												<hlayout>
-													<textbox
-														width="250px" readonly="true"
-														value="@bind(vm.currentUser.login)" />
-												</hlayout>
-											</row>
-											<row>
-												<label value="Email" />
-												<hlayout>
-													<textbox
-														width="250px" readonly="true"
-														value="@bind(vm.currentUser.email)" />
-												</hlayout>
-											</row>
-											<row>
-												<label value="ApiKey" />
-												<hlayout>
-													<textbox
-														onChange="@command('checkUserApiKey')" width="250px"
-														value="@bind(vm.currentUser.apiKey)" />
-												</hlayout>
-											</row>
-										</rows>
-									</grid>
-								</vlayout>
-							</groupbox>
-						</tabpanel>
-					</tabpanels>
-				</tabbox>
+						</center>
+					</borderlayout>
+				</tabpanel>
+				<tabpanel>
+					<groupbox contentStyle="padding: 0">
+						<vlayout hflex="true" vflex="true">
+							<toolbar>
+								<toolbarbutton label="New Query"
+									tooltiptext="Create a new query"
+									onClick="@command('newRepositoryQuery')" />
+								<separator orient="vertical" />
+								<label value="Filter" />
+								<textbox
+									value="@bind(vm.repositoryQueryFilterByRepositoryName)"
+									onChange="@command('searchRepositoryQueryByRepositoryName')"
+									instant="true" placeholder="repository name" />
+								<textbox
+									value="@bind(vm.repositoryQueryFilterByName)"
+									onChange="@command('searchRepositoryQueryByName')"
+									instant="true" placeholder="query name" />
+							</toolbar>
+							<hlayout hflex="true" vflex="true">
+								<grid model="@load(vm.queries)"
+									autopaging="true" pagingPosition="bottom" mold="paging"
+									hflex="true" height="560px">
+									<columns>
+										<column align="center"
+											label="Repository name" />
+										<column align="center"
+											label="Query name" />
+										<column align="center"
+											label="Options" width="400px" />
+									</columns>
+									<template name="model"
+										var="repositoryQuery">
+										<row>
+											<label
+												value="@load(repositoryQuery.repository.name)" />
+											<label
+												value="@load(repositoryQuery.name)" />
+											<cell>
+												<button
+													style="margin-right: 10px" label="Execute"
+													tooltiptext="Execute now"
+													disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+													onClick="@command('launchExecutionNow',current=repositoryQuery)" />
+												<button
+													style="margin-right: 10px" label="Schedule"
+													tooltiptext="Schedule query"
+													disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+													onClick="@command('launchExecution',current=repositoryQuery)" />
+												<button
+													style="margin-right: 10px" label="Stop"
+													tooltiptext="Stop query"
+													disabled="@load(not repositoryQuery.running)"
+													onClick="@command('abortExecution',current=repositoryQuery)" />
+												<button
+													style="margin-right: 10px" label="Edit"
+													tooltiptext="Edit query"
+													disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+													onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
+												<button label="Remove"
+													tooltiptext="Remove Query"
+													disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
+													onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
+											</cell>
+										</row>
+									</template>
+								</grid>
+							</hlayout>
+						</vlayout>
+					</groupbox>
+				</tabpanel>
+				<tabpanel>
+					<groupbox mold="3d" closable="false"
+						contentStyle="padding: 0px;" height="600px">
+						<vlayout>
+							<toolbar>
+								<toolbarbutton label="Save Changes"
+									onClick="@command('persistUserChanges')" />
+							</toolbar>
+							<grid>
+								<columns>
+									<column width="75px" />
+									<column />
+								</columns>
+								<rows>
+									<row>
+										<label value="Login" />
+										<hlayout>
+											<textbox width="250px"
+												readonly="true" value="@bind(vm.currentUser.login)" />
+										</hlayout>
+									</row>
+									<row>
+										<label value="Email" />
+										<hlayout>
+											<textbox width="250px"
+												readonly="true" value="@bind(vm.currentUser.email)" />
+										</hlayout>
+									</row>
+									<row>
+										<label value="ApiKey" />
+										<hlayout>
+											<textbox
+												onChange="@command('checkUserApiKey')" width="250px"
+												value="@bind(vm.currentUser.apiKey)" />
+										</hlayout>
+									</row>
+								</rows>
+							</grid>
+						</vlayout>
+					</groupbox>
+				</tabpanel>
+			</tabpanels>
+		</tabbox>
 	</window>
 </zk>

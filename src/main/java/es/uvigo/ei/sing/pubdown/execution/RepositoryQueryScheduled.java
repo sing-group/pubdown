@@ -2,6 +2,7 @@ package es.uvigo.ei.sing.pubdown.execution;
 
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.pubmed.PubMedDownloader;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.scopus.ScopusDownloader;
+import es.uvigo.ei.sing.pubdown.web.entities.Repository;
 import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 
 public class RepositoryQueryScheduled {
@@ -68,11 +69,13 @@ public class RepositoryQueryScheduled {
 			scopusResult = scopusDownloader.getResultSize();
 			if (scopusResult != 0) {
 
-				scopusDownloadTo = scopusResult;
+				// scopusDownloadTo = scopusResult;
+				//
+				// if (scopusResult > 6000) {
+				// scopusDownloadTo = 6000;
+				// }
 
-				if (scopusResult > 6000) {
-					scopusDownloadTo = 6000;
-				}
+				scopusDownloadTo = 3;
 
 				repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
 			}
@@ -82,7 +85,9 @@ public class RepositoryQueryScheduled {
 			pubmedDownloader = new PubMedDownloader(query, directoryPath);
 			pubmedResult = pubmedDownloader.getResultSize();
 			if (pubmedResult != 0) {
-				pubmedDownloadTo = pubmedResult;
+				// pubmedDownloadTo = pubmedResult;
+
+				pubmedDownloadTo = 3;
 
 				repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
 			}
@@ -100,6 +105,8 @@ public class RepositoryQueryScheduled {
 
 		final String scopusApiKey = repositoryQuery.getRepository().getUser().getApiKey();
 
+		final Repository repository = repositoryQuery.getRepository();
+
 		if (isValidApiKey(scopusApiKey)) {
 			if (repositoryQuery.isScopus() && (repositoryQuery.getScopusDownloadTo() != 0
 					&& repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE)) {
@@ -114,28 +121,28 @@ public class RepositoryQueryScheduled {
 			pubmedReady = true;
 		}
 
-		if (repositoryQuery.isFulltextPaper()) {
-			final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
+		if (repository.isFulltextPaper()) {
+			final boolean directoryType = repositoryQuery.isGroupBy();
 			if (repositoryQuery.isScopus() && scopusReady) {
-				scopusDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-						directoryType, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+				scopusDownloader.downloadPapers(true, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
+						repositoryQuery.getDownloadLimit(), startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
 			}
 
 			if (repositoryQuery.isPubmed() && pubmedReady) {
-				pubmedDownloader.downloadPapers(true, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-						directoryType, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+				pubmedDownloader.downloadPapers(true, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
+						repositoryQuery.getDownloadLimit(), startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
 			}
 		}
 
-		if (repositoryQuery.isAbstractPaper()) {
-			final boolean directoryType = Boolean.valueOf(repositoryQuery.getGroupBy());
+		if (repository.isAbstractPaper()) {
+			final boolean directoryType = repositoryQuery.isGroupBy();
 			if (repositoryQuery.isScopus() && scopusReady) {
-				scopusDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-						directoryType, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+				scopusDownloader.downloadPapers(false, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
+						repositoryQuery.getDownloadLimit(), startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
 			}
 			if (repositoryQuery.isPubmed() && pubmedReady) {
-				pubmedDownloader.downloadPapers(false, repositoryQuery.isPdfToText(), repositoryQuery.isKeepPdf(),
-						directoryType, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+				pubmedDownloader.downloadPapers(false, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
+						repositoryQuery.getDownloadLimit(), startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
 			}
 		}
 	}

@@ -3,6 +3,7 @@ package es.uvigo.ei.sing.pubdown.web.entities;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -29,8 +30,20 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	@Column
 	private String path;
 
+	@Basic
+	private boolean abstractPaper = false;
+
+	@Basic
+	private boolean fulltextPaper = false;
+
+	@Basic
+	private boolean pdfToText = false;
+
+	@Basic
+	private boolean keepPdf = true;
+
 	@Column
-	private int numberOfPapers = 0;
+	private int numberOffilesInRepository = 0;
 
 	@Column
 	private String lastUpdate = "";
@@ -46,23 +59,33 @@ public class Repository implements Cloneable, Comparable<Repository> {
 		this.repositoryQueries = new LinkedList<>();
 	}
 
-	public Repository(final String name, final String path, final int numberOfPapers, final String lastUpdate,
-			final List<RepositoryQuery> repositoryQueries) {
+	public Repository(final String name, final boolean abstractPaper, final boolean fulltextPaper,
+			final boolean pdfToText, final boolean keepPdf, final String path, final int numberOfFilesInRepository,
+			final String lastUpdate, final List<RepositoryQuery> repositoryQueries) {
 		super();
 		this.name = name;
+		this.abstractPaper = abstractPaper;
+		this.fulltextPaper = fulltextPaper;
+		this.pdfToText = pdfToText;
+		this.keepPdf = keepPdf;
 		this.path = path;
-		this.numberOfPapers = numberOfPapers;
+		this.numberOffilesInRepository = numberOfFilesInRepository;
 		this.lastUpdate = lastUpdate;
 		this.repositoryQueries = repositoryQueries;
 	}
 
-	private Repository(final Integer id, final String name, final String path, final int numberOfPapers,
+	private Repository(final Integer id, final String name, final boolean abstractPaper, final boolean fulltextPaper,
+			final boolean pdfToText, final boolean keepPdf, final String path, final int numberOfFilesInRepository,
 			final String lastUpdate, final List<RepositoryQuery> repositoryQueries, final User user) {
 		super();
 		this.id = id;
 		this.name = name;
+		this.abstractPaper = abstractPaper;
+		this.fulltextPaper = fulltextPaper;
+		this.pdfToText = pdfToText;
+		this.keepPdf = keepPdf;
 		this.path = path;
-		this.numberOfPapers = numberOfPapers;
+		this.numberOffilesInRepository = numberOfFilesInRepository;
 		this.lastUpdate = lastUpdate;
 		this.repositoryQueries = repositoryQueries;
 		this.user = user;
@@ -80,6 +103,38 @@ public class Repository implements Cloneable, Comparable<Repository> {
 		this.name = name;
 	}
 
+	public boolean isAbstractPaper() {
+		return abstractPaper;
+	}
+
+	public void setAbstractPaper(final boolean abstractPaper) {
+		this.abstractPaper = abstractPaper;
+	}
+
+	public boolean isFulltextPaper() {
+		return fulltextPaper;
+	}
+
+	public void setFulltextPaper(final boolean fulltextPaper) {
+		this.fulltextPaper = fulltextPaper;
+	}
+
+	public boolean isPdfToText() {
+		return pdfToText;
+	}
+
+	public void setPdfToText(final boolean pdfToText) {
+		this.pdfToText = pdfToText;
+	}
+
+	public boolean isKeepPdf() {
+		return this.keepPdf;
+	}
+
+	public void setKeepPdf(final boolean keepPdf) {
+		this.keepPdf = keepPdf;
+	}
+
 	public String getPath() {
 		return path;
 	}
@@ -88,12 +143,12 @@ public class Repository implements Cloneable, Comparable<Repository> {
 		this.path = path;
 	}
 
-	public int getNumberOfPapers() {
-		return numberOfPapers;
+	public int getNumberOffilesInRepository() {
+		return numberOffilesInRepository;
 	}
 
-	public void setNumberOfPapers(final int numberOfPapers) {
-		this.numberOfPapers = numberOfPapers;
+	public void setNumberOffilesInRepository(final int numberOffilesInRepository) {
+		this.numberOffilesInRepository = numberOffilesInRepository;
 	}
 
 	public String getLastUpdate() {
@@ -185,14 +240,15 @@ public class Repository implements Cloneable, Comparable<Repository> {
 
 	@Override
 	public Repository clone() {
-		return new Repository(this.id, this.name, this.path, this.numberOfPapers, this.lastUpdate,
-				this.repositoryQueries, this.user);
+		return new Repository(this.id, this.name, this.abstractPaper, this.fulltextPaper, this.pdfToText, this.keepPdf,
+				this.path, this.numberOffilesInRepository, this.lastUpdate, this.repositoryQueries, this.user);
 	}
 
 	@Override
 	public int compareTo(final Repository obj) {
-		return Compare.objects(this, obj).by(Repository::getId).thenBy(Repository::getName).thenBy(Repository::getPath)
-				.andGet();
+		return Compare.objects(this, obj).by(Repository::getId).thenBy(Repository::getName)
+				.thenBy(Repository::isAbstractPaper).thenBy(Repository::isFulltextPaper).thenBy(Repository::isPdfToText)
+				.thenBy(Repository::isKeepPdf).thenBy(Repository::getPath).andGet();
 	}
 
 	@Override

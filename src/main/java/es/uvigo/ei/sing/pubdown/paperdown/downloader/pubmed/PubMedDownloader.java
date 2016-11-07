@@ -69,7 +69,7 @@ public class PubMedDownloader implements Searcher {
 
 	@Override
 	public void downloadPapers(final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
-			final boolean directoryType, final int downloadFrom, final int downloadTo) {
+			final boolean directoryType, final int downloadLimit, final int downloadFrom, int downloadTo) {
 
 		int aux = downloadTo;
 		int searchIncrease = 1;
@@ -78,9 +78,15 @@ public class PubMedDownloader implements Searcher {
 			if (resultNumber < searchIncrease) {
 				searchIncrease = resultNumber;
 			}
+
 			if (searchIncrease > downloadTo) {
 				searchIncrease = downloadTo;
 			}
+
+			if (downloadLimit < resultNumber) {
+				downloadTo = downloadLimit;
+			}
+
 			String queryURL = SEARCH_REQUEST + this.query.replace(" ", "+") + "&retmax=" + searchIncrease;
 			final PubMedXMLParser xmlParser = new PubMedXMLParser(this.httpClient, this.context, queryURL);
 			final PubMedHTMLParser htmlParser = new PubMedHTMLParser(this.httpClient, this.context, null);
@@ -108,7 +114,7 @@ public class PubMedDownloader implements Searcher {
 
 				aux = aux - searchIncrease;
 
-				notifyDownloadListeners(new DownloadEvent());
+				// notifyDownloadListeners(new DownloadEvent());
 			}
 		}
 	}

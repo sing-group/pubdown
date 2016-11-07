@@ -34,12 +34,15 @@ public class RepositoryQueryFormViewModel extends ViewModelUtils {
 	private RepositoryQueryTask repositoryQueryTask;
 	private RepositoryQueryTask uneditedRepositoryQueryTask;
 
+	private List<Repository> repositories;
+
 	@Init
 	public void init(@ExecutionArgParam("repositoryQuery") final RepositoryQuery repositoryQuery) {
 		this.repositoryQuery = repositoryQuery;
 		this.uneditedRepositoryQuery = this.repositoryQuery.clone();
 		this.repositoryQueryTask = this.repositoryQuery.getTask();
 		this.uneditedRepositoryQueryTask = this.repositoryQueryTask.clone();
+		this.repositories = getAllRepositories();
 	}
 
 	public RepositoryQuery getRepositoryQuery() {
@@ -83,6 +86,10 @@ public class RepositoryQueryFormViewModel extends ViewModelUtils {
 	}
 
 	public List<Repository> getRepositories() {
+		return repositories;
+	}
+
+	public List<Repository> getAllRepositories() {
 		return tm.getInTransaction(
 				em -> em.createQuery("SELECT DISTINCT r FROM Repository r WHERE r.user = :user ORDER BY r.name ASC",
 						Repository.class).setParameter("user", getCurrentUser(tm)).getResultList());
@@ -92,14 +99,10 @@ public class RepositoryQueryFormViewModel extends ViewModelUtils {
 		return !(getCurrentUser(tm).getApiKey() == null || getCurrentUser(tm).getApiKey().isEmpty());
 	}
 
-	public boolean isQueryReadyToCheckResult() {
-		return isValidRepositoryQuery() && (this.repositoryQuery.isScopus() || this.repositoryQuery.isPubmed())
-				&& (this.repositoryQuery.isFulltextPaper() || this.repositoryQuery.isAbstractPaper());
-	}
-
 	public boolean isValidRepositoryQuery() {
 		return !isEmpty(this.repositoryQuery.getName()) && !isEmpty(this.repositoryQuery.getQuery())
-				&& !isEmpty(this.repositoryQuery.getRepository().getName());
+				&& !isEmpty(this.repositoryQuery.getRepository().getName())
+				&& (this.repositoryQuery.isScopus() || this.repositoryQuery.isPubmed());
 	}
 
 	public boolean isDaily() {
@@ -111,7 +114,7 @@ public class RepositoryQueryFormViewModel extends ViewModelUtils {
 	 * {@link RepositoryQueryFormViewModel#isValid()}
 	 */
 	@Command
-	@NotifyChange({ "daily", "validRepositoryQuery", "queryReadyToCheckResult" })
+	@NotifyChange({ "daily", "validRepositoryQuery" })
 	public void checkData() {
 	}
 
@@ -136,6 +139,27 @@ public class RepositoryQueryFormViewModel extends ViewModelUtils {
 
 				if (isEmpty(query)) {
 					addInvalidMessage(ctx, "Query can't be empty");
+				}
+			}
+		};
+	}
+
+	public Validator getDownloadLimitValidator() {
+		return new AbstractValidator() {
+			@Override
+			public void validate(final ValidationContext ctx) {
+				final String downloadLimit = (String) ctx.getProperty().getValue();
+
+				if (isEmpty(downloadLimit)) {
+					addInvalidMessage(ctx, "Limit can't be empty");
+				}
+				try {
+					final int limit = Integer.parseInt(downloadLimit);
+					if (limit <= 0 || limit > Integer.MAX_VALUE) {
+						addInvalidMessage(ctx, "Limit must be an integer between 0 and " + Integer.MAX_VALUE);
+					}
+				} catch (NumberFormatException e) {
+					addInvalidMessage(ctx, "Limit must be an integer between 0 and " + Integer.MAX_VALUE);
 				}
 			}
 		};

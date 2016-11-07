@@ -1,10 +1,13 @@
 <?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
 <zk>
+	<style src="css/pubdown.css" />
+
 	<window title="Pubdown Administration Panel" id="winAdminPubDown"
 		binder="@init(queueName='adminpubdown')" closable="true"
-		border="normal" style="margin: 0 auto;" width="960px"
+		border="normal" style="margin: 0 auto;" width="960px" height="700px"
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.AdministrationViewModel')"
-		onClose="@command('closeSession')">
+		onClose="@command('closeSession')"
+		validationMessages="@id('vmsgs')">
 		<tabbox hflex="true">
 			<tabs>
 				<tab label="Users" />
@@ -16,7 +19,7 @@
 				<tabpanel>
 					<groupbox contentStyle="padding: 0">
 						<vlayout vflex="true" hflex="true">
-							<toolbar>
+							<toolbar height="40px">
 								<toolbarbutton label="New User"
 									onClick="@command('newUser')" />
 								<label value="Filter" />
@@ -26,7 +29,7 @@
 							</toolbar>
 							<hlayout vflex="true" hflex="true">
 								<grid autopaging="true"
-									pagingPosition="bottom" mold="paging" height="450px"
+									pagingPosition="bottom" mold="paging" height="555px"
 									model="@load(vm.users)">
 									<columns>
 										<column align="center"
@@ -78,7 +81,7 @@
 						<vlayout vflex="true" hflex="true">
 							<hlayout vflex="true" hflex="true">
 								<grid autopaging="true"
-									pagingPosition="bottom" mold="paging" height="450px"
+									pagingPosition="bottom" mold="paging" height="600px"
 									model="@load(vm.repositories)">
 									<columns>
 										<column align="center"
@@ -110,7 +113,7 @@
 				<tabpanel>
 					<groupbox contentStyle="padding: 0">
 						<vlayout vflex="true" hflex="true">
-							<toolbar>
+							<toolbar height="40px">
 								<label value="Filter" />
 								<textbox
 									value="@bind(vm.repositoryQueryFilterByRepositoryName)"
@@ -124,7 +127,7 @@
 							<hlayout vflex="true" hflex="true">
 								<grid model="@load(vm.queries)"
 									autopaging="true" pagingPosition="bottom" mold="paging"
-									hflex="true" height="538px">
+									hflex="true" height="555px">
 									<columns>
 										<column align="center"
 											label="Repository name" />
@@ -161,42 +164,21 @@
 				<tabpanel>
 					<groupbox mold="3d" closable="false"
 						contentStyle="padding: 0px;">
-						<vlayout>
+						<vlayout hflex="true" height="600px">
 							<toolbar>
-								<toolbarbutton label="New Parameter"
-									onClick="@command('newGlobalConfiguration')" />
+								<toolbarbutton label="Save Changes"
+									disabled="@load(not vm.valid or not empty vmsgs)"
+									onClick="@command('persistGlobalConfigurationChanges')" />
 							</toolbar>
-							<hlayout vflex="true" hflex="true">
-								<grid
-									model="@load(vm.globalConfigurations)" autopaging="true"
-									pagingPosition="bottom" mold="paging" hflex="true"
-									height="538px">
-									<columns>
-										<column align="center"
-											label="Parameter" />
-										<column align="center"
-											label="Value" />
-										<column align="center"
-											width="300px" label="Options" />
-									</columns>
-									<template name="model"
-										var="globalConfiguration">
-										<row>
-											<label
-												value="@load(globalConfiguration.configurationKey)" />
-											<label
-												value="@load(globalConfiguration.configurationValue)" />
-											<cell>
-												<button label="Edit"
-													style="margin-right: 10px" tooltiptext="Edit Value"
-													onClick="@command('editGlobalConfiguration',current=globalConfiguration)" />
-												<button label="Remove"
-													tooltiptext="Remove Value"
-													onClick="@command('removeGlobalConfiguration',current=globalConfiguration)" />
-											</cell>
-										</row>
-									</template>
-								</grid>
+							<hlayout valign="middle" hflex="true"
+								style="padding: 6px">
+								<label value="Repositories path"
+									width="200px" />
+								<textbox id="rbValue" width="250px"
+									onChange="@command('checkGlobalConfiguration')"
+									value="@bind(vm.globalConfiguration.configurationValue) @validator(vm.valueValidator)" />
+								<label value="@load(vmsgs[rbValue])"
+									sclass="error" />
 							</hlayout>
 						</vlayout>
 					</groupbox>

@@ -45,35 +45,15 @@
 					<checkbox label="PubMed"
 						checked="@bind(vm.repositoryQuery.pubmed)"
 						onCheck="@command('checkData')" />
-					<label value=" (You must select at least one)"/>
+					<label value=" (You must select at least one)" />
 				</hlayout>
 				<hlayout valign="middle">
-					<label value="Download: " />
-					<checkbox label="abstract"
-						checked="@bind(vm.repositoryQuery.abstractPaper)"
-						onCheck="@command('checkData')" />
-					<checkbox label="full text"
-						checked="@bind(vm.repositoryQuery.fulltextPaper)"
-						onCheck="@command('checkData')" />
-					<label value=" (You must select at least one)"/>
-				</hlayout>
-				<hlayout valign="middle">
-					<label value="PDF: " />
-					<checkbox label="extract text"
-						checked="@bind(vm.repositoryQuery.pdfToText)"
-						onCheck="@command('checkData')" />
-					<checkbox label="delete after processing"
-						disabled="@load(not vm.repositoryQuery.pdfToText)"
-						checked="@bind(vm.repositoryQuery.keepPdf)"
-						onCheck="@command('checkData')" />
-				</hlayout>
-				<hlayout valign="middle">
-					<label value="Group by " />
-					<radiogroup onCheck="@command('checkData')"
-						selectedItem="@bind(vm.repositoryQuery.groupBy)">
-						<radio label="paper" value="false" />
-						<radio label="abstract/full text" value="true" />
-					</radiogroup>
+					<label value="Limit: " />
+					<textbox id="rbDownloadLimit"
+						value="@bind(vm.repositoryQuery.downloadLimit) @validator(vm.downloadLimitValidator)"
+						onChange="@command('checkData')" />
+					<label value="@load(vmsgs[rbDownloadLimit])"
+						sclass="error" />
 				</hlayout>
 				<groupbox closable="false">
 					<caption>Schedule</caption>
@@ -134,7 +114,7 @@
 					<button label="Save Query"
 						onClick="@command('confirm')"
 						forward="repositoryQueryForm.onClose"
-						disabled="@load(not vm.validRepositoryQuery or not vm.queryReadyToCheckResult or not empty vmsgs)" />
+						disabled="@load(not vm.validRepositoryQuery or not empty vmsgs)" />
 					<button label="Cancel" onClick="@command('refresh')"
 						forward="repositoryQueryForm.onClose" />
 					<button label="Reset form"

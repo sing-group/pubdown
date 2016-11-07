@@ -13,11 +13,14 @@ import java.util.UUID;
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 
+import org.zkoss.bind.ValidationContext;
+import org.zkoss.bind.Validator;
 import org.zkoss.bind.annotation.BindingParam;
 import org.zkoss.bind.annotation.Command;
 import org.zkoss.bind.annotation.GlobalCommand;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
+import org.zkoss.bind.validator.AbstractValidator;
 import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventQueue;
@@ -74,7 +77,7 @@ public class AdministrationViewModel extends ViewModelUtils {
 	private String repositoryQueryFilterByRepositoryName;
 	private String repositoryQueryFilterByName;
 
-	private List<GlobalConfiguration> globalConfigurations;
+	private GlobalConfiguration globalConfiguration;
 
 	private final Mailer mailer = new Mailer();
 
@@ -90,7 +93,7 @@ public class AdministrationViewModel extends ViewModelUtils {
 		this.queries = getAllQueries();
 		sortQueries(this.queries);
 
-		this.globalConfigurations = getGlobalConfigurations();
+		this.globalConfiguration = getRepositoryPathConfiguration();
 
 	}
 
@@ -129,6 +132,10 @@ public class AdministrationViewModel extends ViewModelUtils {
 	 */
 	public void setUserFilter(final String userFilter) {
 		this.userFilter = userFilter;
+	}
+
+	public GlobalConfiguration getGlobalConfiguration() {
+		return globalConfiguration;
 	}
 
 	private List<User> getLoggedUsers() {
@@ -191,6 +198,11 @@ public class AdministrationViewModel extends ViewModelUtils {
 		return this.users;
 	}
 
+	private List<User> getAllUsersForFilter() {
+		return tm.getInTransaction(
+				em -> em.createQuery("SELECT u FROM User u ORDER BY u.login ASC", User.class).getResultList());
+	}
+
 	/**
 	 * Gets all the {@link RepositoryQuery} in the DB
 	 *
@@ -206,6 +218,12 @@ public class AdministrationViewModel extends ViewModelUtils {
 		return this.queries;
 	}
 
+	private List<RepositoryQuery> getAllQueriesForFilter() {
+		return tm.getInTransaction(
+				em -> em.createQuery("SELECT rq FROM RepositoryQuery rq ORDER BY rq.repository ASC, rq.name ASC",
+						RepositoryQuery.class).getResultList());
+	}
+
 	private void sortQueries(List<RepositoryQuery> queries) {
 		queries.sort((rq1, rq2) -> {
 			if (rq1.getRepository().getName().compareTo(rq2.getRepository().getName()) == 0) {
@@ -216,13 +234,9 @@ public class AdministrationViewModel extends ViewModelUtils {
 		});
 	}
 
-	public List<GlobalConfiguration> getGlobalConfigurations() {
+	public GlobalConfiguration getRepositoryPathConfiguration() {
 		return tm.getInTransaction(em -> em
-				.createQuery("SELECT gc FROM GlobalConfiguration gc", GlobalConfiguration.class).getResultList());
-	}
-
-	private boolean isNonRemovableGlobalConfiguration(GlobalConfiguration globalConfiguration) {
-		return NON_REMOVABLE_GLOBAL_CONFIGURATION.contains(globalConfiguration.getConfigurationKey());
+				.createQuery("SELECT gc FROM GlobalConfiguration gc", GlobalConfiguration.class).getSingleResult());
 	}
 
 	/**
@@ -605,51 +619,31 @@ public class AdministrationViewModel extends ViewModelUtils {
 				singletonMap("globalConfiguration", globalConfiguration));
 	}
 
-	@GlobalCommand
-	public void addGlobalConfiguration(
-			@BindingParam("globalConfiguration") final GlobalConfiguration globalConfiguration) {
-		this.globalConfigurations.add(globalConfiguration);
-		postNotifyChangeAdmins(this, "globalConfigurations");
-	}
-
-	@GlobalCommand
-	public void updateGlobalConfiguration(
-			@BindingParam("globalConfiguration") final GlobalConfiguration globalConfiguration) {
-		final int indexOf = this.globalConfigurations.indexOf(globalConfiguration);
-		this.globalConfigurations.set(indexOf, globalConfiguration);
-		postNotifyChangeAdmins(this, "globalConfigurations");
+	public boolean isValid() {
+		return !isEmpty(this.globalConfiguration.getConfigurationValue());
 	}
 
 	@Command
-	public void removeGlobalConfiguration(@BindingParam("current") final GlobalConfiguration globalConfiguration) {
-		if (globalConfiguration != null) {
-			if (!isNonRemovableGlobalConfiguration(globalConfiguration)) {
-				Messagebox.show("Do you want to delete the parameter?", "Delete Parameter",
-						new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
-						new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
-							switch (event.getName()) {
-							case Messagebox.ON_OK:
-								tm.runInTransaction(em -> {
-									em.remove(globalConfiguration);
-								});
-								this.globalConfigurations.remove(globalConfiguration);
+	@NotifyChange("valid")
+	public void checkGlobalConfiguration() {
+		System.out.println(isValid());
+	}
 
-								postNotifyChangeAdmins(this, "globalConfigurations");
-
-								break;
-							case Messagebox.ON_CANCEL:
-							default:
-								break;
-							}
-						}, singletonMap("width", "500"));
-			} else {
-				Messagebox.show(
-						"You can't delete this parameter.\nThis would compromise the proper functioning of the system",
-						null, new Messagebox.Button[] { Messagebox.Button.OK }, new String[] { "OK" },
-						Messagebox.INFORMATION, null, null, singletonMap("width", "450"));
+	public Validator getValueValidator() {
+		return new AbstractValidator() {
+			@Override
+			public void validate(final ValidationContext ctx) {
+				final String value = (String) ctx.getProperty().getValue();
+				if (isEmpty(value)) {
+					addInvalidMessage(ctx, "Value can't be empty");
+				}
 			}
+		};
+	}
 
-		}
+	@Command
+	public void persistGlobalConfigurationChanges() {
+		tm.runInTransaction(em -> em.merge(this.globalConfiguration));
 	}
 
 	@Command
@@ -729,13 +723,14 @@ public class AdministrationViewModel extends ViewModelUtils {
 	@NotifyChange("users")
 	public void searchUser() {
 		this.users.clear();
-		final List<User> users = getAllUsers();
+
+		List<User> allUsers = getAllUsersForFilter();
 
 		if (isEmpty(this.userFilter)) {
-			this.users.addAll(users);
+			this.users.addAll(allUsers);
 		} else {
 			final String filterLC = this.userFilter.toLowerCase();
-			for (final User user : users) {
+			for (final User user : allUsers) {
 				if (user.getLogin().toLowerCase().contains(filterLC)
 						|| user.getEmail().toLowerCase().contains(filterLC)) {
 					this.users.add(user);
@@ -748,7 +743,8 @@ public class AdministrationViewModel extends ViewModelUtils {
 	@NotifyChange("queries")
 	public void searchRepositoryQueryByRepositoryName() {
 		this.queries.clear();
-		final List<RepositoryQuery> allQueries = getAllQueries();
+
+		final List<RepositoryQuery> allQueries = getAllQueriesForFilter();
 
 		if (isEmpty(this.repositoryQueryFilterByRepositoryName)) {
 			this.queries.addAll(allQueries);
@@ -766,7 +762,8 @@ public class AdministrationViewModel extends ViewModelUtils {
 	@NotifyChange("queries")
 	public void searchRepositoryQueryByName() {
 		this.queries.clear();
-		final List<RepositoryQuery> allQueries = getAllQueries();
+
+		final List<RepositoryQuery> allQueries = getAllQueriesForFilter();
 
 		if (isEmpty(this.repositoryQueryFilterByName)) {
 			this.queries.addAll(allQueries);

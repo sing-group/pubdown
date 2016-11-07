@@ -3,7 +3,7 @@ package es.uvigo.ei.sing.pubdown.paperdown.downloader;
 public interface Searcher {
 
 	void downloadPapers(boolean isCompletePaper, boolean convertPDFtoTXT, boolean keepPDF, boolean directoryType,
-			int downloadFrom, int downloadTo);
+			int downloadLimit, int downloadFrom, int downloadTo);
 
 	int getResultSize();
 

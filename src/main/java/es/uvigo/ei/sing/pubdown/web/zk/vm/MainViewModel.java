@@ -240,7 +240,26 @@ public class MainViewModel extends ViewModelUtils {
 
 	@DependsOn("repository")
 	public boolean isRepositoryReadyToDownload() {
-		return this.repository.getNumberOfPapers() > 0;
+		if (this.repository.getNumberOffilesInRepository() > 0) {
+			final String userLogin = this.repository.getUser().getLogin() + File.separator;
+			final String basePath = RepositoryManager.getRepositoryPath() + File.separator + userLogin;
+			final String repositoryPath = this.repository.getPath() + File.separator;
+			final String finalPath = basePath + repositoryPath;
+
+			final File file = new File(finalPath);
+
+			if (file.isDirectory()) {
+				if (file.list().length > 0) {
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
 	}
 
 	private boolean isNewRepository() {
@@ -291,11 +310,15 @@ public class MainViewModel extends ViewModelUtils {
 	}
 
 	public boolean isValidRepository() {
-		return !isEmpty(this.repository.getName()) && !isEmpty(this.repository.getPath());
+		return !isEmpty(this.repository.getName());
+	}
+
+	public boolean isQueryReadyToCheckResult() {
+		return isValidRepository() && (this.repository.isFulltextPaper() || this.repository.isAbstractPaper());
 	}
 
 	@Command
-	@NotifyChange("validRepository")
+	@NotifyChange({ "validRepository", "queryReadyToCheckResult" })
 	public void checkRepository() {
 	}
 
@@ -318,7 +341,7 @@ public class MainViewModel extends ViewModelUtils {
 	}
 
 	@Command
-	public void downloadPapers() {
+	public void downloadPapers(@BindingParam("downloadOption") final String downloadOption) {
 		final String suggestedDownloadName = this.repository.getName() + DOWNLOAD_FILE_EXTENSION;
 
 		final String basePath = RepositoryManager.getRepositoryPath() + File.separator;
@@ -328,7 +351,7 @@ public class MainViewModel extends ViewModelUtils {
 		final String finalPath = basePath + userLogin + repositoryPath;
 
 		try {
-			RepositoryManager.zipDirectory(suggestedDownloadName, finalPath);
+			RepositoryManager.zipDirectory(suggestedDownloadName, finalPath, downloadOption);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -359,6 +382,7 @@ public class MainViewModel extends ViewModelUtils {
 	@Command
 	public void selectRepository(@BindingParam("current") Repository repository) {
 		final Repository selectedRepository = repository;
+
 		if (selectedRepository != null) {
 			if (!this.repository.equals(selectedRepository) && isRepositoryModified()) {
 				Messagebox.show("Do you want to save?", "Save Repository",
@@ -388,6 +412,15 @@ public class MainViewModel extends ViewModelUtils {
 						}, singletonMap("width", "500"));
 			} else {
 				setRepository(selectedRepository);
+				final String userLogin = this.repository.getUser().getLogin() + File.separator;
+				final String basePath = RepositoryManager.getRepositoryPath() + File.separator + userLogin;
+				final String repositoryPath = this.repository.getPath() + File.separator;
+				final String finalPath = basePath + repositoryPath;
+
+				long fileNumber = numberOfFilesInDirectory(finalPath);
+				this.repository.setNumberOffilesInRepository((int) fileNumber);
+				tm.runInTransaction(em -> em.merge(this.repository));
+
 				postNotifyChange(this, "repository");
 			}
 		}
@@ -484,13 +517,7 @@ public class MainViewModel extends ViewModelUtils {
 	public void persistRepository() {
 		final Repository repository = this.repository;
 
-		if (repository.getPath().charAt(0) == File.separatorChar) {
-			repository.setPath(repository.getPath().substring(1));
-		}
-
-		if (repository.getPath().charAt(repository.getPath().length() - 1) == File.separatorChar) {
-			repository.setPath(repository.getPath().substring(0, repository.getPath().length() - 1));
-		}
+		repository.setPath(repository.getName());
 
 		final boolean isNew = isNewRepository();
 
@@ -517,6 +544,15 @@ public class MainViewModel extends ViewModelUtils {
 	public void newRepositoryQuery() {
 		Executions.createComponents("repositoryQueryForm.zul", null,
 				singletonMap("repositoryQuery", new RepositoryQuery()));
+	}
+
+	@Command
+	public void newRepositoryQueryWithRepository() {
+		RepositoryQuery repositoryQuery = new RepositoryQuery();
+		if (this.repository != null) {
+			repositoryQuery = new RepositoryQuery(this.repository);
+		}
+		Executions.createComponents("repositoryQueryForm.zul", null, singletonMap("repositoryQuery", repositoryQuery));
 	}
 
 	@Command
@@ -602,14 +638,33 @@ public class MainViewModel extends ViewModelUtils {
 
 		ExecutionEngine.getSingleton().executeTask(repositoryQueryScheduled);
 	}
-	
+
 	private boolean RepositoryQueryReadyToBeScheduled(final RepositoryQuery repositoryQuery) {
 		return (repositoryQuery.getPubmedDownloadTo() != 0
 				&& repositoryQuery.getPubmedDownloadTo() != Integer.MAX_VALUE)
 				|| (repositoryQuery.getScopusDownloadTo() != 0
 						&& repositoryQuery.getScopusDownloadTo() != Integer.MAX_VALUE);
 	}
-	
+
+	@Command
+	public void launchExecutionNow(@BindingParam("current") final RepositoryQuery repositoryQuery) {
+		findRepositoryQuery(repositoryQuery);
+
+		final String basePath = RepositoryManager.getRepositoryPath() + File.separator;
+		final String userLogin = repositoryQuery.getRepository().getUser().getLogin();
+		final String repositoryPath = this.repositoryQuery.getRepository().getPath() + File.separator;
+		final String directoryPath = basePath + userLogin + File.separator + repositoryPath;
+
+		if (RepositoryQueryReadyToBeScheduled(this.repositoryQuery)) {
+			final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery,
+					directoryPath, false);
+			ExecutionEngine.getSingleton().executeTask(repositoryQueryScheduled);
+		} else {
+			Messagebox.show("The query has no results.\n Edit it and try again.");
+		}
+
+	}
+
 	@Command
 	public void launchExecution(@BindingParam("current") final RepositoryQuery repositoryQuery) {
 		findRepositoryQuery(repositoryQuery);
@@ -619,7 +674,7 @@ public class MainViewModel extends ViewModelUtils {
 		final String repositoryPath = this.repositoryQuery.getRepository().getPath() + File.separator;
 		final String directoryPath = basePath + userLogin + File.separator + repositoryPath;
 
-		if(RepositoryQueryReadyToBeScheduled(this.repositoryQuery)){
+		if (RepositoryQueryReadyToBeScheduled(this.repositoryQuery)) {
 			final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery,
 					directoryPath, false);
 			ExecutionEngine.getSingleton().scheduleTask(repositoryQueryScheduled);
@@ -660,7 +715,6 @@ public class MainViewModel extends ViewModelUtils {
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
 						if (event.getName().equals(Messagebox.ON_OK)) {
 							stopRepositoryQueryExecution(repositoryQueryScheduled);
-							postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
 						}
 					});
 		}
@@ -721,9 +775,9 @@ public class MainViewModel extends ViewModelUtils {
 				final long filesInDirectory = numberOfFilesInDirectory(directoryPath);
 
 				synchronized (repository) {
-					final int numberOfPapers = (int) (repository.getNumberOfPapers() + filesInDirectory);
+					final int numberOfFiles = (int) (repository.getNumberOffilesInRepository() + filesInDirectory);
 
-					repository.setNumberOfPapers((int) (numberOfPapers));
+					repository.setNumberOffilesInRepository((int) (numberOfFiles));
 					repository.setLastUpdate(SIMPLE_DATE_FORMAT.format(new Date()));
 
 					tm.runInTransaction(em -> em.merge(repository));
@@ -757,7 +811,7 @@ public class MainViewModel extends ViewModelUtils {
 			synchronized (this.queries) {
 				this.queries.set(this.queries.indexOf(this.repositoryQuery), this.repositoryQuery);
 			}
-			postNotifyChange(this, "repositoryQuery", "queries");
+			postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
 			break;
 		case GlobalEvents.ACTION_STARTED:
 			findRepositoryQuery(this.repositoryQuery);
@@ -787,7 +841,6 @@ public class MainViewModel extends ViewModelUtils {
 					.find(Paths.get(directoryPath), Integer.MAX_VALUE, (filePath, fileAttr) -> fileAttr.isRegularFile())
 					.count() - metadataAndLogFiles;
 		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		return 0;
 	}

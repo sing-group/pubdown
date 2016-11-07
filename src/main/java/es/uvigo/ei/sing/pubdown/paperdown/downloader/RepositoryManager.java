@@ -310,12 +310,12 @@ public class RepositoryManager {
 		}
 	}
 
-	public static void zipDirectory(String zipFileName, String directoryPath) {
+	public static void zipDirectory(final String zipFileName, final String directoryPath, final String downloadOption) {
 		try {
 			File dirObj = new File(directoryPath);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ZipOutputStream zos = new ZipOutputStream(baos);
-			addDir(dirObj, zos);
+			addDir(dirObj, zos, downloadOption);
 			zos.close();
 			Filedownload.save(baos.toByteArray(), ZIP_CONTENT_TYPE, zipFileName);
 		} catch (IOException e) {
@@ -323,32 +323,58 @@ public class RepositoryManager {
 		}
 	}
 
-	static void addDir(File dirObj, ZipOutputStream zos) {
+	static void addDir(final File dirObj, final ZipOutputStream zos, final String downloadOption) {
 		File[] files = dirObj.listFiles();
 		byte[] tmpBuf = new byte[1024];
 
 		for (int i = 0; i < files.length; i++) {
 			try {
 				if (files[i].isDirectory()) {
-					addDir(files[i], zos);
+					addDir(files[i], zos, downloadOption);
 					continue;
 				}
-				FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
+				final String absolutePath = files[i].getAbsolutePath();
+				FileInputStream in = new FileInputStream(absolutePath);
 
 				final String relativePath = dirObj.toURI().relativize(files[i].toURI()).getPath();
 
-				if (!relativePath.equals(LOG_FILE) && !relativePath.equals(METADATA_FILE)) {
-					zos.putNextEntry(new ZipEntry(relativePath));
-					int len;
-					while ((len = in.read(tmpBuf)) > 0) {
-						zos.write(tmpBuf, 0, len);
+				final String completePapers = "complete_papers";
+				final String abstractPapers = "abstract_papers";
+				final boolean isAbstract = absolutePath.contains(abstractPapers);
+
+				switch (downloadOption) {
+				case "both":
+					addFileToZip(zos, tmpBuf, in, relativePath, isAbstract);
+					break;
+				case "abstract":
+					if (!absolutePath.contains(completePapers)) {
+						addFileToZip(zos, tmpBuf, in, relativePath, isAbstract);
 					}
-					zos.closeEntry();
+					break;
+				case "fulltext":
+					if (!absolutePath.contains(abstractPapers)) {
+						addFileToZip(zos, tmpBuf, in, relativePath, isAbstract);
+					}
+					break;
 				}
+
 				in.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+	}
+
+	private static void addFileToZip(final ZipOutputStream zos, byte[] tmpBuf, FileInputStream in,
+			final String relativePath, final boolean isAbstract) throws IOException {
+		if (!relativePath.equals(LOG_FILE) && !relativePath.equals(METADATA_FILE)) {
+			final String abstractOrFulltext = isAbstract ? "abstract" : "fulltext";
+			zos.putNextEntry(new ZipEntry(abstractOrFulltext + File.separator + relativePath));
+			int len;
+			while ((len = in.read(tmpBuf)) > 0) {
+				zos.write(tmpBuf, 0, len);
+			}
+			zos.closeEntry();
 		}
 	}
 
@@ -359,9 +385,12 @@ public class RepositoryManager {
 			stream = Files.lines(Paths.get(csvPath + LOG_FILE));
 			if (stream != null) {
 				stream.forEach((line) -> {
-					final String[] doi = line.split(SEMICOLON_DELIMITER);
-					final String paperTitle = doi[1];
-					titles.add(paperTitle);
+					final String[] paper = line.split(SEMICOLON_DELIMITER);
+					final String paperTitle = paper[1];
+					final String isPaperDownloadedOrError = paper[2];
+					if (isPaperDownloadedOrError.equals("OK") && !titles.contains(paperTitle)) {
+						titles.add(paperTitle);
+					}
 				});
 			}
 		} catch (final IOException e) {

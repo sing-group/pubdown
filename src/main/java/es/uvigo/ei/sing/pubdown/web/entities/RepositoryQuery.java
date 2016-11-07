@@ -36,25 +36,16 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	private boolean pubmed = false;
 
 	@Basic
+	private int downloadLimit = 1;
+
+	@Basic
 	private int scopusDownloadTo = Integer.MAX_VALUE;
 
 	@Basic
 	private int pubmedDownloadTo = Integer.MAX_VALUE;
 
 	@Basic
-	private boolean abstractPaper = false;
-
-	@Basic
-	private boolean fulltextPaper = false;
-
-	@Basic
-	private boolean pdfToText = false;
-
-	@Basic
-	private boolean keepPdf = false;
-
-	@Basic
-	private boolean groupBy = false;
+	private boolean groupBy = true;
 
 	@Basic
 	private boolean checked = false;
@@ -78,21 +69,22 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.task = new RepositoryQueryTask();
 	}
 
+	public RepositoryQuery(final Repository repository) {
+		this.repository = repository;
+		this.task = new RepositoryQueryTask();
+	}
+
 	public RepositoryQuery(final String name, final String query, final Repository repository, final boolean scopus,
-			final boolean pubmed, final int scopusDownloadTo, final int pubmedDownloadTo, final boolean abstractPaper,
-			final boolean fulltextPaper, final boolean pdfToText, final boolean keepPdf, final boolean groupBy,
-			final boolean checked, final boolean running, final RepositoryQueryTask task) {
+			final boolean pubmed, final int downloadLimit, final int scopusDownloadTo, final int pubmedDownloadTo,
+			final boolean groupBy, final boolean checked, final boolean running, final RepositoryQueryTask task) {
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
+		this.downloadLimit = downloadLimit;
 		this.scopusDownloadTo = scopusDownloadTo;
 		this.pubmedDownloadTo = pubmedDownloadTo;
-		this.abstractPaper = abstractPaper;
-		this.fulltextPaper = fulltextPaper;
-		this.pdfToText = pdfToText;
-		this.keepPdf = keepPdf;
 		this.groupBy = groupBy;
 		this.checked = checked;
 		this.running = running;
@@ -100,21 +92,18 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	}
 
 	private RepositoryQuery(final Integer id, final String name, final String query, final Repository repository,
-			final boolean scopus, final boolean pubmed, final int scopusDownloadTo, final int pubmedDownloadTo,
-			final boolean abstractPaper, final boolean fulltextPaper, final boolean pdfToText, final boolean keepPdf,
-			final boolean groupBy, final boolean checked, final boolean running, final RepositoryQueryTask task) {
+			final boolean scopus, final boolean pubmed, final int downloadLimit, final int scopusDownloadTo,
+			final int pubmedDownloadTo, final boolean groupBy, final boolean checked, final boolean running,
+			final RepositoryQueryTask task) {
 		this.id = id;
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
+		this.downloadLimit = downloadLimit;
 		this.scopusDownloadTo = scopusDownloadTo;
 		this.pubmedDownloadTo = pubmedDownloadTo;
-		this.abstractPaper = abstractPaper;
-		this.fulltextPaper = fulltextPaper;
-		this.pdfToText = pdfToText;
-		this.keepPdf = keepPdf;
 		this.groupBy = groupBy;
 		this.checked = checked;
 		this.running = running;
@@ -195,6 +184,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.pubmed = pubmed;
 	}
 
+	public int getDownloadLimit() {
+		return downloadLimit;
+	}
+
+	public void setDownloadLimit(int downloadLimit) {
+		this.downloadLimit = downloadLimit;
+	}
+
 	public int getScopusDownloadTo() {
 		return scopusDownloadTo;
 	}
@@ -211,44 +208,8 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.pubmedDownloadTo = pubmedDownloadTo;
 	}
 
-	public boolean isAbstractPaper() {
-		return abstractPaper;
-	}
-
-	public void setAbstractPaper(final boolean abstractPaper) {
-		this.abstractPaper = abstractPaper;
-	}
-
-	public boolean isFulltextPaper() {
-		return fulltextPaper;
-	}
-
-	public void setFulltextPaper(final boolean fulltextPaper) {
-		this.fulltextPaper = fulltextPaper;
-	}
-
-	public boolean isPdfToText() {
-		return pdfToText;
-	}
-
-	public void setPdfToText(final boolean pdfToText) {
-		this.pdfToText = pdfToText;
-	}
-
-	public boolean isKeepPdf() {
-		return keepPdf;
-	}
-
-	public void setKeepPdf(final boolean keepPdf) {
-		this.keepPdf = keepPdf;
-	}
-
-	public String getGroupBy() {
-		return String.valueOf(groupBy);
-	}
-
-	public void setGroupBy(final String groupBy) {
-		this.groupBy = Boolean.parseBoolean(groupBy);
+	public boolean isGroupBy() {
+		return groupBy;
 	}
 
 	public boolean isChecked() {
@@ -319,8 +280,8 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	@Override
 	public RepositoryQuery clone() {
 		return new RepositoryQuery(this.id, this.name, this.query, this.repository.clone(), this.scopus, this.pubmed,
-				this.scopusDownloadTo, this.pubmedDownloadTo, this.abstractPaper, this.fulltextPaper, this.pdfToText,
-				this.keepPdf, this.groupBy, this.checked, this.running, this.task.clone());
+				this.downloadLimit, this.scopusDownloadTo, this.pubmedDownloadTo, this.groupBy, this.checked,
+				this.running, this.task.clone());
 	}
 
 	/**
@@ -334,9 +295,8 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		return Compare.objects(this, obj).by(RepositoryQuery::getId).thenBy(RepositoryQuery::getName)
 				.thenBy(RepositoryQuery::getQuery).thenBy(RepositoryQuery::getRepository)
 				.thenBy(RepositoryQuery::isScopus).thenBy(RepositoryQuery::isPubmed)
-				.thenBy(RepositoryQuery::isAbstractPaper).thenBy(RepositoryQuery::isFulltextPaper)
-				.thenBy(RepositoryQuery::isPdfToText).thenBy(RepositoryQuery::isKeepPdf)
-				.thenBy(RepositoryQuery::getGroupBy).thenBy(RepositoryQuery::getTask).andGet();
+				.thenBy(RepositoryQuery::getDownloadLimit).thenBy(RepositoryQuery::isGroupBy)
+				.thenBy(RepositoryQuery::getTask).andGet();
 	}
 
 }

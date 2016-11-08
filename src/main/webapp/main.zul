@@ -119,7 +119,7 @@
 															<toolbar>
 																<toolbarbutton
 																	label="New Query" tooltiptext="Create a new query"
-																	onClick="@command('newRepositoryQueryWithRepository')" />
+																	onClick="@command('newRepositoryQuery',option='repository')" />
 															</toolbar>
 															<hlayout
 																hflex="true" vflex="true">
@@ -143,12 +143,12 @@
 																					style="margin-right: 10px" label="Execute"
 																					tooltiptext="Execute now"
 																					disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-																					onClick="@command('launchExecutionNow',current=repositoryQuery)" />
+																					onClick="@command('launchExecution',current=repositoryQuery,executeOption = 'now')" />
 																				<button
 																					style="margin-right: 10px" label="Schedule"
 																					tooltiptext="Schedule query"
 																					disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-																					onClick="@command('launchExecution',current=repositoryQuery)" />
+																					onClick="@command('launchExecution',current=repositoryQuery,executeOption = 'schedule')" />
 																				<button
 																					style="margin-right: 10px" label="Stop"
 																					tooltiptext="Stop query"
@@ -222,7 +222,7 @@
 							<toolbar>
 								<toolbarbutton label="New Query"
 									tooltiptext="Create a new query"
-									onClick="@command('newRepositoryQuery')" />
+									onClick="@command('newRepositoryQuery',option='new')" />
 								<separator orient="vertical" />
 								<label value="Filter" />
 								<textbox
@@ -258,12 +258,12 @@
 													style="margin-right: 10px" label="Execute"
 													tooltiptext="Execute now"
 													disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-													onClick="@command('launchExecutionNow',current=repositoryQuery)" />
+													onClick="@command('launchExecution',current=repositoryQuery,executeOption = 'now')" />
 												<button
 													style="margin-right: 10px" label="Schedule"
 													tooltiptext="Schedule query"
 													disabled="@load(repositoryQuery.running or (not repositoryQuery.checked))"
-													onClick="@command('launchExecution',current=repositoryQuery)" />
+													onClick="@command('launchExecution',current=repositoryQuery,executeOption = 'schedule')" />
 												<button
 													style="margin-right: 10px" label="Stop"
 													tooltiptext="Stop query"

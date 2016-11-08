@@ -73,7 +73,7 @@ public class ScopusDownloader implements Searcher {
 	public void downloadPapers(final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
 			final boolean directoryType, final int downloadLimit, final int downloadFrom, int downloadTo) {
 
-		int aux = downloadTo;
+		
 		int searchIncrease = 1;
 		final int resultNumber = getResultSize();
 		if (resultNumber > 0) {
@@ -85,10 +85,12 @@ public class ScopusDownloader implements Searcher {
 				searchIncrease = downloadTo;
 			}
 
-			if (downloadLimit < resultNumber) {
+			if (downloadLimit <= resultNumber) {
 				downloadTo = downloadLimit;
 			}
-
+			
+			int aux = downloadTo;
+			
 			String queryURL = SEARCH_REQUEST + "count=" + searchIncrease + "&query=" + this.query + "&apiKey="
 					+ this.apiKey + "&httpAccept=application%2F" + SEARCH_REQUEST_TYPE + "&start=";
 

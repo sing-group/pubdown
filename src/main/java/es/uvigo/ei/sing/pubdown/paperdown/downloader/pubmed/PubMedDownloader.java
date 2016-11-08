@@ -71,7 +71,7 @@ public class PubMedDownloader implements Searcher {
 	public void downloadPapers(final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
 			final boolean directoryType, final int downloadLimit, final int downloadFrom, int downloadTo) {
 
-		int aux = downloadTo;
+		
 		int searchIncrease = 1;
 		final int resultNumber = getResultSize();
 		if (resultNumber > 0) {
@@ -86,6 +86,10 @@ public class PubMedDownloader implements Searcher {
 			if (downloadLimit < resultNumber) {
 				downloadTo = downloadLimit;
 			}
+			
+			System.out.println("PUBMED DOWNLOAD TO :"+ downloadTo);
+			
+			int aux = downloadTo;
 
 			String queryURL = SEARCH_REQUEST + this.query.replace(" ", "+") + "&retmax=" + searchIncrease;
 			final PubMedXMLParser xmlParser = new PubMedXMLParser(this.httpClient, this.context, queryURL);

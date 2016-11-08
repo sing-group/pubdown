@@ -540,16 +540,11 @@ public class MainViewModel extends ViewModelUtils {
 		publishRefreshData("repositories");
 	}
 
-	@Command
-	public void newRepositoryQuery() {
-		Executions.createComponents("repositoryQueryForm.zul", null,
-				singletonMap("repositoryQuery", new RepositoryQuery()));
-	}
 
 	@Command
-	public void newRepositoryQueryWithRepository() {
+	public void newRepositoryQuery(@BindingParam("option") final String option) {
 		RepositoryQuery repositoryQuery = new RepositoryQuery();
-		if (this.repository != null) {
+		if (this.repository != null && option.equals("repository")) {
 			repositoryQuery = new RepositoryQuery(this.repository);
 		}
 		Executions.createComponents("repositoryQueryForm.zul", null, singletonMap("repositoryQuery", repositoryQuery));
@@ -647,7 +642,8 @@ public class MainViewModel extends ViewModelUtils {
 	}
 
 	@Command
-	public void launchExecutionNow(@BindingParam("current") final RepositoryQuery repositoryQuery) {
+	public void launchExecution(@BindingParam("current") final RepositoryQuery repositoryQuery,
+			@BindingParam("executeOption") final String executeOption) {
 		findRepositoryQuery(repositoryQuery);
 
 		final String basePath = RepositoryManager.getRepositoryPath() + File.separator;
@@ -658,26 +654,11 @@ public class MainViewModel extends ViewModelUtils {
 		if (RepositoryQueryReadyToBeScheduled(this.repositoryQuery)) {
 			final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery,
 					directoryPath, false);
-			ExecutionEngine.getSingleton().executeTask(repositoryQueryScheduled);
-		} else {
-			Messagebox.show("The query has no results.\n Edit it and try again.");
-		}
-
-	}
-
-	@Command
-	public void launchExecution(@BindingParam("current") final RepositoryQuery repositoryQuery) {
-		findRepositoryQuery(repositoryQuery);
-
-		final String basePath = RepositoryManager.getRepositoryPath() + File.separator;
-		final String userLogin = repositoryQuery.getRepository().getUser().getLogin();
-		final String repositoryPath = this.repositoryQuery.getRepository().getPath() + File.separator;
-		final String directoryPath = basePath + userLogin + File.separator + repositoryPath;
-
-		if (RepositoryQueryReadyToBeScheduled(this.repositoryQuery)) {
-			final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery,
-					directoryPath, false);
-			ExecutionEngine.getSingleton().scheduleTask(repositoryQueryScheduled);
+			if (executeOption.equals("now")) {
+				ExecutionEngine.getSingleton().executeTask(repositoryQueryScheduled);
+			} else {
+				ExecutionEngine.getSingleton().scheduleTask(repositoryQueryScheduled);
+			}
 		} else {
 			Messagebox.show("The query has no results.\n Edit it and try again.");
 		}

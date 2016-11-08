@@ -69,13 +69,11 @@ public class RepositoryQueryScheduled {
 			scopusResult = scopusDownloader.getResultSize();
 			if (scopusResult != 0) {
 
-				// scopusDownloadTo = scopusResult;
-				//
-				// if (scopusResult > 6000) {
-				// scopusDownloadTo = 6000;
-				// }
+				scopusDownloadTo = scopusResult;
 
-				scopusDownloadTo = 3;
+				if (scopusResult > 6000) {
+					scopusDownloadTo = 6000;
+				}
 
 				repositoryQuery.setScopusDownloadTo(scopusDownloadTo);
 			}
@@ -85,9 +83,8 @@ public class RepositoryQueryScheduled {
 			pubmedDownloader = new PubMedDownloader(query, directoryPath);
 			pubmedResult = pubmedDownloader.getResultSize();
 			if (pubmedResult != 0) {
-				// pubmedDownloadTo = pubmedResult;
-
-				pubmedDownloadTo = 3;
+				
+				pubmedDownloadTo = pubmedResult;
 
 				repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
 			}

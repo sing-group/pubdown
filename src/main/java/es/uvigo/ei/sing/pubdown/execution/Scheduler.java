@@ -118,7 +118,7 @@ public class Scheduler {
 		return userCalendar;
 	}
 
-	private int getCalendarDay(final String day) {
+	public static int getCalendarDay(final String day) {
 		int calendarDay = 0;
 		switch (day.toUpperCase()) {
 		case "MONDAY":

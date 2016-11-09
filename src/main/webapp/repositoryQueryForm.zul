@@ -114,7 +114,7 @@
 					<button label="Save Query"
 						onClick="@command('confirm')"
 						forward="repositoryQueryForm.onClose"
-						disabled="@load(not vm.validRepositoryQuery or not empty vmsgs)" />
+						disabled="@load(not vm.validRepositoryQuery or not vm.weeklyDaySelected or not empty vmsgs)" />
 					<button label="Cancel" onClick="@command('refresh')"
 						forward="repositoryQueryForm.onClose" />
 					<button label="Reset form"

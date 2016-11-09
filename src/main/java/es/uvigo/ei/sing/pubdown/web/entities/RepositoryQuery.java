@@ -1,8 +1,13 @@
 package es.uvigo.ei.sing.pubdown.web.entities;
 
+import static es.uvigo.ei.sing.pubdown.web.entities.ExecutionState.UNSCHEDULED;
+
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -51,7 +56,17 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	private boolean checked = false;
 
 	@Basic
-	private boolean running = false;
+	private boolean scheduled = false;
+
+	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	private ExecutionState executionState = UNSCHEDULED;
+
+	@Basic
+	private String lastExecution = "Never";
+
+	@Basic
+	private String nextExecution = "Unscheduled";
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "repositoryId")
@@ -76,7 +91,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 
 	public RepositoryQuery(final String name, final String query, final Repository repository, final boolean scopus,
 			final boolean pubmed, final int downloadLimit, final int scopusDownloadTo, final int pubmedDownloadTo,
-			final boolean groupBy, final boolean checked, final boolean running, final RepositoryQueryTask task) {
+			final boolean groupBy, final boolean checked, final boolean scheduled, final RepositoryQueryTask task) {
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
@@ -87,13 +102,13 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.pubmedDownloadTo = pubmedDownloadTo;
 		this.groupBy = groupBy;
 		this.checked = checked;
-		this.running = running;
+		this.scheduled = scheduled;
 		this.task = new RepositoryQueryTask();
 	}
 
 	private RepositoryQuery(final Integer id, final String name, final String query, final Repository repository,
 			final boolean scopus, final boolean pubmed, final int downloadLimit, final int scopusDownloadTo,
-			final int pubmedDownloadTo, final boolean groupBy, final boolean checked, final boolean running,
+			final int pubmedDownloadTo, final boolean groupBy, final boolean checked, final boolean scheduled,
 			final RepositoryQueryTask task) {
 		this.id = id;
 		this.name = name;
@@ -106,7 +121,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.pubmedDownloadTo = pubmedDownloadTo;
 		this.groupBy = groupBy;
 		this.checked = checked;
-		this.running = running;
+		this.scheduled = scheduled;
 		this.task = task;
 	}
 
@@ -220,12 +235,36 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.checked = checked;
 	}
 
-	public boolean isRunning() {
-		return running;
+	public boolean isScheduled() {
+		return scheduled;
 	}
 
-	public void setRunning(final boolean running) {
-		this.running = running;
+	public void setScheduled(final boolean scheduled) {
+		this.scheduled = scheduled;
+	}
+
+	public ExecutionState getExecutionState() {
+		return executionState;
+	}
+
+	public void setExecutionState(ExecutionState executionState) {
+		this.executionState = executionState;
+	}
+
+	public String getLastExecution() {
+		return lastExecution;
+	}
+
+	public void setLastExecution(String lastExecution) {
+		this.lastExecution = lastExecution;
+	}
+	
+	public String getNextExecution() {
+		return nextExecution;
+	}
+	
+	public void setNextExecution(String nextExecution) {
+		this.nextExecution = nextExecution;
 	}
 
 	public RepositoryQueryTask getTask() {
@@ -281,7 +320,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public RepositoryQuery clone() {
 		return new RepositoryQuery(this.id, this.name, this.query, this.repository.clone(), this.scopus, this.pubmed,
 				this.downloadLimit, this.scopusDownloadTo, this.pubmedDownloadTo, this.groupBy, this.checked,
-				this.running, this.task.clone());
+				this.scheduled, this.task.clone());
 	}
 
 	/**

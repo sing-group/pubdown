@@ -3,6 +3,9 @@ package es.uvigo.ei.sing.pubdown.web.zk.vm;
 import static es.uvigo.ei.sing.pubdown.execution.GlobalEvents.EVENT_REFRESH_DATA;
 import static es.uvigo.ei.sing.pubdown.execution.GlobalEvents.EVENT_REPOSITORY_QUERY;
 import static es.uvigo.ei.sing.pubdown.util.Checks.isEmpty;
+import static es.uvigo.ei.sing.pubdown.web.entities.ExecutionState.RUNNING;
+import static es.uvigo.ei.sing.pubdown.web.entities.ExecutionState.SCHEDULED;
+import static es.uvigo.ei.sing.pubdown.web.entities.ExecutionState.UNSCHEDULED;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 
@@ -11,9 +14,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.zkoss.bind.ValidationContext;
 import org.zkoss.bind.Validator;
@@ -34,6 +47,7 @@ import es.uvigo.ei.sing.pubdown.execution.EventRepositoryQuery;
 import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
 import es.uvigo.ei.sing.pubdown.execution.GlobalEvents;
 import es.uvigo.ei.sing.pubdown.execution.RepositoryQueryScheduled;
+import es.uvigo.ei.sing.pubdown.execution.Scheduler;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.Repository;
@@ -52,6 +66,7 @@ public class MainViewModel extends ViewModelUtils {
 
 	private static final String DOWNLOAD_FILE_EXTENSION = ".zip";
 	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm");
+	private static final DateTimeFormatter DATE_TIMER_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
 	private static final String GC_UPDATE_EXECUTIONS = "updateExecutions";
 	private static final String GC_REFRESH_DATA = "resfreshData";
@@ -470,7 +485,7 @@ public class MainViewModel extends ViewModelUtils {
 						switch (event.getName()) {
 						case Messagebox.ON_OK:
 							for (RepositoryQuery repositoryQuery : selectedRepository.getRepositoryQueries()) {
-								if (repositoryQuery.isRunning()) {
+								if (repositoryQuery.isScheduled()) {
 									final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(
 											repositoryQuery);
 									stopRepositoryQueryExecution(repositoryQueryScheduled);
@@ -539,7 +554,6 @@ public class MainViewModel extends ViewModelUtils {
 
 		publishRefreshData("repositories");
 	}
-
 
 	@Command
 	public void newRepositoryQuery(@BindingParam("option") final String option) {
@@ -685,12 +699,16 @@ public class MainViewModel extends ViewModelUtils {
 		});
 	}
 
+	private void stopRepositoryQueryExecution(final RepositoryQueryScheduled repositoryQueryScheduled) {
+		ExecutionEngine.getSingleton().removeTask(repositoryQueryScheduled);
+	}
+
 	@Command
 	public void abortExecution(@BindingParam("current") RepositoryQuery repositoryQuery) {
 		findRepositoryQuery(repositoryQuery);
 
 		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery);
-		if (this.repositoryQuery.isRunning()) {
+		if (this.repositoryQuery.isScheduled()) {
 			Messagebox.show("Do you want to stop the execution?", "Stop Execution",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
@@ -699,10 +717,6 @@ public class MainViewModel extends ViewModelUtils {
 						}
 					});
 		}
-	}
-
-	private void stopRepositoryQueryExecution(final RepositoryQueryScheduled repositoryQueryScheduled) {
-		ExecutionEngine.getSingleton().removeTask(repositoryQueryScheduled);
 	}
 
 	@Command
@@ -721,17 +735,92 @@ public class MainViewModel extends ViewModelUtils {
 				});
 	}
 
+	private Calendar getNextDailyExecution() {
+		Calendar calendar = Calendar.getInstance();
+		calendar.add(Calendar.DATE, 1);
+		calendar.set(Calendar.HOUR_OF_DAY, this.repositoryQuery.getTask().getHour());
+		calendar.set(Calendar.MINUTE, this.repositoryQuery.getTask().getMinutes());
+		return calendar;
+	}
+
+	private LocalDateTime getNextWeeklyExecution() {
+		final Calendar calendar = Calendar.getInstance();
+		final RepositoryQueryTask task = this.repositoryQuery.getTask();
+		final Map<String, Integer> days = new HashMap<>();
+		final Map<String, Boolean> executionDays = new HashMap<>();
+		final List<LocalDateTime> localDateTimes = new LinkedList<>();
+
+		executionDays.put("MONDAY", task.isMonday());
+		executionDays.put("TUESDAY", task.isTuesday());
+		executionDays.put("WEDNESDAY", task.isWednesday());
+		executionDays.put("THURSDAY", task.isThursday());
+		executionDays.put("FRIDAY", task.isFriday());
+		executionDays.put("SATURDAY", task.isSaturday());
+		executionDays.put("SUNDAY", task.isSunday());
+
+		executionDays.forEach((nameOfDay, isToExecute) -> {
+			if (isToExecute) {
+				days.put(nameOfDay, Scheduler.getCalendarDay(nameOfDay));
+			}
+		});
+
+		final LocalDateTime localDateTime = LocalDateTime.of(LocalDate.now(),
+				LocalTime.of(task.getHour(), task.getMinutes()));
+
+		for (Map.Entry<String, Integer> entry : days.entrySet()) {
+			final String nameOfDay = entry.getKey();
+			final Integer day = entry.getValue();
+			final LocalDateTime executionDate;
+			if (day.equals(calendar.get(Calendar.DAY_OF_WEEK))) {
+				if ((calendar.get(Calendar.HOUR_OF_DAY) <= task.getHour())
+						&& (calendar.get(Calendar.MINUTE) < task.getMinutes())) {
+					executionDate = localDateTime.with(TemporalAdjusters.nextOrSame(getDayOfWeek(nameOfDay)));
+				} else {
+					executionDate = localDateTime.with(TemporalAdjusters.next(getDayOfWeek(nameOfDay)));
+				}
+				localDateTimes.add(executionDate);
+			} else {
+				executionDate = localDateTime.with(TemporalAdjusters.next(getDayOfWeek(nameOfDay)));
+				localDateTimes.add(executionDate);
+			}
+		}
+
+		Collections.sort(localDateTimes);
+
+		return localDateTimes.get(0);
+
+	}
+
+	private DayOfWeek getDayOfWeek(String nameOfDay) {
+		switch (nameOfDay.toUpperCase()) {
+		case "MONDAY":
+			return DayOfWeek.MONDAY;
+		case "TUESDAY":
+			return DayOfWeek.TUESDAY;
+		case "WEDNESDAY":
+			return DayOfWeek.WEDNESDAY;
+		case "THURSDAY":
+			return DayOfWeek.THURSDAY;
+		case "FRIDAY":
+			return DayOfWeek.FRIDAY;
+		case "SATURDAY":
+			return DayOfWeek.SATURDAY;
+		case "SUNDAY":
+			return DayOfWeek.SUNDAY;
+		}
+		return null;
+	}
+
 	@GlobalCommand(MainViewModel.GC_UPDATE_EXECUTIONS)
 	public void updateExecutions(@BindingParam("task") final RepositoryQueryScheduled repositoryQueryScheduled,
-			@BindingParam("action") final String action, @BindingParam("data") boolean toCheck) {
-		this.repositoryQuery = repositoryQueryScheduled.getRepositoryQuery();
+			@BindingParam("action") final String action, @BindingParam("data") boolean toCheckResultSize) {
+		findRepositoryQuery(repositoryQueryScheduled.getRepositoryQuery());
 
 		Repository repository = this.repositoryQuery.getRepository();
 
 		switch (action) {
 		case GlobalEvents.ACTION_FINISHED:
-			if (toCheck) {
-
+			if (toCheckResultSize) {
 				synchronized (this.repositoryQuery) {
 					this.repositoryQuery.setChecked(true);
 					tm.runInTransaction(em -> {
@@ -739,18 +828,28 @@ public class MainViewModel extends ViewModelUtils {
 					});
 				}
 
-				synchronized (this.queries) {
-					if (this.queries.contains(this.repositoryQuery)) {
-						final int indexOf = this.queries.indexOf(this.repositoryQuery);
-						this.queries.set(indexOf, this.repositoryQuery);
-					} else {
-						this.queries.add(this.repositoryQuery);
-					}
-					postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
-
-					publishRefreshData("queries");
-				}
 			} else {
+				final Date lastDate = new Date();
+				synchronized (this.repositoryQuery) {
+					this.repositoryQuery.setLastExecution(SIMPLE_DATE_FORMAT.format(lastDate));
+					if (this.repositoryQuery.isScheduled()) {
+						this.repositoryQuery.setExecutionState(SCHEDULED);
+						if (this.repositoryQuery.getTask().isDaily()) {
+							final Calendar calendar = getNextDailyExecution();
+							this.repositoryQuery.setNextExecution(SIMPLE_DATE_FORMAT.format(calendar.getTime()));
+						} else {
+							this.repositoryQuery
+									.setNextExecution(DATE_TIMER_FORMATTER.format(getNextWeeklyExecution()));
+						}
+					} else {
+						this.repositoryQuery.setExecutionState(UNSCHEDULED);
+						this.repositoryQuery.setNextExecution("Unscheduled");
+					}
+
+					tm.runInTransaction(em -> {
+						em.merge(this.repositoryQuery);
+					});
+				}
 
 				final String directoryPath = repositoryQueryScheduled.getDirectoryPath();
 				final long filesInDirectory = numberOfFilesInDirectory(directoryPath);
@@ -759,7 +858,7 @@ public class MainViewModel extends ViewModelUtils {
 					final int numberOfFiles = (int) (repository.getNumberOffilesInRepository() + filesInDirectory);
 
 					repository.setNumberOffilesInRepository((int) (numberOfFiles));
-					repository.setLastUpdate(SIMPLE_DATE_FORMAT.format(new Date()));
+					repository.setLastUpdate(SIMPLE_DATE_FORMAT.format(lastDate));
 
 					tm.runInTransaction(em -> em.merge(repository));
 				}
@@ -769,10 +868,23 @@ public class MainViewModel extends ViewModelUtils {
 
 				postNotifyChange(this, "repository", "repositories", "repositoryReadyToCompress");
 			}
+
+			synchronized (this.queries) {
+				if (this.queries.contains(this.repositoryQuery)) {
+					final int indexOf = this.queries.indexOf(this.repositoryQuery);
+					this.queries.set(indexOf, this.repositoryQuery);
+				} else {
+					this.queries.add(this.repositoryQuery);
+				}
+				postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
+			}
 			break;
 		case GlobalEvents.ACTION_SCHEDULED:
 			synchronized (this.repositoryQuery) {
-				this.repositoryQuery.setRunning(true);
+				this.repositoryQuery.setScheduled(true);
+				if (!this.repositoryQuery.getExecutionState().equals(RUNNING)) {
+					this.repositoryQuery.setExecutionState(SCHEDULED);
+				}
 				tm.runInTransaction(em -> em.merge(this.repositoryQuery));
 			}
 			synchronized (this.queries) {
@@ -785,9 +897,11 @@ public class MainViewModel extends ViewModelUtils {
 			break;
 		case GlobalEvents.ACTION_ABORTED:
 			synchronized (this.repositoryQuery) {
-				this.repositoryQuery.setRunning(false);
+				this.repositoryQuery.setScheduled(false);
+				this.repositoryQuery.setExecutionState(UNSCHEDULED);
+				this.repositoryQuery.setNextExecution("Unscheduled");
+				this.repositoryQuery.setLastExecution(SIMPLE_DATE_FORMAT.format(new Date()));
 				tm.runInTransaction(em -> em.merge(this.repositoryQuery));
-
 			}
 			synchronized (this.queries) {
 				this.queries.set(this.queries.indexOf(this.repositoryQuery), this.repositoryQuery);
@@ -797,22 +911,32 @@ public class MainViewModel extends ViewModelUtils {
 		case GlobalEvents.ACTION_STARTED:
 			findRepositoryQuery(this.repositoryQuery);
 
-			if (toCheck) {
+			if (toCheckResultSize) {
 				synchronized (this.repositoryQuery) {
 					this.repositoryQuery.setChecked(false);
 					tm.runInTransaction(em -> {
 						em.merge(this.repositoryQuery);
 					});
 				}
-
-				final int indexOf = this.queries.indexOf(this.repositoryQuery);
-				this.queries.remove(indexOf);
-				this.queries.add(indexOf, this.repositoryQuery);
-				postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
+			} else {
+				synchronized (this.repositoryQuery) {
+					if (!this.repositoryQuery.getExecutionState().equals(RUNNING)) {
+						this.repositoryQuery.setExecutionState(RUNNING);
+						this.repositoryQuery.setLastExecution("Running");
+						tm.runInTransaction(em -> {
+							em.merge(this.repositoryQuery);
+						});
+					}
+				}
 			}
+			final int indexOf = this.queries.indexOf(this.repositoryQuery);
+			this.queries.remove(indexOf);
+			this.queries.add(indexOf, this.repositoryQuery);
+			postNotifyChange(this, "repositoryQuery", "queries", "repositoryQueries");
 			break;
 		default:
 		}
+		publishRefreshData("queries");
 	}
 
 	private long numberOfFilesInDirectory(final String directoryPath) {

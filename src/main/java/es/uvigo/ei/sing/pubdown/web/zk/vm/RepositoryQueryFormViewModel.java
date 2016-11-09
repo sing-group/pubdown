@@ -99,6 +99,19 @@ public class RepositoryQueryFormViewModel extends ViewModelUtils {
 		return !(getCurrentUser(tm).getApiKey() == null || getCurrentUser(tm).getApiKey().isEmpty());
 	}
 
+	public boolean isWeeklyDaySelected() {
+		if (!isDaily()) {
+			final RepositoryQueryTask task = this.repositoryQuery.getTask();
+			if (task.isMonday() || task.isTuesday() || task.isWednesday() || task.isThursday() || task.isFriday()
+					|| task.isSaturday() || task.isSunday()) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public boolean isValidRepositoryQuery() {
 		return !isEmpty(this.repositoryQuery.getName()) && !isEmpty(this.repositoryQuery.getQuery())
 				&& !isEmpty(this.repositoryQuery.getRepository().getName())
@@ -114,7 +127,7 @@ public class RepositoryQueryFormViewModel extends ViewModelUtils {
 	 * {@link RepositoryQueryFormViewModel#isValid()}
 	 */
 	@Command
-	@NotifyChange({ "daily", "validRepositoryQuery" })
+	@NotifyChange({ "daily", "validRepositoryQuery", "weeklyDaySelected" })
 	public void checkData() {
 	}
 

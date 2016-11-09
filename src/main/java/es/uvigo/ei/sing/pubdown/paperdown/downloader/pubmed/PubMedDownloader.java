@@ -87,8 +87,6 @@ public class PubMedDownloader implements Searcher {
 				downloadTo = downloadLimit;
 			}
 			
-			System.out.println("PUBMED DOWNLOAD TO :"+ downloadTo);
-			
 			int aux = downloadTo;
 
 			String queryURL = SEARCH_REQUEST + this.query.replace(" ", "+") + "&retmax=" + searchIncrease;

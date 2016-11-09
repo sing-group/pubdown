@@ -46,7 +46,7 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	private int numberOffilesInRepository = 0;
 
 	@Column
-	private String lastUpdate = "";
+	private String lastUpdate = "Never";
 
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "repository")
 	private List<RepositoryQuery> repositoryQueries;

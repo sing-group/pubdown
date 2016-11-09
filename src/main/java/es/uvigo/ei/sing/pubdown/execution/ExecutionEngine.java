@@ -1,6 +1,7 @@
 package es.uvigo.ei.sing.pubdown.execution;
 
 import static es.uvigo.ei.sing.pubdown.execution.GlobalEvents.EVENT_REPOSITORY_QUERY;
+import static es.uvigo.ei.sing.pubdown.web.entities.ExecutionState.RUNNING;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -73,8 +74,8 @@ public class ExecutionEngine {
 
 		}
 
-		final boolean toCheck = repositoryQueryScheduled.isToCheck();
-		publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_SCHEDULED, toCheck);
+		final boolean toCheckResultSize = repositoryQueryScheduled.isToCheck();
+		publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_SCHEDULED, toCheckResultSize);
 
 	}
 
@@ -86,8 +87,8 @@ public class ExecutionEngine {
 				scheduledFuture.cancel(true);
 			});
 
-			final boolean toCheck = repositoryQueryScheduled.isToCheck();
-			publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_ABORTED, toCheck);
+			final boolean toCheckResultSize = repositoryQueryScheduled.isToCheck();
+			publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_ABORTED, toCheckResultSize);
 		}
 	}
 
@@ -161,14 +162,21 @@ public class ExecutionEngine {
 
 		@Override
 		public void run() {
-			final boolean toCheck = repositoryQueryScheduled.isToCheck();
-			publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_STARTED, toCheck);
-			if (toCheck) {
+			final boolean toCheckResultSize = repositoryQueryScheduled.isToCheck();
+			final RepositoryQuery repositoryQuery = repositoryQueryScheduled.getRepositoryQuery();
+
+			publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_STARTED, toCheckResultSize);
+
+			if (toCheckResultSize) {
 				repositoryQueryScheduled.getResultSize();
+				publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_FINISHED, toCheckResultSize);
 			} else {
-				repositoryQueryScheduled.getPapers();
+				if (!repositoryQuery.getExecutionState().equals(RUNNING)) {
+					repositoryQueryScheduled.getPapers();
+					publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_FINISHED, toCheckResultSize);
+				}
 			}
-			publishEvent(repositoryQueryScheduled, GlobalEvents.SUFFIX_FINISHED, toCheck);
+
 		}
 
 	}

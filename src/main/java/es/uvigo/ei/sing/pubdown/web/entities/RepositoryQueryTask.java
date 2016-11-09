@@ -198,7 +198,7 @@ public class RepositoryQueryTask implements Cloneable, Comparable<RepositoryQuer
 	public void setRepositoryQuery(final RepositoryQuery repositoryQuery) {
 		this.repositoryQuery = repositoryQuery;
 	}
-
+	
 	/**
 	 * {@link RepositoryQuery} hashcode method
 	 */

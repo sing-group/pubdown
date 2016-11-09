@@ -17,10 +17,11 @@
 	<servlet>
 		<servlet-name>ContextListener</servlet-name>
 		<servlet-class>
-			es.uvigo.ei.sing.pubdown.web.zk.initiators.ContextListenerServlet</servlet-class>
+			es.uvigo.ei.sing.pubdown.web.zk.initiators.LaunchAtStartUpServlet
+		</servlet-class>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
-	
+
 	<resource-ref>
 		<description>
 			Resource reference to a factory for javax.mail.Session

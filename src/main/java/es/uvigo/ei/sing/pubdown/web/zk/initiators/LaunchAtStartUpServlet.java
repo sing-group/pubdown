@@ -13,7 +13,7 @@ import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.zk.util.CleanEntityManagerTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
 
-public class ContextListenerServlet extends HttpServlet {
+public class LaunchAtStartUpServlet extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
@@ -22,7 +22,7 @@ public class ContextListenerServlet extends HttpServlet {
 	@Override
 	public void init() throws ServletException {
 		final List<RepositoryQuery> repositoryQueries = tm.getInTransaction(
-				em -> em.createQuery("SELECT rq FROM RepositoryQuery rq WHERE rq.running = 1", RepositoryQuery.class)
+				em -> em.createQuery("SELECT rq FROM RepositoryQuery rq WHERE rq.scheduled = 1", RepositoryQuery.class)
 						.getResultList());
 
 		for (final RepositoryQuery repositoryQuery : repositoryQueries) {

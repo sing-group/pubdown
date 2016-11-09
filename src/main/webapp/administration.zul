@@ -134,6 +134,10 @@
 										<column align="center"
 											label="Query name" />
 										<column align="center"
+											label="Last Execution" width="125px" />
+										<column align="center"
+											label="Next Execution" />
+										<column align="center"
 											width="300px" label="Options" />
 									</columns>
 									<template name="model"
@@ -143,15 +147,19 @@
 												value="@load(repositoryQuery.repository.name)" />
 											<label
 												value="@load(repositoryQuery.name)" />
+											<label
+												value="@load(repositoryQuery.lastExecution)" />
+											<label
+												value="@load(repositoryQuery.nextExecution)" />
 											<cell>
 												<button
 													style="margin-right: 10px" label="Stop"
 													tooltiptext="Stop query"
-													disabled="@load(not repositoryQuery.running)"
+													disabled="@load(not repositoryQuery.scheduled)"
 													onClick="@command('abortExecution',current=repositoryQuery)" />
 												<button label="Remove"
 													tooltiptext="Remove Query"
-													disabled="@load(repositoryQuery.running)"
+													disabled="@load(repositoryQuery.scheduled)"
 													onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
 											</cell>
 										</row>

@@ -294,7 +294,7 @@ public class AdministrationViewModel extends ViewModelUtils {
 							this.queries = getAllQueries();
 							for (Repository repository : this.user.getRepositories()) {
 								for (RepositoryQuery repositoryQuery : repository.getRepositoryQueries()) {
-									if (repositoryQuery.isRunning()) {
+									if (repositoryQuery.isScheduled()) {
 										final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(
 												repositoryQuery);
 										stopRepositoryQueryExecution(repositoryQueryScheduled);
@@ -517,7 +517,7 @@ public class AdministrationViewModel extends ViewModelUtils {
 						switch (event.getName()) {
 						case Messagebox.ON_OK:
 							for (RepositoryQuery repositoryQuery : this.repository.getRepositoryQueries()) {
-								if (repositoryQuery.isRunning()) {
+								if (repositoryQuery.isScheduled()) {
 									final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(
 											repositoryQuery);
 									stopRepositoryQueryExecution(repositoryQueryScheduled);
@@ -664,7 +664,7 @@ public class AdministrationViewModel extends ViewModelUtils {
 	@Command
 	public void abortExecution(@BindingParam("current") RepositoryQuery repositoryQuery) {
 		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(repositoryQuery);
-		if (repositoryQuery.isRunning()) {
+		if (repositoryQuery.isScheduled()) {
 			Messagebox.show("Do you want to stop the execution?", "Stop Execution",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
@@ -703,7 +703,7 @@ public class AdministrationViewModel extends ViewModelUtils {
 			break;
 		case GlobalEvents.ACTION_ABORTED:
 			synchronized (repositoryQuery) {
-				repositoryQuery.setRunning(false);
+				repositoryQuery.setScheduled(false);
 				tm.runInTransaction(em -> em.merge(repositoryQuery));
 			}
 

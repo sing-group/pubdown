@@ -58,13 +58,13 @@
 											<checkbox
 												checked="@load(user.locked)" disabled="true" />
 											<cell>
-												<button label="Remove"
+												<button image="images/deleteUser16x16.png"
 													tooltiptext="Remove User"
 													onClick="@command('removeUser', current=user )" />
-												<button
-													label="Reset Password" tooltiptext="Reset Password"
+												<button 
+													image="images/resetPassword16x16.png" tooltiptext="Reset Password"
 													onClick="@command('resetUserPassword', current=user )" />
-												<button label="Unlock"
+												<button image="images/unlockUser16x16.png"
 													tooltiptext="Unlock User"
 													onClick="@command('unlockUser', current=user )"
 													disabled="@load(!user.locked)" />
@@ -99,7 +99,7 @@
 											<label
 												value="@load(repository.path)" />
 											<cell>
-												<button label="Remove"
+												<button image="images/trashCan16x16.png"
 													tooltiptext="Remove Repository"
 													onClick="@command('removeRepository', current=repository )" />
 											</cell>
@@ -153,11 +153,11 @@
 												value="@load(repositoryQuery.nextExecution)" />
 											<cell>
 												<button
-													style="margin-right: 10px" label="Stop"
+													style="margin-right: 10px" image="images/stop16x16.png"
 													tooltiptext="Stop query"
 													disabled="@load(not repositoryQuery.scheduled)"
 													onClick="@command('abortExecution',current=repositoryQuery)" />
-												<button label="Remove"
+												<button image="images/trashCan16x16.png"
 													tooltiptext="Remove Query"
 													disabled="@load(repositoryQuery.scheduled)"
 													onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />

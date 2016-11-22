@@ -29,12 +29,12 @@ import es.uvigo.ei.sing.pubdown.web.zk.util.ViewModelUtils;
 public class RepositoryQueryFormViewModel extends ViewModelUtils {
 	private final TransactionManager tm = new CleanEntityManagerTransactionManager();
 
+	private List<Repository> repositories;
+
 	private RepositoryQuery repositoryQuery;
 	private RepositoryQuery uneditedRepositoryQuery;
 	private RepositoryQueryTask repositoryQueryTask;
 	private RepositoryQueryTask uneditedRepositoryQueryTask;
-
-	private List<Repository> repositories;
 
 	@Init
 	public void init(@ExecutionArgParam("repositoryQuery") final RepositoryQuery repositoryQuery) {

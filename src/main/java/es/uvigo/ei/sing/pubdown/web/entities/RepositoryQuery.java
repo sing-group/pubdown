@@ -1,5 +1,6 @@
 package es.uvigo.ei.sing.pubdown.web.entities;
 
+import static es.uvigo.ei.sing.pubdown.web.entities.ExecutionState.RUNNING;
 import static es.uvigo.ei.sing.pubdown.web.entities.ExecutionState.UNSCHEDULED;
 
 import javax.persistence.Basic;
@@ -41,9 +42,6 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	private boolean pubmed = false;
 
 	@Basic
-	private int downloadLimit = 1;
-
-	@Basic
 	private int scopusDownloadTo = Integer.MAX_VALUE;
 
 	@Basic
@@ -75,6 +73,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	@OneToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "taskId")
 	private RepositoryQueryTask task;
+	
 
 	/**
 	 * Empty Constructor
@@ -90,14 +89,13 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	}
 
 	public RepositoryQuery(final String name, final String query, final Repository repository, final boolean scopus,
-			final boolean pubmed, final int downloadLimit, final int scopusDownloadTo, final int pubmedDownloadTo,
-			final boolean groupBy, final boolean checked, final boolean scheduled, final RepositoryQueryTask task) {
+			final boolean pubmed, final int scopusDownloadTo, final int pubmedDownloadTo, final boolean groupBy,
+			final boolean checked, final boolean scheduled, final RepositoryQueryTask task) {
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
-		this.downloadLimit = downloadLimit;
 		this.scopusDownloadTo = scopusDownloadTo;
 		this.pubmedDownloadTo = pubmedDownloadTo;
 		this.groupBy = groupBy;
@@ -107,16 +105,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	}
 
 	private RepositoryQuery(final Integer id, final String name, final String query, final Repository repository,
-			final boolean scopus, final boolean pubmed, final int downloadLimit, final int scopusDownloadTo,
-			final int pubmedDownloadTo, final boolean groupBy, final boolean checked, final boolean scheduled,
-			final RepositoryQueryTask task) {
+			final boolean scopus, final boolean pubmed, final int scopusDownloadTo, final int pubmedDownloadTo,
+			final boolean groupBy, final boolean checked, final boolean scheduled, final RepositoryQueryTask task) {
 		this.id = id;
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
-		this.downloadLimit = downloadLimit;
 		this.scopusDownloadTo = scopusDownloadTo;
 		this.pubmedDownloadTo = pubmedDownloadTo;
 		this.groupBy = groupBy;
@@ -199,14 +195,6 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.pubmed = pubmed;
 	}
 
-	public int getDownloadLimit() {
-		return downloadLimit;
-	}
-
-	public void setDownloadLimit(int downloadLimit) {
-		this.downloadLimit = downloadLimit;
-	}
-
 	public int getScopusDownloadTo() {
 		return scopusDownloadTo;
 	}
@@ -258,11 +246,11 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public void setLastExecution(String lastExecution) {
 		this.lastExecution = lastExecution;
 	}
-	
+
 	public String getNextExecution() {
 		return nextExecution;
 	}
-	
+
 	public void setNextExecution(String nextExecution) {
 		this.nextExecution = nextExecution;
 	}
@@ -274,7 +262,11 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public void setTask(final RepositoryQueryTask task) {
 		this.task = task;
 	}
-
+	
+	public boolean isRunning(){
+		return getExecutionState().equals(RUNNING);
+	}
+	
 	/**
 	 * {@link RepositoryQuery} hashcode method
 	 */
@@ -319,8 +311,8 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	@Override
 	public RepositoryQuery clone() {
 		return new RepositoryQuery(this.id, this.name, this.query, this.repository.clone(), this.scopus, this.pubmed,
-				this.downloadLimit, this.scopusDownloadTo, this.pubmedDownloadTo, this.groupBy, this.checked,
-				this.scheduled, this.task.clone());
+				this.scopusDownloadTo, this.pubmedDownloadTo, this.groupBy, this.checked, this.scheduled,
+				this.task.clone());
 	}
 
 	/**
@@ -333,8 +325,7 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public int compareTo(final RepositoryQuery obj) {
 		return Compare.objects(this, obj).by(RepositoryQuery::getId).thenBy(RepositoryQuery::getName)
 				.thenBy(RepositoryQuery::getQuery).thenBy(RepositoryQuery::getRepository)
-				.thenBy(RepositoryQuery::isScopus).thenBy(RepositoryQuery::isPubmed)
-				.thenBy(RepositoryQuery::getDownloadLimit).thenBy(RepositoryQuery::isGroupBy)
+				.thenBy(RepositoryQuery::isScopus).thenBy(RepositoryQuery::isPubmed).thenBy(RepositoryQuery::isGroupBy)
 				.thenBy(RepositoryQuery::getTask).andGet();
 	}
 

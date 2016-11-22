@@ -277,7 +277,7 @@ public class MainViewModel extends ViewModelUtils {
 		}
 	}
 
-	private boolean isNewRepository() {
+	public boolean isNewRepository() {
 		return this.repository.getId() == null;
 	}
 
@@ -324,16 +324,42 @@ public class MainViewModel extends ViewModelUtils {
 		};
 	}
 
+	public Validator getDownloadLimitValidator() {
+		return new AbstractValidator() {
+			@Override
+			public void validate(final ValidationContext ctx) {
+				final String downloadLimit = (String) ctx.getProperty().getValue();
+
+				if (isEmpty(downloadLimit)) {
+					addInvalidMessage(ctx, "Limit can't be empty");
+				}
+				try {
+					final int limit = Integer.parseInt(downloadLimit);
+					if (limit <= 0 || limit > Integer.MAX_VALUE) {
+						addInvalidMessage(ctx, "Limit must be an integer between 0 and " + Integer.MAX_VALUE);
+					}
+					if (limit <= repository.getNumberOffilesInRepository()) {
+						addInvalidMessage(ctx,
+								"Limit must be greater than the current number of files in the repository");
+					}
+
+				} catch (NumberFormatException e) {
+					addInvalidMessage(ctx, "Limit must be an integer between 0 and " + Integer.MAX_VALUE);
+				}
+			}
+		};
+	}
+
 	public boolean isValidRepository() {
 		return !isEmpty(this.repository.getName());
 	}
 
-	public boolean isQueryReadyToCheckResult() {
+	public boolean isRepositoryReady() {
 		return isValidRepository() && (this.repository.isFulltextPaper() || this.repository.isAbstractPaper());
 	}
 
 	@Command
-	@NotifyChange({ "validRepository", "queryReadyToCheckResult" })
+	@NotifyChange({ "validRepository", "repositoryReady" })
 	public void checkRepository() {
 	}
 
@@ -395,6 +421,7 @@ public class MainViewModel extends ViewModelUtils {
 	}
 
 	@Command
+	@NotifyChange("newRepository")
 	public void selectRepository(@BindingParam("current") Repository repository) {
 		final Repository selectedRepository = repository;
 
@@ -442,6 +469,7 @@ public class MainViewModel extends ViewModelUtils {
 	}
 
 	@Command
+	@NotifyChange("newRepository")
 	public void newRepository() {
 		if (isRepositoryModified()) {
 			Messagebox.show("Do you want to save?", "Save Repository",
@@ -452,26 +480,53 @@ public class MainViewModel extends ViewModelUtils {
 						case Messagebox.ON_OK:
 							persistRepository();
 
-							setRepository(this.repository);
 							postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
+
+							Executions.createComponents("repositoryForm.zul", null,
+									singletonMap("repository", new Repository()));
 
 							break;
 						case Messagebox.ON_CANCEL:
 							discardRepositoryChanges();
 
-							setRepository(new Repository());
-
 							postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
+
+							Executions.createComponents("repositoryForm.zul", null,
+									singletonMap("repository", new Repository()));
+
 							break;
 						case Messagebox.ON_NO:
 						default:
 						}
 					}, singletonMap("width", "500"));
 		} else {
-			this.setRepository(new Repository());
 			this.repositoryQueries = new LinkedList<>();
 			postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
+
+			Executions.createComponents("repositoryForm.zul", null, singletonMap("repository", new Repository()));
 		}
+	}
+
+	@GlobalCommand
+	public void addRepository(@BindingParam("repository") final Repository repository) {
+		this.repositories.add(repository);
+
+		setRepository(repository);
+
+		postNotifyChange(this, "repository", "repositories");
+
+		publishRefreshData("repositories");
+
+	}
+
+	@GlobalCommand
+	public void updateRepository(@BindingParam("repository") final Repository repository) {
+		final int indexOf = this.repositories.indexOf(repository);
+		this.repositories.remove(indexOf);
+		this.repositories.add(indexOf, repository);
+		postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
+
+		publishRefreshData("repositories");
 	}
 
 	@Command
@@ -504,7 +559,8 @@ public class MainViewModel extends ViewModelUtils {
 							this.repositories = getRepositories();
 							this.queries = getAllQueries();
 
-							postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
+							postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries",
+									"newRepository");
 
 							publishRefreshData("repositories");
 
@@ -518,17 +574,8 @@ public class MainViewModel extends ViewModelUtils {
 		}
 	}
 
-	@GlobalCommand
-	public void updateRepository(@BindingParam("repository") final Repository repository) {
-		final int indexOf = this.repositories.indexOf(repository);
-		this.repositories.remove(indexOf);
-		this.repositories.add(indexOf, repository);
-		postNotifyChange(this, "repository", "repositories", "queries", "repositoryQueries");
-
-		publishRefreshData("repositories");
-	}
-
 	@Command
+	@NotifyChange("newRepository")
 	public void persistRepository() {
 		final Repository repository = this.repository;
 
@@ -558,17 +605,21 @@ public class MainViewModel extends ViewModelUtils {
 	@Command
 	public void newRepositoryQuery(@BindingParam("option") final String option) {
 		RepositoryQuery repositoryQuery = new RepositoryQuery();
-		if (this.repository != null && option.equals("repository")) {
+		if (this.repository != null && option.equals("repository") && !isNewRepository()) {
 			repositoryQuery = new RepositoryQuery(this.repository);
+			Executions.createComponents("repositoryQueryFormWithoutRepository.zul", null,
+					singletonMap("repositoryQuery", repositoryQuery));
+		} else {
+			Executions.createComponents("repositoryQueryForm.zul", null,
+					singletonMap("repositoryQuery", repositoryQuery));
 		}
-		Executions.createComponents("repositoryQueryForm.zul", null, singletonMap("repositoryQuery", repositoryQuery));
 	}
 
 	@Command
 	public void editRepositoryQuery(@BindingParam("current") RepositoryQuery repositoryQuery) {
 		findRepositoryQuery(repositoryQuery);
 
-		Executions.createComponents("repositoryQueryForm.zul", null,
+		Executions.createComponents("repositoryQueryFormWithoutRepository.zul", null,
 				singletonMap("repositoryQuery", this.repositoryQuery));
 	}
 
@@ -709,7 +760,15 @@ public class MainViewModel extends ViewModelUtils {
 
 		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(this.repositoryQuery);
 		if (this.repositoryQuery.isScheduled()) {
-			Messagebox.show("Do you want to stop the execution?", "Stop Execution",
+			Messagebox.show("Do you want to stop the scheduled tasks?", "Stop Execution",
+					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
+					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
+						if (event.getName().equals(Messagebox.ON_OK)) {
+							stopRepositoryQueryExecution(repositoryQueryScheduled);
+						}
+					});
+		} else {
+			Messagebox.show("Do you want to stop the current execution?", "Stop Execution",
 					new Messagebox.Button[] { Messagebox.Button.OK, Messagebox.Button.CANCEL },
 					new String[] { "Confirm", "Cancel" }, Messagebox.QUESTION, null, event -> {
 						if (event.getName().equals(Messagebox.ON_OK)) {
@@ -737,7 +796,14 @@ public class MainViewModel extends ViewModelUtils {
 
 	private Calendar getNextDailyExecution() {
 		Calendar calendar = Calendar.getInstance();
-		calendar.add(Calendar.DATE, 1);
+
+		if (calendar.get(Calendar.HOUR_OF_DAY) > this.repositoryQuery.getTask().getHour()) {
+			calendar.add(Calendar.DATE, 1);
+		} else if ((calendar.get(Calendar.HOUR_OF_DAY) == this.repositoryQuery.getTask().getHour())
+				&& (calendar.get(Calendar.MINUTE)) >= this.repositoryQuery.getTask().getMinutes()) {
+			calendar.add(Calendar.DATE, 1);
+		}
+
 		calendar.set(Calendar.HOUR_OF_DAY, this.repositoryQuery.getTask().getHour());
 		calendar.set(Calendar.MINUTE, this.repositoryQuery.getTask().getMinutes());
 		return calendar;
@@ -770,14 +836,18 @@ public class MainViewModel extends ViewModelUtils {
 		for (Map.Entry<String, Integer> entry : days.entrySet()) {
 			final String nameOfDay = entry.getKey();
 			final Integer day = entry.getValue();
+
 			final LocalDateTime executionDate;
 			if (day.equals(calendar.get(Calendar.DAY_OF_WEEK))) {
-				if ((calendar.get(Calendar.HOUR_OF_DAY) <= task.getHour())
+				if (task.getHour() > calendar.get(Calendar.HOUR_OF_DAY)) {
+					executionDate = localDateTime.with(TemporalAdjusters.nextOrSame(getDayOfWeek(nameOfDay)));
+				} else if ((task.getHour() == calendar.get(Calendar.HOUR_OF_DAY))
 						&& (calendar.get(Calendar.MINUTE) < task.getMinutes())) {
 					executionDate = localDateTime.with(TemporalAdjusters.nextOrSame(getDayOfWeek(nameOfDay)));
 				} else {
 					executionDate = localDateTime.with(TemporalAdjusters.next(getDayOfWeek(nameOfDay)));
 				}
+
 				localDateTimes.add(executionDate);
 			} else {
 				executionDate = localDateTime.with(TemporalAdjusters.next(getDayOfWeek(nameOfDay)));
@@ -786,6 +856,8 @@ public class MainViewModel extends ViewModelUtils {
 		}
 
 		Collections.sort(localDateTimes);
+
+		System.out.println(localDateTimes);
 
 		return localDateTimes.get(0);
 
@@ -814,7 +886,8 @@ public class MainViewModel extends ViewModelUtils {
 	@GlobalCommand(MainViewModel.GC_UPDATE_EXECUTIONS)
 	public void updateExecutions(@BindingParam("task") final RepositoryQueryScheduled repositoryQueryScheduled,
 			@BindingParam("action") final String action, @BindingParam("data") boolean toCheckResultSize) {
-		findRepositoryQuery(repositoryQueryScheduled.getRepositoryQuery());
+		RepositoryQuery rq = repositoryQueryScheduled.getRepositoryQuery();
+		findRepositoryQuery(rq);
 
 		Repository repository = this.repositoryQuery.getRepository();
 
@@ -822,6 +895,8 @@ public class MainViewModel extends ViewModelUtils {
 		case GlobalEvents.ACTION_FINISHED:
 			if (toCheckResultSize) {
 				synchronized (this.repositoryQuery) {
+					this.repositoryQuery.setScopusDownloadTo(rq.getScopusDownloadTo());
+					this.repositoryQuery.setPubmedDownloadTo(rq.getPubmedDownloadTo());
 					this.repositoryQuery.setChecked(true);
 					tm.runInTransaction(em -> {
 						em.merge(this.repositoryQuery);
@@ -884,7 +959,16 @@ public class MainViewModel extends ViewModelUtils {
 				this.repositoryQuery.setScheduled(true);
 				if (!this.repositoryQuery.getExecutionState().equals(RUNNING)) {
 					this.repositoryQuery.setExecutionState(SCHEDULED);
+
+					if (this.repositoryQuery.getTask().isDaily()) {
+						final Calendar calendar = getNextDailyExecution();
+						this.repositoryQuery.setNextExecution(SIMPLE_DATE_FORMAT.format(calendar.getTime()));
+					} else {
+						this.repositoryQuery.setNextExecution(DATE_TIMER_FORMATTER.format(getNextWeeklyExecution()));
+					}
+
 				}
+
 				tm.runInTransaction(em -> em.merge(this.repositoryQuery));
 			}
 			synchronized (this.queries) {
@@ -939,12 +1023,29 @@ public class MainViewModel extends ViewModelUtils {
 		publishRefreshData("queries");
 	}
 
+	// private long numberOfFilesInDirectory(final String directoryPath) {
+	// try {
+	// final int metadataAndLogFiles = 2;
+	// return Files
+	// .find(Paths.get(directoryPath), Integer.MAX_VALUE, (filePath, fileAttr)
+	// -> fileAttr.isRegularFile())
+	// .count() - metadataAndLogFiles;
+	// } catch (IOException e) {
+	// }
+	// return 0;
+	// }
+
 	private long numberOfFilesInDirectory(final String directoryPath) {
 		try {
 			final int metadataAndLogFiles = 2;
-			return Files
+			long fileNumber = Files
 					.find(Paths.get(directoryPath), Integer.MAX_VALUE, (filePath, fileAttr) -> fileAttr.isRegularFile())
-					.count() - metadataAndLogFiles;
+					.count();
+			if (fileNumber < 3) {
+				return 0;
+			} else {
+				return fileNumber - metadataAndLogFiles;
+			}
 		} catch (IOException e) {
 		}
 		return 0;

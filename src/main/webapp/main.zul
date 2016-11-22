@@ -1,4 +1,3 @@
-<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
 <zk>
 	<style src="css/pubdown.css" />
 
@@ -28,7 +27,8 @@
 									<menuitem
 										image="./images/trashCan16x16.png"
 										onClick="@command('removeRepository')"
-										tooltiptext="Delete Repository" />
+										tooltiptext="Delete Repository"
+										disabled="@load(vm.newRepository)" />
 								</menubar>
 								<listbox id="repositories" vflex="true"
 									model="@load(vm.repositories)"
@@ -57,7 +57,7 @@
 											onClick="@command('refreshRepository')" />
 										<toolbarbutton
 											label="Save Repository"
-											disabled="@load(not vm.validRepository or not vm.queryReadyToCheckResult or not empty vmsgs)"
+											disabled="@load(not vm.validRepository or not vm.repositoryReady or not empty vmsgs)"
 											onClick="@command('persistRepository')" />
 									</toolbar>
 									<vlayout vflex="true"
@@ -66,17 +66,27 @@
 											<label value="Name" />
 											<textbox id="rbName"
 												width="400px" onChange="@command('checkRepository')"
+												disabled="@load(vm.newRepository)"
 												value="@bind(vm.repository.name) @validator(vm.nameValidator)" />
 											<label
 												value="@load(vmsgs[rbName])" sclass="error" />
 										</hlayout>
 										<hlayout valign="middle">
+											<label value="Limit: " />
+											<textbox
+												id="rbDownloadLimit" disabled="@load(vm.newRepository)"
+												value="@bind(vm.repository.downloadLimit) @validator(vm.downloadLimitValidator)"
+												onChange="@command('checkRepository')" />
+											<label
+												value="@load(vmsgs[rbDownloadLimit])" sclass="error" />
+										</hlayout>
+										<hlayout valign="middle">
 											<label value="Download: " />
 											<checkbox label="abstract"
 												checked="@bind(vm.repository.abstractPaper)"
-												onCheck="@command('checkRepository')" />
+												onCheck="@command('checkRepository')" disabled="true" />
 											<checkbox label="full text"
-												checked="@bind(vm.repository.fulltextPaper)"
+												disabled="true" checked="@bind(vm.repository.fulltextPaper)"
 												onCheck="@command('checkRepository')" />
 											<label
 												value=" (You must select at least one)" />
@@ -84,12 +94,11 @@
 										<hlayout valign="middle">
 											<label value="PDF: " />
 											<checkbox
-												label="extract text"
+												label="extract text" disabled="true"
 												checked="@bind(vm.repository.pdfToText)"
 												onCheck="@command('checkRepository')" />
 											<checkbox
-												label="keep after processing"
-												disabled="@load(not vm.repository.pdfToText)"
+												label="keep after processing" disabled="true"
 												checked="@bind(vm.repository.keepPdf)"
 												onCheck="@command('checkRepository')" />
 										</hlayout>
@@ -126,7 +135,7 @@
 																<grid
 																	model="@load(vm.repositoryQueries)" autopaging="true"
 																	pagingPosition="bottom" mold="paging" hflex="true"
-																	height="350px">
+																	height="335px">
 																	<columns>
 																		<column
 																			align="center" label="Query name" />
@@ -135,7 +144,7 @@
 																		<column
 																			align="center" label="Next Execution" />
 																		<column
-																			align="center" label="Options" width="375px" />
+																			align="center" label="Options" width="300px" />
 																	</columns>
 																	<template
 																		name="model" var="repositoryQuery">
@@ -148,27 +157,32 @@
 																				value="@load(repositoryQuery.nextExecution)" />
 																			<cell>
 																				<button
-																					style="margin-right: 10px" label="Execute"
+																					style="margin-right: 10px"
+																					image="images/run16x16.png"
 																					tooltiptext="Execute now"
-																					disabled="@load(not repositoryQuery.checked)"
+																					disabled="@load(not repositoryQuery.checked or repositoryQuery.running or repositoryQuery.scheduled)"
 																					onClick="@command('launchExecution',current=repositoryQuery,executeOption = 'now')" />
 																				<button
-																					style="margin-right: 10px" label="Schedule"
+																					style="margin-right: 10px"
+																					image="images/schedule16x16.png"
 																					tooltiptext="Schedule query"
-																					disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
+																					disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked) or repositoryQuery.running)"
 																					onClick="@command('launchExecution',current=repositoryQuery,executeOption = 'schedule')" />
 																				<button
-																					style="margin-right: 10px" label="Stop"
+																					style="margin-right: 10px"
+																					image="images/stop16x16.png"
 																					tooltiptext="Stop query"
-																					disabled="@load(not repositoryQuery.scheduled)"
+																					disabled="@load(not repositoryQuery.scheduled and (not repositoryQuery.running))"
 																					onClick="@command('abortExecution',current=repositoryQuery)" />
 																				<button
-																					style="margin-right: 10px" label="Edit"
+																					style="margin-right: 10px"
+																					image="images/edit16x16.png"
 																					tooltiptext="Edit query"
 																					disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
 																					onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
 																				<button
-																					label="Remove" tooltiptext="Remove Query"
+																					image="images/trashCan16x16.png"
+																					tooltiptext="Remove Query"
 																					disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
 																					onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
 																			</cell>
@@ -200,7 +214,7 @@
 															<grid
 																model="@load(vm.repositoryPapers)" autopaging="true"
 																pagingPosition="bottom" mold="paging" hflex="true"
-																height="350px">
+																height="335px">
 																<columns>
 																	<column
 																		align="left" label="Paper Title" />
@@ -256,7 +270,7 @@
 										<column align="center"
 											label="Next Execution" />
 										<column align="center"
-											label="Options" width="400px" />
+											label="Options" width="300px" />
 									</columns>
 									<template name="model"
 										var="repositoryQuery">
@@ -271,27 +285,27 @@
 												value="@load(repositoryQuery.nextExecution)" />
 											<cell>
 												<button
-													style="margin-right: 10px" label="Execute"
+													style="margin-right: 10px" image="images/run16x16.png"
 													tooltiptext="Execute now"
-													disabled="@load(not repositoryQuery.checked)"
+													disabled="@load(not repositoryQuery.checked or repositoryQuery.running or repositoryQuery.scheduled)"
 													onClick="@command('launchExecution',current=repositoryQuery,executeOption = 'now')" />
 												<button
-													style="margin-right: 10px" label="Schedule"
+													style="margin-right: 10px" image="images/schedule16x16.png"
 													tooltiptext="Schedule query"
-													disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
+													disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked) or repositoryQuery.running)"
 													onClick="@command('launchExecution',current=repositoryQuery,executeOption = 'schedule')" />
 												<button
-													style="margin-right: 10px" label="Stop"
+													style="margin-right: 10px" image="images/stop16x16.png"
 													tooltiptext="Stop query"
-													disabled="@load(not repositoryQuery.scheduled)"
+													disabled="@load(not repositoryQuery.scheduled and (not repositoryQuery.running))"
 													onClick="@command('abortExecution',current=repositoryQuery)" />
 												<button
-													style="margin-right: 10px" label="Edit"
+													style="margin-right: 10px" image="images/edit16x16.png"
 													tooltiptext="Edit query"
 													disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
 													onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
-												<button label="Remove"
-													tooltiptext="Remove Query"
+												<button
+													image="images/trashCan16x16.png" tooltiptext="Remove Query"
 													disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
 													onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
 											</cell>

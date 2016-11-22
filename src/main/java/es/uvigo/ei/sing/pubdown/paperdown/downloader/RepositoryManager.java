@@ -15,10 +15,11 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -232,64 +233,27 @@ public class RepositoryManager {
 		}
 	}
 
-	public static Map<String, String> readMetaData(final String directory) {
-		BufferedReader bufferedReader = null;
-		String line = "";
-		final Map<String, String> doiMap = new HashMap<>();
-		try {
-			final File file = new File(directory + File.separator + METADATA_FILE);
-			if (!file.exists()) {
-				file.createNewFile();
-			}
-			bufferedReader = new BufferedReader(new FileReader(file));
-			while ((line = bufferedReader.readLine()) != null) {
-				final String[] tokens = line.split(SEMICOLON_DELIMITER);
-				if (tokens.length > 0) {
-					doiMap.put(tokens[0], tokens[1]);
+	public static Set<String> readDOIInMetaData(final String directory, final String doi) {
+		final File file = new File(directory + File.separator + METADATA_FILE);
+		if (file.exists()) {
+			final Set<String> doiList = new HashSet<>();
+			
+			String line;
+			try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
+				while ((line = bufferedReader.readLine()) != null) {
+					final String[] tokens = line.split(SEMICOLON_DELIMITER);
+					if (tokens.length > 0 && tokens[0].equalsIgnoreCase(doi)) {
+						doiList.add(tokens[1]);
+					}
 				}
+			} catch (final IOException e) {
+				e.printStackTrace();
 			}
-		} catch (final IOException e) {
-		} finally {
-			if (bufferedReader != null) {
-				try {
-					bufferedReader.close();
-				} catch (final IOException e) {
-				}
-			}
+			
+			return doiList;
+		} else {
+			return Collections.emptySet();
 		}
-		return doiMap;
-
-	}
-
-	public static Map<String, List<String>> readDOIInMetaData(final String directory, final String doi) {
-		BufferedReader bufferedReader = null;
-		String line = "";
-		final List<String> doiList = new LinkedList<>();
-		final Map<String, List<String>> doiMap = new HashMap<>();
-		try {
-			final File file = new File(directory + File.separator + METADATA_FILE);
-			if (!file.exists()) {
-				file.createNewFile();
-			}
-			bufferedReader = new BufferedReader(new FileReader(file));
-			while ((line = bufferedReader.readLine()) != null) {
-				final String[] tokens = line.split(SEMICOLON_DELIMITER);
-				if (tokens.length > 0 && tokens[0].equals(doi)) {
-					doiList.add(tokens[1]);
-				}
-			}
-			doiMap.put(doi, doiList);
-		} catch (final IOException e) {
-		} finally {
-			if (bufferedReader != null) {
-				try {
-					bufferedReader.close();
-				} catch (final IOException e) {
-				}
-			}
-		}
-		return doiMap;
-
 	}
 
 	public static void writeMetaData(final String directory, final String doi, final String title, final String date,
@@ -308,6 +272,22 @@ public class RepositoryManager {
 					+ date + SEMICOLON_DELIMITER + authors + "\n");
 		} catch (final IOException e) {
 		}
+	}
+
+	public static long numberOfFilesInDirectory(final String directoryPath) {
+		try {
+			final int metadataAndLogFiles = 2;
+			long fileNumber = Files
+					.find(Paths.get(directoryPath), Integer.MAX_VALUE, (filePath, fileAttr) -> fileAttr.isRegularFile())
+					.count();
+			if (fileNumber < 3) {
+				return 0;
+			} else {
+				return fileNumber - metadataAndLogFiles;
+			}
+		} catch (IOException e) {
+		}
+		return 0;
 	}
 
 	public static void zipDirectory(final String zipFileName, final String directoryPath, final String downloadOption) {

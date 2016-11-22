@@ -5,6 +5,7 @@ import java.io.StringReader;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -29,6 +30,7 @@ import es.uvigo.ei.sing.pubdown.paperdown.downloader.DownloadEvent;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.DownloadListener;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.Searcher;
+import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 
 public class ScopusDownloader implements Searcher {
 	private static final String SEARCH_REQUEST = "https://api.elsevier.com/content/search/scidir?";
@@ -37,6 +39,7 @@ public class ScopusDownloader implements Searcher {
 
 	private CloseableHttpClient httpClient;
 	private HttpClientContext context;
+	private RepositoryQuery repositoryQuery;
 	private String query;
 	private String apiKey;
 	private String directory;
@@ -61,6 +64,10 @@ public class ScopusDownloader implements Searcher {
 		this.context = HttpClientContext.create();
 	}
 
+	public RepositoryQuery getRepositoryQuery() {
+		return repositoryQuery;
+	}
+
 	public String getDirectory() {
 		return directory;
 	}
@@ -73,10 +80,10 @@ public class ScopusDownloader implements Searcher {
 	public void downloadPapers(final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
 			final boolean directoryType, final int downloadLimit, final int downloadFrom, int downloadTo) {
 
-		
 		int searchIncrease = 1;
 		final int resultNumber = getResultSize();
 		if (resultNumber > 0) {
+
 			if (resultNumber < searchIncrease) {
 				searchIncrease = resultNumber;
 			}
@@ -88,9 +95,9 @@ public class ScopusDownloader implements Searcher {
 			if (downloadLimit <= resultNumber) {
 				downloadTo = downloadLimit;
 			}
-			
+
 			int aux = downloadTo;
-			
+
 			String queryURL = SEARCH_REQUEST + "count=" + searchIncrease + "&query=" + this.query + "&apiKey="
 					+ this.apiKey + "&httpAccept=application%2F" + SEARCH_REQUEST_TYPE + "&start=";
 
@@ -98,6 +105,7 @@ public class ScopusDownloader implements Searcher {
 			final ScopusHTMLParser htmlParser = new ScopusHTMLParser(this.httpClient, this.context, null);
 
 			for (int i = downloadFrom; i < downloadTo; i += searchIncrease) {
+
 				xmlParser.setQueryURL(queryURL + i);
 
 				if (aux < searchIncrease) {
@@ -109,15 +117,19 @@ public class ScopusDownloader implements Searcher {
 				final Map<String, String> urlsWithTitle = isCompletePaper ? xmlParser.getCompletePaperPDFURLs()
 						: xmlParser.getAbstractPaperPDFURLs(this.apiKey);
 
+				final int numberOfFiles = (int) RepositoryManager.numberOfFilesInDirectory(this.directory);
+
 				if (checkMetadata(xmlParser.getQueryURL(), isCompletePaper)) {
-					htmlParser.setUrlsWithTitle(urlsWithTitle);
-					downloadCompleteOrAbstract(isCompletePaper, htmlParser, convertPDFtoTXT, keepPDF, directoryType);
-					RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList, isCompletePaper);
+					if((numberOfFiles < downloadLimit)){
+						htmlParser.setUrlsWithTitle(urlsWithTitle);
+						downloadCompleteOrAbstract(isCompletePaper, htmlParser, convertPDFtoTXT, keepPDF, directoryType);
+						RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList, isCompletePaper);
+						authorList.clear();
+					}
 				}
 
 				aux = aux - searchIncrease;
 
-				// notifyDownloadListeners(new DownloadEvent());
 			}
 		}
 	}
@@ -186,16 +198,11 @@ public class ScopusDownloader implements Searcher {
 	}
 
 	private boolean checkMetadata(final String query, final boolean isCompletePaper) {
-		try {
-
-			final HttpGet httpget = new HttpGet(query);
-			final CloseableHttpResponse response = this.httpClient.execute(httpget, this.context);
-			final String xmlDocument = EntityUtils.toString(response.getEntity());
-			response.close();
-
+		final HttpGet httpget = new HttpGet(query);
+		try (final CloseableHttpResponse response = this.httpClient.execute(httpget, this.context)) {
 			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder builder = factory.newDocumentBuilder();
-			final Document document = builder.parse(new InputSource(new StringReader(xmlDocument)));
+			final Document document = builder.parse(new InputSource(response.getEntity().getContent()));
 			document.getDocumentElement().normalize();
 			final NodeList errorElements = document.getElementsByTagName("error");
 			if (errorElements.item(0) != null) {
@@ -239,21 +246,11 @@ public class ScopusDownloader implements Searcher {
 
 						if (child.getNodeName().equals("prism:doi")) {
 							doi = child.getFirstChild().getTextContent();
-							final Map<String, String> doiMap = RepositoryManager.readMetaData(this.directory);
-							if (!doiMap.containsKey(doi)) {
-								return true;
-							} else {
-								final Map<String, List<String>> auxMap = RepositoryManager
-										.readDOIInMetaData(this.directory, doi);
-								final List<String> auxList = auxMap.get(doi);
-								if (auxList.size() == 1) {
-									final String type = auxList.get(0);
-									final String paperType = isCompletePaper ? "full" : "abstract";
-									if (!paperType.equals(type)) {
-										return true;
-									}
-								}
-							}
+							
+							final Set<String> auxList = RepositoryManager.readDOIInMetaData(this.directory, doi);
+							final String paperType = isCompletePaper ? "full" : "abstract";
+							
+							return !auxList.contains(paperType);
 						}
 					}
 				}

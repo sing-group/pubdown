@@ -31,6 +31,9 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	private String path;
 
 	@Basic
+	private int downloadLimit = 1000;
+
+	@Basic
 	private boolean abstractPaper = false;
 
 	@Basic
@@ -59,11 +62,13 @@ public class Repository implements Cloneable, Comparable<Repository> {
 		this.repositoryQueries = new LinkedList<>();
 	}
 
-	public Repository(final String name, final boolean abstractPaper, final boolean fulltextPaper,
-			final boolean pdfToText, final boolean keepPdf, final String path, final int numberOfFilesInRepository,
-			final String lastUpdate, final List<RepositoryQuery> repositoryQueries) {
+	public Repository(final String name, final int downloadLimit, final boolean abstractPaper,
+			final boolean fulltextPaper, final boolean pdfToText, final boolean keepPdf, final String path,
+			final int numberOfFilesInRepository, final String lastUpdate,
+			final List<RepositoryQuery> repositoryQueries) {
 		super();
 		this.name = name;
+		this.downloadLimit = downloadLimit;
 		this.abstractPaper = abstractPaper;
 		this.fulltextPaper = fulltextPaper;
 		this.pdfToText = pdfToText;
@@ -74,12 +79,14 @@ public class Repository implements Cloneable, Comparable<Repository> {
 		this.repositoryQueries = repositoryQueries;
 	}
 
-	private Repository(final Integer id, final String name, final boolean abstractPaper, final boolean fulltextPaper,
-			final boolean pdfToText, final boolean keepPdf, final String path, final int numberOfFilesInRepository,
-			final String lastUpdate, final List<RepositoryQuery> repositoryQueries, final User user) {
+	private Repository(final Integer id, final String name, final int downloadLimit, final boolean abstractPaper,
+			final boolean fulltextPaper, final boolean pdfToText, final boolean keepPdf, final String path,
+			final int numberOfFilesInRepository, final String lastUpdate, final List<RepositoryQuery> repositoryQueries,
+			final User user) {
 		super();
 		this.id = id;
 		this.name = name;
+		this.downloadLimit = downloadLimit;
 		this.abstractPaper = abstractPaper;
 		this.fulltextPaper = fulltextPaper;
 		this.pdfToText = pdfToText;
@@ -141,6 +148,14 @@ public class Repository implements Cloneable, Comparable<Repository> {
 
 	public void setPath(final String path) {
 		this.path = path;
+	}
+
+	public int getDownloadLimit() {
+		return downloadLimit;
+	}
+
+	public void setDownloadLimit(int downloadLimit) {
+		this.downloadLimit = downloadLimit;
 	}
 
 	public int getNumberOffilesInRepository() {
@@ -240,15 +255,17 @@ public class Repository implements Cloneable, Comparable<Repository> {
 
 	@Override
 	public Repository clone() {
-		return new Repository(this.id, this.name, this.abstractPaper, this.fulltextPaper, this.pdfToText, this.keepPdf,
-				this.path, this.numberOffilesInRepository, this.lastUpdate, this.repositoryQueries, this.user);
+		return new Repository(this.id, this.name, this.downloadLimit, this.abstractPaper, this.fulltextPaper,
+				this.pdfToText, this.keepPdf, this.path, this.numberOffilesInRepository, this.lastUpdate,
+				this.repositoryQueries, this.user);
 	}
 
 	@Override
 	public int compareTo(final Repository obj) {
 		return Compare.objects(this, obj).by(Repository::getId).thenBy(Repository::getName)
-				.thenBy(Repository::isAbstractPaper).thenBy(Repository::isFulltextPaper).thenBy(Repository::isPdfToText)
-				.thenBy(Repository::isKeepPdf).thenBy(Repository::getPath).andGet();
+				.thenBy(Repository::getDownloadLimit).thenBy(Repository::isAbstractPaper)
+				.thenBy(Repository::isFulltextPaper).thenBy(Repository::isPdfToText).thenBy(Repository::isKeepPdf)
+				.thenBy(Repository::getPath).andGet();
 	}
 
 	@Override

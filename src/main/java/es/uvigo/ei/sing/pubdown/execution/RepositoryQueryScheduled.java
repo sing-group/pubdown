@@ -83,7 +83,7 @@ public class RepositoryQueryScheduled {
 			pubmedDownloader = new PubMedDownloader(query, directoryPath);
 			pubmedResult = pubmedDownloader.getResultSize();
 			if (pubmedResult != 0) {
-				
+
 				pubmedDownloadTo = pubmedResult;
 
 				repositoryQuery.setPubmedDownloadTo(pubmedDownloadTo);
@@ -118,16 +118,18 @@ public class RepositoryQueryScheduled {
 			pubmedReady = true;
 		}
 
+		final int repositoryDownloadLimit = repositoryQuery.getRepository().getDownloadLimit();
+
 		if (repository.isFulltextPaper()) {
 			final boolean directoryType = repositoryQuery.isGroupBy();
 			if (repositoryQuery.isScopus() && scopusReady) {
 				scopusDownloader.downloadPapers(true, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
-						repositoryQuery.getDownloadLimit(), startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+						repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
 			}
 
 			if (repositoryQuery.isPubmed() && pubmedReady) {
 				pubmedDownloader.downloadPapers(true, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
-						repositoryQuery.getDownloadLimit(), startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+						repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
 			}
 		}
 
@@ -135,11 +137,11 @@ public class RepositoryQueryScheduled {
 			final boolean directoryType = repositoryQuery.isGroupBy();
 			if (repositoryQuery.isScopus() && scopusReady) {
 				scopusDownloader.downloadPapers(false, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
-						repositoryQuery.getDownloadLimit(), startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+						repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
 			}
 			if (repositoryQuery.isPubmed() && pubmedReady) {
 				pubmedDownloader.downloadPapers(false, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
-						repositoryQuery.getDownloadLimit(), startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+						repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
 			}
 		}
 	}

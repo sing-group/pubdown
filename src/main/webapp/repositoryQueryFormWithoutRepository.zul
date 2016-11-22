@@ -2,7 +2,7 @@
 <zk>
 	<style src="css/pubdown.css" />
 
-	<window title="Query Form" id="repositoryQueryForm"
+	<window title="Query Form" id="repositoryQueryFormWithoutRepository"
 		binder="@init(queueName='pubdown')"
 		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.RepositoryQueryFormViewModel')"
 		width="600px" height="auto" border="normal" minimizable="false"
@@ -16,18 +16,6 @@
 						value="@bind(vm.repositoryQuery.name) @validator(vm.nameValidator)"
 						onChange="@command('checkData')" />
 					<label value="@load(vmsgs[rbName])" sclass="error" />
-				</hlayout>
-				<hlayout valign="middle">
-					<label value="Repository" />
-					<combobox model="@load(vm.repositories)"
-						buttonVisible="true" autocomplete="true" autodrop="true"
-						onChange="@command('checkData')" mold="rounded"
-						selectedItem="@bind(vm.repositoryQuery.repository)"
-						readonly="true">
-						<template name="model" var="repo">
-							<comboitem label="@load(repo.name)" />
-						</template>
-					</combobox>
 				</hlayout>
 				<hlayout valign="middle">
 					<label value="Query" />

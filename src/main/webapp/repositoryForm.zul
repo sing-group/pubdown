@@ -1,0 +1,60 @@
+<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
+<zk>
+	<style src="css/pubdown.css" />
+
+	<window title="Query Form" id="repositoryForm"
+		binder="@init(queueName='pubdown')"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.RepositoryFormViewModel')"
+		width="600px" height="auto" border="normal" minimizable="false"
+		mode="modal" maximizable="false" closable="false"
+		onClose="self.detach()" validationMessages="@id('vmsgs')">
+		<groupbox vflex="true" mold="3d" contentStyle="padding: 0">
+			<vlayout vflex="true" style="padding: 6px">
+				<hlayout valign="middle">
+					<label value="Repository Name" />
+					<textbox id="rbName" width="200px"
+						value="@bind(vm.repository.name) @validator(vm.nameValidator)"
+						onChange="@command('checkRepository')" />
+					<label value="@load(vmsgs[rbName])" sclass="error" />
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="Limit: " />
+					<textbox id="rbDownloadLimit" width="200px"
+						value="@bind(vm.repository.downloadLimit) @validator(vm.downloadLimitValidator)"
+						onChange="@command('checkRepository')" />
+					<label value="@load(vmsgs[rbDownloadLimit])"
+						sclass="error" />
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="Download: " />
+					<checkbox label="abstract"
+						checked="@bind(vm.repository.abstractPaper)"
+						onCheck="@command('checkRepository')" />
+					<checkbox label="full text"
+						checked="@bind(vm.repository.fulltextPaper)"
+						onCheck="@command('checkRepository')" />
+					<label value=" (You must select at least one)" />
+				</hlayout>
+				<hlayout valign="middle">
+					<label value="PDF: " />
+					<checkbox label="extract text"
+						checked="@bind(vm.repository.pdfToText)"
+						onCheck="@command('checkRepository')" />
+					<checkbox label="keep after processing"
+						disabled="@load(not vm.repository.pdfToText)"
+						checked="@bind(vm.repository.keepPdf)"
+						onCheck="@command('checkRepository')" />
+				</hlayout>
+				<hbox width="100%" align="center" pack="center">
+					<button label="Save Repository"
+						onClick="@command('confirm')" forward="repositoryForm.onClose"
+						disabled="@load(not vm.validRepository  or not vm.repositoryReady or not empty vmsgs)" />
+					<button label="Cancel" onClick="@command('refresh')"
+						forward="repositoryForm.onClose" />
+					<button label="Reset form"
+						onClick="@command('refresh')" />
+				</hbox>
+			</vlayout>
+		</groupbox>
+	</window>
+</zk>

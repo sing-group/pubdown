@@ -178,12 +178,12 @@
 																					style="margin-right: 10px"
 																					image="images/edit16x16.png"
 																					tooltiptext="Edit query"
-																					disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
+																					disabled="@load(repositoryQuery.scheduled or repositoryQuery.running or (not repositoryQuery.checked))"
 																					onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
 																				<button
 																					image="images/trashCan16x16.png"
 																					tooltiptext="Remove Query"
-																					disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
+																					disabled="@load(repositoryQuery.scheduled or repositoryQuery.running or (not repositoryQuery.checked))"
 																					onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
 																			</cell>
 																		</row>
@@ -302,11 +302,11 @@
 												<button
 													style="margin-right: 10px" image="images/edit16x16.png"
 													tooltiptext="Edit query"
-													disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
+													disabled="@load(repositoryQuery.scheduled or repositoryQuery.running or (not repositoryQuery.checked))"
 													onClick="@command('editRepositoryQuery',current=repositoryQuery)" />
 												<button
 													image="images/trashCan16x16.png" tooltiptext="Remove Query"
-													disabled="@load(repositoryQuery.scheduled or (not repositoryQuery.checked))"
+													disabled="@load(repositoryQuery.scheduled or repositoryQuery.running or (not repositoryQuery.checked))"
 													onClick="@command('removeRepositoryQuery',current=repositoryQuery)" />
 											</cell>
 										</row>

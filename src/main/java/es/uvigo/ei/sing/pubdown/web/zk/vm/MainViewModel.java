@@ -696,7 +696,7 @@ public class MainViewModel extends ViewModelUtils {
 		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(repositoryQuery,
 				directoryPath, true);
 
-		ExecutionEngine.getSingleton().executeTask(repositoryQueryScheduled);
+		ExecutionEngine.getSingleton().submitTask(repositoryQueryScheduled);
 	}
 
 	private boolean RepositoryQueryReadyToBeScheduled(final RepositoryQuery repositoryQuery) {

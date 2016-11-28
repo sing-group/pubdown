@@ -112,6 +112,11 @@ public class ExecutionEngine {
 
 	}
 
+	synchronized public void submitTask(final RepositoryQueryScheduled repositoryQueryScheduled) {
+		final TaskExecutor taskExecutor = new TaskExecutor(repositoryQueryScheduled);
+		executor.submit(taskExecutor);
+	}
+
 	synchronized public boolean isScheduled(final RepositoryQueryScheduled repositoryQueryScheduled) {
 		final RepositoryQueryTask task = repositoryQueryScheduled.getRepositoryQuery().getTask();
 		return scheduledTasks.containsKey(task.getId());

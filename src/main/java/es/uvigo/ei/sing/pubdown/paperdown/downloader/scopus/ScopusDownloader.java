@@ -117,13 +117,15 @@ public class ScopusDownloader implements Searcher {
 				final Map<String, String> urlsWithTitle = isCompletePaper ? xmlParser.getCompletePaperPDFURLs()
 						: xmlParser.getAbstractPaperPDFURLs(this.apiKey);
 
-				final int numberOfFiles = (int) RepositoryManager.numberOfFilesInDirectory(this.directory);
+				final int numberOfPapers = (int) RepositoryManager.numberOfPapersInRepository(this.directory);
 
-				if (checkMetadata(xmlParser.getQueryURL(), isCompletePaper)) {
-					if((numberOfFiles < downloadLimit)){
+				if (shouldDownloadPaper(xmlParser.getQueryURL(), isCompletePaper)) {
+					if ((numberOfPapers < downloadLimit)) {
 						htmlParser.setUrlsWithTitle(urlsWithTitle);
-						downloadCompleteOrAbstract(isCompletePaper, htmlParser, convertPDFtoTXT, keepPDF, directoryType);
-						RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList, isCompletePaper);
+						downloadCompleteOrAbstract(isCompletePaper, htmlParser, convertPDFtoTXT, keepPDF,
+								directoryType);
+						RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList,
+								isCompletePaper);
 						authorList.clear();
 					}
 				}
@@ -197,7 +199,7 @@ public class ScopusDownloader implements Searcher {
 		this.downloadListeners.clear();
 	}
 
-	private boolean checkMetadata(final String query, final boolean isCompletePaper) {
+	private boolean shouldDownloadPaper(final String query, final boolean isCompletePaper) {
 		final HttpGet httpget = new HttpGet(query);
 		try (final CloseableHttpResponse response = this.httpClient.execute(httpget, this.context)) {
 			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -217,9 +219,11 @@ public class ScopusDownloader implements Searcher {
 							final NodeList authorsChildren = child.getChildNodes();
 							for (int k = 0; k < authorsChildren.getLength(); k++) {
 								final NodeList author = authorsChildren.item(k).getChildNodes();
-								final String authorName = author.item(0).getTextContent();
-								final String authorSurName = author.item(1).getTextContent();
-								authorList.add(authorSurName + " " + authorName);
+								if (!author.item(0).getTextContent().equalsIgnoreCase("NA")) {
+									final String authorName = author.item(0).getTextContent();
+									final String authorSurName = author.item(1).getTextContent();
+									authorList.add(authorSurName + " " + authorName);
+								}
 							}
 						}
 
@@ -246,10 +250,10 @@ public class ScopusDownloader implements Searcher {
 
 						if (child.getNodeName().equals("prism:doi")) {
 							doi = child.getFirstChild().getTextContent();
-							
+
 							final Set<String> auxList = RepositoryManager.readDOIInMetaData(this.directory, doi);
 							final String paperType = isCompletePaper ? "full" : "abstract";
-							
+
 							return !auxList.contains(paperType);
 						}
 					}

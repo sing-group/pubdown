@@ -101,16 +101,17 @@ public class PubMedDownloader implements Searcher {
 					queryURL = SEARCH_REQUEST + this.query.replace(" ", "+") + "&retmax=" + aux + "&retstart=" + i;
 					xmlParser.setQueryURL(queryURL);
 				}
-				
+
 				final List<String> idList = xmlParser.getPubMedIDs();
-				
-				final int numberOfFiles = (int) RepositoryManager.numberOfFilesInDirectory(this.directory);
-				
+
+				final int numberOfPapers = (int) RepositoryManager.numberOfPapersInRepository(this.directory);
+
 				for (final String id : idList) {
-					if (!shouldDownloadPaper(id, isCompletePaper)) {
-						if((numberOfFiles < downloadLimit)){
+					if (shouldDownloadPaper(id, isCompletePaper)) {
+						if ((numberOfPapers < downloadLimit)) {
 							htmlParser.setIdList(idList);
-							htmlParser.download(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
+							htmlParser.download(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF,
+									directoryType);
 							RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList,
 									isCompletePaper);
 							authorList.clear();
@@ -201,17 +202,17 @@ public class PubMedDownloader implements Searcher {
 			for (final Element link : links) {
 				if (link.attr("ref").contains("aid_type=doi")) {
 					doi = link.text();
-					
+
 					final Set<String> auxList = RepositoryManager.readDOIInMetaData(this.directory, doi);
 					final String paperType = isCompletePaper ? "full" : "abstract";
-					
+
 					return !auxList.contains(paperType);
 				}
 			}
 		} catch (final IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		return false;
 	}
 

@@ -10,9 +10,6 @@ import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -255,7 +252,7 @@ public class MainViewModel extends ViewModelUtils {
 
 	@DependsOn("repository")
 	public boolean isRepositoryReadyToDownload() {
-		if (this.repository.getNumberOffilesInRepository() > 0) {
+		if (this.repository.getNumberOfPapersInRepository() > 0) {
 			final String userLogin = this.repository.getUser().getLogin() + File.separator;
 			final String basePath = RepositoryManager.getRepositoryPath() + File.separator + userLogin;
 			final String repositoryPath = this.repository.getPath() + File.separator;
@@ -338,7 +335,7 @@ public class MainViewModel extends ViewModelUtils {
 					if (limit <= 0 || limit > Integer.MAX_VALUE) {
 						addInvalidMessage(ctx, "Limit must be an integer between 0 and " + Integer.MAX_VALUE);
 					}
-					if (limit <= repository.getNumberOffilesInRepository()) {
+					if (limit <= repository.getNumberOfPapersInRepository()) {
 						addInvalidMessage(ctx,
 								"Limit must be greater than the current number of files in the repository");
 					}
@@ -459,8 +456,8 @@ public class MainViewModel extends ViewModelUtils {
 				final String repositoryPath = this.repository.getPath() + File.separator;
 				final String finalPath = basePath + repositoryPath;
 
-				long fileNumber = numberOfFilesInDirectory(finalPath);
-				this.repository.setNumberOffilesInRepository((int) fileNumber);
+				long fileNumber =  RepositoryManager.numberOfPapersInRepository(finalPath);
+				this.repository.setNumberOfPapersInRepository((int) fileNumber);
 				tm.runInTransaction(em -> em.merge(this.repository));
 
 				postNotifyChange(this, "repository");
@@ -696,7 +693,7 @@ public class MainViewModel extends ViewModelUtils {
 		final RepositoryQueryScheduled repositoryQueryScheduled = new RepositoryQueryScheduled(repositoryQuery,
 				directoryPath, true);
 
-		ExecutionEngine.getSingleton().submitTask(repositoryQueryScheduled);
+		ExecutionEngine.getSingleton().executeTask(repositoryQueryScheduled);
 	}
 
 	private boolean RepositoryQueryReadyToBeScheduled(final RepositoryQuery repositoryQuery) {
@@ -927,12 +924,12 @@ public class MainViewModel extends ViewModelUtils {
 				}
 
 				final String directoryPath = repositoryQueryScheduled.getDirectoryPath();
-				final long filesInDirectory = numberOfFilesInDirectory(directoryPath);
+				final long filesInDirectory = RepositoryManager.numberOfPapersInRepository(directoryPath);
 
 				synchronized (repository) {
-					final int numberOfFiles = (int) (repository.getNumberOffilesInRepository() + filesInDirectory);
+					final int numberOfFiles = (int) (repository.getNumberOfPapersInRepository() + filesInDirectory);
 
-					repository.setNumberOffilesInRepository((int) (numberOfFiles));
+					repository.setNumberOfPapersInRepository((int) (numberOfFiles));
 					repository.setLastUpdate(SIMPLE_DATE_FORMAT.format(lastDate));
 
 					tm.runInTransaction(em -> em.merge(repository));
@@ -1021,34 +1018,6 @@ public class MainViewModel extends ViewModelUtils {
 		default:
 		}
 		publishRefreshData("queries");
-	}
-
-	// private long numberOfFilesInDirectory(final String directoryPath) {
-	// try {
-	// final int metadataAndLogFiles = 2;
-	// return Files
-	// .find(Paths.get(directoryPath), Integer.MAX_VALUE, (filePath, fileAttr)
-	// -> fileAttr.isRegularFile())
-	// .count() - metadataAndLogFiles;
-	// } catch (IOException e) {
-	// }
-	// return 0;
-	// }
-
-	private long numberOfFilesInDirectory(final String directoryPath) {
-		try {
-			final int metadataAndLogFiles = 2;
-			long fileNumber = Files
-					.find(Paths.get(directoryPath), Integer.MAX_VALUE, (filePath, fileAttr) -> fileAttr.isRegularFile())
-					.count();
-			if (fileNumber < 3) {
-				return 0;
-			} else {
-				return fileNumber - metadataAndLogFiles;
-			}
-		} catch (IOException e) {
-		}
-		return 0;
 	}
 
 	@Command

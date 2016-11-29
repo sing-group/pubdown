@@ -46,7 +46,7 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	private boolean keepPdf = true;
 
 	@Column
-	private int numberOffilesInRepository = 0;
+	private int numberOfPapersInRepository = 0;
 
 	@Column
 	private String lastUpdate = "Never";
@@ -64,7 +64,7 @@ public class Repository implements Cloneable, Comparable<Repository> {
 
 	public Repository(final String name, final int downloadLimit, final boolean abstractPaper,
 			final boolean fulltextPaper, final boolean pdfToText, final boolean keepPdf, final String path,
-			final int numberOfFilesInRepository, final String lastUpdate,
+			final int numberOfPapersInRespository, final String lastUpdate,
 			final List<RepositoryQuery> repositoryQueries) {
 		super();
 		this.name = name;
@@ -74,14 +74,14 @@ public class Repository implements Cloneable, Comparable<Repository> {
 		this.pdfToText = pdfToText;
 		this.keepPdf = keepPdf;
 		this.path = path;
-		this.numberOffilesInRepository = numberOfFilesInRepository;
+		this.numberOfPapersInRepository = numberOfPapersInRespository;
 		this.lastUpdate = lastUpdate;
 		this.repositoryQueries = repositoryQueries;
 	}
 
 	private Repository(final Integer id, final String name, final int downloadLimit, final boolean abstractPaper,
 			final boolean fulltextPaper, final boolean pdfToText, final boolean keepPdf, final String path,
-			final int numberOfFilesInRepository, final String lastUpdate, final List<RepositoryQuery> repositoryQueries,
+			final int numberOfPapersInRespository, final String lastUpdate, final List<RepositoryQuery> repositoryQueries,
 			final User user) {
 		super();
 		this.id = id;
@@ -92,7 +92,7 @@ public class Repository implements Cloneable, Comparable<Repository> {
 		this.pdfToText = pdfToText;
 		this.keepPdf = keepPdf;
 		this.path = path;
-		this.numberOffilesInRepository = numberOfFilesInRepository;
+		this.numberOfPapersInRepository = numberOfPapersInRespository;
 		this.lastUpdate = lastUpdate;
 		this.repositoryQueries = repositoryQueries;
 		this.user = user;
@@ -158,12 +158,12 @@ public class Repository implements Cloneable, Comparable<Repository> {
 		this.downloadLimit = downloadLimit;
 	}
 
-	public int getNumberOffilesInRepository() {
-		return numberOffilesInRepository;
+	public int getNumberOfPapersInRepository() {
+		return numberOfPapersInRepository;
 	}
 
-	public void setNumberOffilesInRepository(final int numberOffilesInRepository) {
-		this.numberOffilesInRepository = numberOffilesInRepository;
+	public void setNumberOfPapersInRepository(final int numberOffilesInRepository) {
+		this.numberOfPapersInRepository = numberOffilesInRepository;
 	}
 
 	public String getLastUpdate() {
@@ -256,7 +256,7 @@ public class Repository implements Cloneable, Comparable<Repository> {
 	@Override
 	public Repository clone() {
 		return new Repository(this.id, this.name, this.downloadLimit, this.abstractPaper, this.fulltextPaper,
-				this.pdfToText, this.keepPdf, this.path, this.numberOffilesInRepository, this.lastUpdate,
+				this.pdfToText, this.keepPdf, this.path, this.numberOfPapersInRepository, this.lastUpdate,
 				this.repositoryQueries, this.user);
 	}
 

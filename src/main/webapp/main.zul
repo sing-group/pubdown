@@ -104,9 +104,9 @@
 										</hlayout>
 										<hlayout valign="middle">
 											<label
-												value="Number of files in repository: " />
+												value="Number of papers in repository: " />
 											<label
-												value="@bind(vm.repository.numberOffilesInRepository)" />
+												value="@bind(vm.repository.numberOfPapersInRepository)" />
 										</hlayout>
 										<hlayout valign="middle">
 											<label
@@ -217,12 +217,13 @@
 																height="335px">
 																<columns>
 																	<column
-																		align="left" label="Paper Title" />
+																		align="left" label="Paper Title" hflex="true"/>
 																</columns>
 																<template
 																	name="model" var="paper">
 																	<row>
 																		<label
+																			style="word-wrap: break-word;" multiline="true"
 																			value="@load(paper)" />
 																	</row>
 																</template>

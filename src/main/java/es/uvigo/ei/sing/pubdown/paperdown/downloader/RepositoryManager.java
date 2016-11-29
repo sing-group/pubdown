@@ -35,7 +35,6 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.zkoss.zul.Filedownload;
 
 import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
-import es.uvigo.ei.sing.pubdown.web.entities.RepositoryQuery;
 import es.uvigo.ei.sing.pubdown.web.zk.util.DesktopTransactionManager;
 import es.uvigo.ei.sing.pubdown.web.zk.util.TransactionManager;
 
@@ -60,12 +59,6 @@ public class RepositoryManager {
 					.setParameter("path", "repositoryPath").getSingleResult().getConfigurationValue();
 		});
 		return repositoryPath;
-	}
-
-	public static void updateRepositoryQuery(final RepositoryQuery repositoryQuery) {
-		tm.runInTransaction(em -> {
-			em.merge(repositoryQuery);
-		});
 	}
 
 	public static void generatePDFFile(final String pdfURL, final String fileName, final String directory,
@@ -108,6 +101,7 @@ public class RepositoryManager {
 						final String paperType = isCompletePaper ? "full;" : "abstract;";
 						logFile.write(paperType + file.getName() + ";OK;\n");
 					} catch (final IOException e) {
+						e.printStackTrace();
 					}
 
 				}
@@ -116,6 +110,7 @@ public class RepositoryManager {
 					final String paperType = isCompletePaper ? "full;" : "abstract;";
 					logFile.write(paperType + file.getName() + ";error;\n");
 				} catch (final IOException e) {
+					e.printStackTrace();
 				}
 			}
 
@@ -152,6 +147,7 @@ public class RepositoryManager {
 			final String paperType = isCompletePaper ? "full;" : "abstract;";
 			logFile.write(paperType + file.getName() + ";OK;\n");
 		} catch (final IOException e) {
+			e.printStackTrace();
 		}
 
 	}
@@ -181,6 +177,7 @@ public class RepositoryManager {
 					final String paperType = isCompletePaper ? "full;" : "abstract;";
 					logFile.write(paperType + file.getName() + ";error;\n");
 				} catch (final IOException e1) {
+					e1.printStackTrace();
 				}
 			}
 		}
@@ -237,7 +234,7 @@ public class RepositoryManager {
 		final File file = new File(directory + File.separator + METADATA_FILE);
 		if (file.exists()) {
 			final Set<String> doiList = new HashSet<>();
-			
+
 			String line;
 			try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
 				while ((line = bufferedReader.readLine()) != null) {
@@ -249,16 +246,40 @@ public class RepositoryManager {
 			} catch (final IOException e) {
 				e.printStackTrace();
 			}
-			
+
 			return doiList;
 		} else {
 			return Collections.emptySet();
 		}
 	}
 
+	public static int numberOfPapersInRepository(final String directory) {
+		final File file = new File(directory + File.separator + METADATA_FILE);
+		if (file.exists()) {
+			final Set<String> doiList = new HashSet<>();
+
+			String line;
+			try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
+				while ((line = bufferedReader.readLine()) != null) {
+					final String[] tokens = line.split(SEMICOLON_DELIMITER);
+					if (tokens.length > 0) {
+						doiList.add(tokens[0]);
+					}
+				}
+			} catch (final IOException e) {
+				e.printStackTrace();
+			}
+
+			return doiList.size();
+		} else {
+			return 0;
+		}
+	}
+
 	public static void writeMetaData(final String directory, final String doi, final String title, final String date,
 			final List<String> authorList, final boolean isCompletePaper) {
-		try (FileWriter metaDataFile = new FileWriter(directory + File.separator + METADATA_FILE, true)) {
+		final File fileName = new File(directory + File.separator + METADATA_FILE);
+		try (FileWriter metaDataFile = new FileWriter(fileName, true)) {
 			final String type = isCompletePaper ? "full" : "abstract";
 			String authors = "";
 			for (int i = 0; i < authorList.size(); i++) {
@@ -271,23 +292,8 @@ public class RepositoryManager {
 			metaDataFile.write(doi + SEMICOLON_DELIMITER + type + SEMICOLON_DELIMITER + title + SEMICOLON_DELIMITER
 					+ date + SEMICOLON_DELIMITER + authors + "\n");
 		} catch (final IOException e) {
+			e.printStackTrace();
 		}
-	}
-
-	public static long numberOfFilesInDirectory(final String directoryPath) {
-		try {
-			final int metadataAndLogFiles = 2;
-			long fileNumber = Files
-					.find(Paths.get(directoryPath), Integer.MAX_VALUE, (filePath, fileAttr) -> fileAttr.isRegularFile())
-					.count();
-			if (fileNumber < 3) {
-				return 0;
-			} else {
-				return fileNumber - metadataAndLogFiles;
-			}
-		} catch (IOException e) {
-		}
-		return 0;
 	}
 
 	public static void zipDirectory(final String zipFileName, final String directoryPath, final String downloadOption) {
@@ -374,6 +380,7 @@ public class RepositoryManager {
 				});
 			}
 		} catch (final IOException e) {
+			e.printStackTrace();
 		}
 
 		return titles;

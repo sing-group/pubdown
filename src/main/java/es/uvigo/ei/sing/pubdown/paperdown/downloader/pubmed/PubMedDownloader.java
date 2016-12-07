@@ -45,6 +45,7 @@ public class PubMedDownloader implements Searcher {
 
 	private String doi = "";
 	private String paperTitle = "";
+	private String completePaperTitle = "";
 	private String date = "";
 	private final List<String> authorList = new LinkedList<>();
 
@@ -112,7 +113,7 @@ public class PubMedDownloader implements Searcher {
 							htmlParser.setIdList(idList);
 							htmlParser.download(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF,
 									directoryType);
-							RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList,
+							RepositoryManager.writeMetaData(this.directory, doi, paperTitle, completePaperTitle, date, authorList,
 									isCompletePaper);
 							authorList.clear();
 						}
@@ -187,7 +188,11 @@ public class PubMedDownloader implements Searcher {
 			for (final Element titleText : titlesTexts) {
 				if (!titleText.text().equals("PubMed")) {
 					paperTitle = titleText.text().replaceAll("[/|.]", "_");
-					paperTitle = paperTitle.substring(0, paperTitle.length() - 1);
+					completePaperTitle = paperTitle;
+//					paperTitle = paperTitle.substring(0, paperTitle.length() - 1);
+					if (paperTitle.length() > 130) {
+						paperTitle = paperTitle.substring(0, 130);
+					}
 				}
 			}
 

@@ -45,6 +45,7 @@ import es.uvigo.ei.sing.pubdown.execution.ExecutionEngine;
 import es.uvigo.ei.sing.pubdown.execution.GlobalEvents;
 import es.uvigo.ei.sing.pubdown.execution.RepositoryQueryScheduled;
 import es.uvigo.ei.sing.pubdown.execution.Scheduler;
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.Paper;
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 import es.uvigo.ei.sing.pubdown.web.entities.GlobalConfiguration;
 import es.uvigo.ei.sing.pubdown.web.entities.Repository;
@@ -245,8 +246,13 @@ public class MainViewModel extends ViewModelUtils {
 		this.repositoryQueryFilterByName = repositoryQueryFilterByName;
 	}
 
+	// @DependsOn("repository")
+	// public List<String> getRepositoryPapers() {
+	// return readRepositoryPapers();
+	// }
+
 	@DependsOn("repository")
-	public List<String> getRepositoryPapers() {
+	public List<Paper> getRepositoryPapers() {
 		return readRepositoryPapers();
 	}
 
@@ -395,6 +401,23 @@ public class MainViewModel extends ViewModelUtils {
 		}
 	}
 
+	@Command
+	public void downloadFile(@BindingParam("current") final String paperTitle,
+			@BindingParam("downloadOption") final String downloadOption) {
+
+		final String basePath = RepositoryManager.getRepositoryPath() + File.separator;
+		final String userLogin = this.repository.getUser().getLogin() + File.separator;
+		final String repositoryPath = this.repository.getPath() + File.separator;
+
+		final String finalPath = basePath + userLogin + repositoryPath;
+
+		try {
+			RepositoryManager.zipFile(paperTitle, finalPath, downloadOption);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	private void discardRepositoryChanges() {
 		if (!isNewRepository()) {
 			tm.runInTransaction(em -> {
@@ -456,7 +479,7 @@ public class MainViewModel extends ViewModelUtils {
 				final String repositoryPath = this.repository.getPath() + File.separator;
 				final String finalPath = basePath + repositoryPath;
 
-				long fileNumber =  RepositoryManager.numberOfPapersInRepository(finalPath);
+				long fileNumber = RepositoryManager.numberOfPapersInRepository(finalPath);
 				this.repository.setNumberOfPapersInRepository((int) fileNumber);
 				tm.runInTransaction(em -> em.merge(this.repository));
 
@@ -1056,7 +1079,7 @@ public class MainViewModel extends ViewModelUtils {
 		}
 	}
 
-	private List<String> readRepositoryPapers() {
+	private List<Paper> readRepositoryPapers() {
 		if (isRepositoryReadyToDownload()) {
 			final String userLogin = this.repository.getUser().getLogin() + File.separator;
 			final String basePath = RepositoryManager.getRepositoryPath() + File.separator + userLogin;
@@ -1067,6 +1090,20 @@ public class MainViewModel extends ViewModelUtils {
 		}
 		return new LinkedList<>();
 	}
+
+	// private Set<String> readRepositoryPapers() {
+	// if (isRepositoryReadyToDownload()) {
+	// final String userLogin = this.repository.getUser().getLogin() +
+	// File.separator;
+	// final String basePath = RepositoryManager.getRepositoryPath() +
+	// File.separator + userLogin;
+	// final String repositoryPath = this.repository.getPath() + File.separator;
+	// final String finalPath = basePath + repositoryPath;
+	//
+	// return RepositoryManager.readPaperTitleFromLog(finalPath);
+	// }
+	// return new HashSet<String>();
+	// }
 
 	@GlobalCommand(MainViewModel.GC_REFRESH_DATA)
 	public void refreshData(@BindingParam("data") String toRefresh) {

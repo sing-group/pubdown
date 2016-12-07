@@ -44,8 +44,9 @@ public class ScopusHTMLParser {
 		this.urlsWithTitle = urlsWithTitle;
 	}
 
-	public void downloadCompletePDFs(final String directory, final boolean isCompletePaper,
-			final boolean convertPDFtoTXT, final boolean keepPDF, final boolean directoryType) {
+	public void downloadCompletePDFs(final String completeFileName, final String directory,
+			final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
+			final boolean directoryType) {
 		this.urlsWithTitle.forEach((url, fileName) -> {
 			try {
 				final Document document = Jsoup.connect(url).get();
@@ -60,8 +61,8 @@ public class ScopusHTMLParser {
 					response.close();
 					final String directorySuffix = directoryType ? COMPLETE_PAPERS : SUB_FOLDER_NAME;
 
-					RepositoryManager.generatePDFFile(location.toASCIIString(), fileName, directory, directorySuffix,
-							isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
+					RepositoryManager.generatePDFFile(location.toASCIIString(), fileName, completeFileName, directory,
+							directorySuffix, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
 				}
 			} catch (URISyntaxException | IOException e) {
 				e.printStackTrace();
@@ -69,13 +70,14 @@ public class ScopusHTMLParser {
 		});
 	}
 
-	public void downloadAbstractTXTs(final String directory, final boolean isCompletePaper,
-			final boolean convertPDFtoTXT, final boolean keepPDF, final boolean directoryType) {
+	public void downloadAbstractTXTs(final String completeFileName, final String directory,
+			final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
+			final boolean directoryType) {
 		this.urlsWithTitle.forEach((url, fileName) -> {
 			final String directorySuffix = directoryType ? ABSTRACT_PAPERS : SUB_FOLDER_NAME;
 
-			RepositoryManager.generatePDFFile(url, fileName, directory, directorySuffix, isCompletePaper,
-					convertPDFtoTXT, keepPDF, directoryType);
+			RepositoryManager.generatePDFFile(url, fileName, completeFileName, directory, directorySuffix,
+					isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
 		});
 	}
 }

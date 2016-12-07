@@ -61,9 +61,9 @@ public class RepositoryManager {
 		return repositoryPath;
 	}
 
-	public static void generatePDFFile(final String pdfURL, final String fileName, final String directory,
-			final String directorySuffix, final boolean isCompletePaper, final boolean convertPDFtoTXT,
-			final boolean keepPDF, final boolean directoryType) {
+	public static void generatePDFFile(final String pdfURL, final String fileName, final String completeFileName,
+			final String directory, final String directorySuffix, final boolean isCompletePaper,
+			final boolean convertPDFtoTXT, final boolean keepPDF, final boolean directoryType) {
 		try {
 			final URL url = new URL(pdfURL);
 			final ReadableByteChannel readableByteChannel = Channels.newChannel(url.openStream());
@@ -95,11 +95,12 @@ public class RepositoryManager {
 
 			if (!checkIfCorruptedPDF(file)) {
 				if (convertPDFtoTXT) {
-					convertPDFFiletoTXTFile(file, directory, directorySuffix, isCompletePaper, keepPDF, directoryType);
+					convertPDFFiletoTXTFile(file, completeFileName, directory, directorySuffix, isCompletePaper,
+							keepPDF, directoryType);
 				} else {
 					try (FileWriter logFile = new FileWriter(directory + File.separator + LOG_FILE, true)) {
 						final String paperType = isCompletePaper ? "full;" : "abstract;";
-						logFile.write(paperType + file.getName() + ";OK;\n");
+						logFile.write(paperType + file.getName() + SEMICOLON_DELIMITER + completeFileName + ";OK;\n");
 					} catch (final IOException e) {
 						e.printStackTrace();
 					}
@@ -108,7 +109,7 @@ public class RepositoryManager {
 			} else {
 				try (FileWriter logFile = new FileWriter(directory + File.separator + LOG_FILE, true)) {
 					final String paperType = isCompletePaper ? "full;" : "abstract;";
-					logFile.write(paperType + file.getName() + ";error;\n");
+					logFile.write(paperType + file.getName() + SEMICOLON_DELIMITER + completeFileName + ";error;\n");
 				} catch (final IOException e) {
 					e.printStackTrace();
 				}
@@ -119,8 +120,9 @@ public class RepositoryManager {
 		}
 	}
 
-	public static void generateTXTFile(final String fileName, final String abstractText, final String directory,
-			final String directorySuffix, final boolean isCompletePaper, final boolean directoryType) {
+	public static void generateTXTFile(final String fileName, final String completeFileName, final String abstractText,
+			final String directory, final String directorySuffix, final boolean isCompletePaper,
+			final boolean directoryType) {
 		File file;
 		String createdFile;
 		File subDirectory;
@@ -145,15 +147,16 @@ public class RepositoryManager {
 		}
 		try (FileWriter logFile = new FileWriter(directory + File.separator + LOG_FILE, true)) {
 			final String paperType = isCompletePaper ? "full;" : "abstract;";
-			logFile.write(paperType + file.getName() + ";OK;\n");
+			logFile.write(paperType + file.getName() + SEMICOLON_DELIMITER + completeFileName + ";OK;\n");
 		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 
 	}
 
-	private static void convertPDFFiletoTXTFile(final File file, final String directory, final String directorySuffix,
-			final boolean isCompletePaper, final boolean keepPDF, final boolean directoryType) {
+	private static void convertPDFFiletoTXTFile(final File file, final String completeFileName, final String directory,
+			final String directorySuffix, final boolean isCompletePaper, final boolean keepPDF,
+			final boolean directoryType) {
 		PDFTextStripper pdfStripper = null;
 		PDDocument pdDoc = null;
 		COSDocument cosDoc = null;
@@ -166,8 +169,8 @@ public class RepositoryManager {
 			pdfStripper.setEndPage(pdDoc.getNumberOfPages());
 			final String parsedText = pdfStripper.getText(pdDoc);
 			pdDoc.close();
-			generateTXTFile(file.getName().replace(PDF_FILE_EXTENSION, ""), parsedText, directory, directorySuffix,
-					isCompletePaper, directoryType);
+			generateTXTFile(file.getName().replace(PDF_FILE_EXTENSION, ""), completeFileName, parsedText, directory,
+					directorySuffix, isCompletePaper, directoryType);
 			if (!keepPDF) {
 				file.delete();
 			}
@@ -175,7 +178,7 @@ public class RepositoryManager {
 			if (file.delete()) {
 				try (FileWriter logFile = new FileWriter(directory + File.separator + LOG_FILE, true)) {
 					final String paperType = isCompletePaper ? "full;" : "abstract;";
-					logFile.write(paperType + file.getName() + ";error;\n");
+					logFile.write(paperType + file.getName() + SEMICOLON_DELIMITER + completeFileName + ";error;\n");
 				} catch (final IOException e1) {
 					e1.printStackTrace();
 				}
@@ -276,8 +279,9 @@ public class RepositoryManager {
 		}
 	}
 
-	public static void writeMetaData(final String directory, final String doi, final String title, final String date,
-			final List<String> authorList, final boolean isCompletePaper) {
+	public static void writeMetaData(final String directory, final String doi, final String title,
+			final String completeTitle, final String date, final List<String> authorList,
+			final boolean isCompletePaper) {
 		final File fileName = new File(directory + File.separator + METADATA_FILE);
 		try (FileWriter metaDataFile = new FileWriter(fileName, true)) {
 			final String type = isCompletePaper ? "full" : "abstract";
@@ -290,7 +294,7 @@ public class RepositoryManager {
 				}
 			}
 			metaDataFile.write(doi + SEMICOLON_DELIMITER + type + SEMICOLON_DELIMITER + title + SEMICOLON_DELIMITER
-					+ date + SEMICOLON_DELIMITER + authors + "\n");
+					+ completeTitle + SEMICOLON_DELIMITER + date + SEMICOLON_DELIMITER + authors + "\n");
 		} catch (final IOException e) {
 			e.printStackTrace();
 		}
@@ -304,6 +308,19 @@ public class RepositoryManager {
 			addDir(dirObj, zos, downloadOption);
 			zos.close();
 			Filedownload.save(baos.toByteArray(), ZIP_CONTENT_TYPE, zipFileName);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void zipFile(final String fileName, final String directoryPath, final String downloadOption) {
+		try {
+			File dirObj = new File(directoryPath);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ZipOutputStream zos = new ZipOutputStream(baos);
+			addZipFile(dirObj, zos, fileName, downloadOption);
+			zos.close();
+			Filedownload.save(baos.toByteArray(), ZIP_CONTENT_TYPE, fileName + ".zip");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -351,6 +368,38 @@ public class RepositoryManager {
 		}
 	}
 
+	static void addZipFile(final File dirObj, final ZipOutputStream zos, final String fileName,
+			final String downloadOption) {
+		File[] files = dirObj.listFiles();
+
+		byte[] tmpBuf = new byte[1024];
+
+		for (int i = 0; i < files.length; i++) {
+			try {
+				if (files[i].isDirectory()) {
+					addZipFile(files[i], zos, fileName, downloadOption);
+					continue;
+				}
+
+				if (files[i].getName().equalsIgnoreCase(fileName)
+						&& files[i].getAbsolutePath().contains(downloadOption)) {
+					final String absolutePath = files[i].getAbsolutePath();
+					final String relativePath = dirObj.toURI().relativize(files[i].toURI()).getPath();
+
+					try (FileInputStream input = new FileInputStream(absolutePath)) {
+						zos.putNextEntry(new ZipEntry(relativePath));
+						int len;
+						while ((len = input.read(tmpBuf)) > 0) {
+							zos.write(tmpBuf, 0, len);
+						}
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 	private static void addFileToZip(final ZipOutputStream zos, byte[] tmpBuf, FileInputStream in,
 			final String relativePath, final boolean isAbstract) throws IOException {
 		if (!relativePath.equals(LOG_FILE) && !relativePath.equals(METADATA_FILE)) {
@@ -364,18 +413,52 @@ public class RepositoryManager {
 		}
 	}
 
-	public static List<String> readPaperTitleFromLog(final String csvPath) {
-		final List<String> titles = new LinkedList<>();
+	public static List<Paper> readPaperTitleFromLog(final String finalPath) {
+		final List<Paper> papers = new LinkedList<>();
 		Stream<String> stream = null;
+		// try {
+		// stream = Files.lines(Paths.get(finalPath + LOG_FILE));
+		// if (stream != null) {
+		// stream.forEach((line) -> {
+		// final String[] paper = line.split(SEMICOLON_DELIMITER);
+		// final String paperTitle = paper[1];
+		// final String isPaperDownloadedOrError = paper[2];
+		// if (isPaperDownloadedOrError.equals("OK") &&
+		// !papers.contains(paperTitle)) {
+		// papers.add(paperTitle);
+		// }
+		// });
+		// }
+		// } catch (final IOException e) {
+		// e.printStackTrace();
+		// }
+
 		try {
-			stream = Files.lines(Paths.get(csvPath + LOG_FILE));
+			stream = Files.lines(Paths.get(finalPath + LOG_FILE));
 			if (stream != null) {
 				stream.forEach((line) -> {
 					final String[] paper = line.split(SEMICOLON_DELIMITER);
 					final String paperTitle = paper[1];
-					final String isPaperDownloadedOrError = paper[2];
-					if (isPaperDownloadedOrError.equals("OK") && !titles.contains(paperTitle)) {
-						titles.add(paperTitle);
+					final String completePaperTitle = paper[2];
+					final String paperDownloadStatus = paper[3];
+					final String type = paper[0];
+					final Paper paperToCheck = new Paper(paperTitle, completePaperTitle);
+
+					if (paperDownloadStatus.equalsIgnoreCase("OK")) {
+						if (!papers.contains(paperToCheck)) {
+							final boolean isPaperFullText = type.equalsIgnoreCase("full") ? true : false;
+							papers.add(new Paper(paperTitle, completePaperTitle, isPaperFullText, !isPaperFullText));
+						} else {
+							final int indexOf = papers.indexOf(paperToCheck);
+							final Paper p = papers.get(indexOf);
+							if (p.isFull()) {
+								p.setAbst(true);
+							} else {
+								p.setFull(true);
+							}
+							papers.add(indexOf, p);
+						}
+
 					}
 				});
 			}
@@ -383,7 +466,25 @@ public class RepositoryManager {
 			e.printStackTrace();
 		}
 
-		return titles;
+		Set<Paper> hs = new HashSet<>();
+		hs.addAll(papers);
+		papers.clear();
+		papers.addAll(hs);
+		return papers;
+
+		// try {
+		// Files.find(Paths.get(finalPath), Integer.MAX_VALUE, (filePath,
+		// fileAttr) -> fileAttr.isRegularFile())
+		// .forEach(file -> {
+		// if (!file.getFileName().toString().contains(".csv")) {
+		// titles.add(file.getFileName().toString());
+		// }
+		// });
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// }
+		//
+		// return titles;
 	}
 
 }

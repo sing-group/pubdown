@@ -108,6 +108,12 @@ public class ScopusXMLParser {
 							if (paperTitle.contains(";")) {
 								paperTitle = paperTitle.replace(";", " - ");
 							}
+							if (paperTitle.contains("/")) {
+								paperTitle = paperTitle.replace("/", " - ");
+							}
+							if (paperTitle.contains(".")) {
+								paperTitle = paperTitle.replace(".", " - ");
+							}
 							if (paperTitle.length() > 130) {
 								paperTitle = paperTitle.substring(0, 130);
 							}
@@ -157,6 +163,12 @@ public class ScopusXMLParser {
 							paperTitle = child.getFirstChild().getTextContent();
 							if (paperTitle.contains(";")) {
 								paperTitle = paperTitle.replace(";", " - ");
+							}
+							if (paperTitle.contains("/")) {
+								paperTitle = paperTitle.replace("/", " - ");
+							}
+							if (paperTitle.contains(".")) {
+								paperTitle = paperTitle.replace(".", " - ");
 							}
 							if (paperTitle.length() > 130) {
 								paperTitle = paperTitle.substring(0, 130);

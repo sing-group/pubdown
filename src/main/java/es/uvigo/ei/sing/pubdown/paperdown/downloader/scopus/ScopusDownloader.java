@@ -47,6 +47,7 @@ public class ScopusDownloader implements Searcher {
 
 	private String doi = "";
 	private String paperTitle = "";
+	private String completePaperTitle = "";
 	private String date = "";
 	private final List<String> authorList = new LinkedList<>();
 
@@ -122,10 +123,10 @@ public class ScopusDownloader implements Searcher {
 				if (shouldDownloadPaper(xmlParser.getQueryURL(), isCompletePaper)) {
 					if ((numberOfPapers < downloadLimit)) {
 						htmlParser.setUrlsWithTitle(urlsWithTitle);
-						downloadCompleteOrAbstract(isCompletePaper, htmlParser, convertPDFtoTXT, keepPDF,
-								directoryType);
-						RepositoryManager.writeMetaData(this.directory, doi, paperTitle, date, authorList,
-								isCompletePaper);
+						downloadCompleteOrAbstract(completePaperTitle, isCompletePaper, htmlParser, convertPDFtoTXT,
+								keepPDF, directoryType);
+						RepositoryManager.writeMetaData(this.directory, doi, paperTitle, completePaperTitle, date,
+								authorList, isCompletePaper);
 						authorList.clear();
 					}
 				}
@@ -243,6 +244,13 @@ public class ScopusDownloader implements Searcher {
 							if (paperTitle.contains(";")) {
 								paperTitle = paperTitle.replace(";", " - ");
 							}
+							if (paperTitle.contains("/")) {
+								paperTitle = paperTitle.replace("/", " - ");
+							}
+							if (paperTitle.contains(".")) {
+								paperTitle = paperTitle.replace(".", " - ");
+							}
+							completePaperTitle = paperTitle;
 							if (paperTitle.length() > 130) {
 								paperTitle = paperTitle.substring(0, 130);
 							}
@@ -265,12 +273,12 @@ public class ScopusDownloader implements Searcher {
 		return false;
 	}
 
-	private void downloadCompleteOrAbstract(final boolean isCompletePaper, final ScopusHTMLParser htmlParser,
+	private void downloadCompleteOrAbstract(final String completeFileName,final boolean isCompletePaper, final ScopusHTMLParser htmlParser,
 			final boolean convertPDFtoTXT, final boolean keepPDF, final boolean directoryType) {
 		if (isCompletePaper) {
-			htmlParser.downloadCompletePDFs(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
+			htmlParser.downloadCompletePDFs(completeFileName, this.directory, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
 		} else {
-			htmlParser.downloadAbstractTXTs(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
+			htmlParser.downloadAbstractTXTs(completeFileName, this.directory, isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
 		}
 	}
 

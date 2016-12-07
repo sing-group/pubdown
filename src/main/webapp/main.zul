@@ -217,14 +217,26 @@
 																height="335px">
 																<columns>
 																	<column
-																		align="left" label="Paper Title" hflex="true"/>
+																		align="left" label="Paper Title" />
+																	<column
+																		align="center" label="Options" width="150px" />
 																</columns>
 																<template
 																	name="model" var="paper">
 																	<row>
 																		<label
-																			style="word-wrap: break-word;" multiline="true"
-																			value="@load(paper)" />
+																			style="word-wrap: break-word;" multiline="true" tooltiptext="@load(paper.completeTitle)"
+																			value="@load(paper.completeTitle)" />
+																		<cell>
+																			<button
+																				label="Paper" tooltiptext="Download full text"
+																				disabled="@load(!paper.full)"
+																				onClick="@command('downloadFile',current=paper.title,downloadOption='complete_papers')" />
+																			<button
+																				disabled="@load(!paper.abst)"
+																				label="Abstract" tooltiptext="Download abstract"
+																				onClick="@command('downloadFile',current=paper.title,downloadOption='abstract_papers')" />
+																		</cell>
 																	</row>
 																</template>
 															</grid>

@@ -53,6 +53,7 @@ public class PubMedHTMLParser {
 		for (final String id : this.idList) {
 			final String queryURL = SEARCH_ID + id;
 			String paperTitle = "PUBMED_DEFAULT_NAME";
+			String completePaperTitle = paperTitle;
 			try {
 				Document document = Jsoup.connect(queryURL).get();
 
@@ -60,7 +61,11 @@ public class PubMedHTMLParser {
 				for (final Element titleText : titlesTexts) {
 					if (!titleText.text().equals("PubMed")) {
 						paperTitle = titleText.text().replaceAll("[/|.]", "_");
-						paperTitle = paperTitle.substring(0, paperTitle.length() - 1);
+						completePaperTitle = paperTitle;
+//						paperTitle = paperTitle.substring(0, paperTitle.length() - 1);
+						if (paperTitle.length() > 130) {
+							paperTitle = paperTitle.substring(0, 130);
+						}
 					}
 				}
 				if (isCompletePaper) {
@@ -81,7 +86,7 @@ public class PubMedHTMLParser {
 										final String directorySuffix = directoryType ? COMPLETE_PAPERS
 												: SUB_FOLDER_NAME;
 
-										RepositoryManager.generatePDFFile(paperURL, paperTitle, directory,
+										RepositoryManager.generatePDFFile(paperURL, paperTitle,completePaperTitle, directory,
 												directorySuffix, isCompletePaper, convertPDFtoTXT, keepPDF,
 												directoryType);
 									}
@@ -96,7 +101,7 @@ public class PubMedHTMLParser {
 						if (!htmlText.isEmpty()) {
 							final String directorySuffix = directoryType ? ABSTRACT_PAPERS : SUB_FOLDER_NAME;
 
-							RepositoryManager.generateTXTFile(paperTitle, htmlText, directory, directorySuffix,
+							RepositoryManager.generateTXTFile(paperTitle,completePaperTitle, htmlText, directory, directorySuffix,
 									isCompletePaper, directoryType);
 						}
 					}

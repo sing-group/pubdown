@@ -1,3 +1,4 @@
+<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
 <zk>
 	<style src="css/pubdown.css" />
 
@@ -29,6 +30,10 @@
 										onClick="@command('removeRepository')"
 										tooltiptext="Delete Repository"
 										disabled="@load(vm.newRepository)" />
+									<menuitem label="Create Corpus"
+										tooltiptext="Create Corpus"
+										onClick="@command('createCorpus')"
+										disabled="@load(empty vm.repositories)" />
 								</menubar>
 								<listbox id="repositories" vflex="true"
 									model="@load(vm.repositories)"
@@ -225,7 +230,8 @@
 																	name="model" var="paper">
 																	<row>
 																		<label
-																			style="word-wrap: break-word;" multiline="true" tooltiptext="@load(paper.completeTitle)"
+																			style="word-wrap: break-word;" multiline="true"
+																			tooltiptext="@load(paper.completeTitle)"
 																			value="@load(paper.completeTitle)" />
 																		<cell>
 																			<button
@@ -233,8 +239,8 @@
 																				disabled="@load(!paper.full)"
 																				onClick="@command('downloadFile',current=paper.title,downloadOption='complete_papers')" />
 																			<button
-																				disabled="@load(!paper.abst)"
-																				label="Abstract" tooltiptext="Download abstract"
+																				disabled="@load(!paper.abst)" label="Abstract"
+																				tooltiptext="Download abstract"
 																				onClick="@command('downloadFile',current=paper.title,downloadOption='abstract_papers')" />
 																		</cell>
 																	</row>

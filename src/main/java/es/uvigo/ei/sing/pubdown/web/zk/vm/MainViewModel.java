@@ -385,6 +385,11 @@ public class MainViewModel extends ViewModelUtils {
 	}
 
 	@Command
+	public void createCorpus() {
+		Executions.createComponents("createCorpusForm.zul", null, singletonMap("repositories", getRepositories()));
+	}
+
+	@Command
 	public void downloadPapers(@BindingParam("downloadOption") final String downloadOption) {
 		final String suggestedDownloadName = this.repository.getName() + DOWNLOAD_FILE_EXTENSION;
 

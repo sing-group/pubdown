@@ -10,9 +10,11 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -485,6 +487,51 @@ public class RepositoryManager {
 		// }
 		//
 		// return titles;
+	}
+	
+	
+	public static void checkIfDirectoryExist(String temporalDirectory) {
+		if (!Files.exists(Paths.get(temporalDirectory))) {
+			try {
+				Files.createDirectories(Paths.get(temporalDirectory));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public static void copyFilesInRepository(File dirObj, String destination) {
+		final File[] files = dirObj.listFiles();
+		if (files != null) {
+			for (int i = 0; i < files.length; i++) {
+				if (files[i].isDirectory()) {
+					copyFilesInRepository(files[i], destination);
+					continue;
+				}
+				URI fileURI = files[i].toURI();
+				final String relativePath = dirObj.toURI().relativize(fileURI).getPath();
+				if (relativePath.endsWith(".txt")) {
+					copyFile(files[i], new File(destination + File.separator + files[i].getName()), relativePath);
+				}
+			}
+		}
+	}
+
+	private static void copyFile(File source, File destination, String fileName) {
+		try {
+			Files.copy(source.toPath(), destination.toPath());
+		} catch (FileAlreadyExistsException e) {
+			try {
+				fileName = fileName.substring(0, fileName.length() - 4);
+				File newDestination = new File(
+						destination.getPath().replace(fileName, fileName + "-" + UUID.randomUUID() + ".txt"));
+				Files.copy(source.toPath(), newDestination.toPath());
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

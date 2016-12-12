@@ -1,0 +1,45 @@
+<?page title="Pubdown" contentType="text/html;charset=UTF-8"?>
+<zk>
+	<style src="css/pubdown.css" />
+
+	<window title="Create Corpus Form" id="createCorpusForm"
+		binder="@init(queueName='pubdown')"
+		viewModel="@id('vm') @init('es.uvigo.ei.sing.pubdown.web.zk.vm.CreateCorpusFormViewModel')"
+		width="600px" height="auto" border="normal" minimizable="false"
+		mode="modal" maximizable="false" closable="false"
+		onClose="self.detach()" validationMessages="@id('vmsgs')">
+		<groupbox contentStyle="padding: 0">
+			<vlayout hflex="true" vflex="true">
+				<hbox width="100%" align="center" pack="center">
+					<label value="ARFF name:" />
+					<textbox value="@bind(vm.arffName)" />
+				</hbox>
+				<hlayout hflex="true" vflex="true">
+					<grid model="@load(vm.repositoriesMap.entrySet())"
+						mold="paging" hflex="true" vflex="true">
+						<columns>
+							<column align="center"
+								label="Repository name" />
+							<column align="center" label="Class name" />
+						</columns>
+						<template name="model" var="repository">
+							<row>
+								<label value="@load(repository.key)" />
+								<textbox
+									value="@bind(repository.value)" />
+							</row>
+						</template>
+					</grid>
+				</hlayout>
+				<hbox width="100%" align="center" pack="center">
+					<button label="Create"
+						onClick="@command('confirm')" />
+					<button label="Cancel" onClick="@command('refresh')"
+						forward="createCorpusForm.onClose" />
+					<button label="Reset form"
+						onClick="@command('refresh')" />
+				</hbox>
+			</vlayout>
+		</groupbox>
+	</window>
+</zk>

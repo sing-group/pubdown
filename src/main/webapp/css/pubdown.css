@@ -1,5 +1,12 @@
 @CHARSET "UTF-8";
 
+.z-loading {
+	top: 40% !important;
+	left: 45% !important;
+	align: center;
+	vertical-align: middle;
+}
+
 .error {
 	color: #D9534F;
 }

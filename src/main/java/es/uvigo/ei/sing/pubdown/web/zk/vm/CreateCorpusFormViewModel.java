@@ -1,24 +1,42 @@
 package es.uvigo.ei.sing.pubdown.web.zk.vm;
 
+import static es.uvigo.ei.sing.pubdown.util.Checks.isEmpty;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.zkoss.bind.ValidationContext;
+import org.zkoss.bind.Validator;
 import org.zkoss.bind.annotation.Command;
 import org.zkoss.bind.annotation.ExecutionArgParam;
 import org.zkoss.bind.annotation.Init;
+import org.zkoss.bind.annotation.NotifyChange;
+import org.zkoss.bind.validator.AbstractValidator;
+import org.zkoss.zul.Filedownload;
 
 import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 import es.uvigo.ei.sing.pubdown.web.entities.Repository;
+import es.uvigo.ei.sing.pubdown.web.entities.User;
+import weka.core.Instances;
+import weka.core.converters.ConverterUtils.DataSink;
+import weka.core.converters.TextDirectoryLoader;
+import weka.core.stopwords.StopwordsHandler;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class CreateCorpusFormViewModel {
-	private static final String TEMPORAL_DIRECTORY = "/tmp/";
+	private static final String TEMPORAL_DIRECTORY = System.getProperty("java.io.tmpdir") + File.separator;
 
 	private Map<Repository, String> repositoriesMap;
 	private String arffName;
+	private User user;
 
 	@Init
 	public void init(@ExecutionArgParam("repositories") final List<Repository> repositories) {
@@ -26,7 +44,7 @@ public class CreateCorpusFormViewModel {
 		for (Repository repository : repositories) {
 			this.repositoriesMap.put(repository, "");
 		}
-
+		this.user = repositories.get(0).getUser();
 		sortRepositoriesMap();
 	}
 
@@ -48,91 +66,103 @@ public class CreateCorpusFormViewModel {
 		this.arffName = arffFileName;
 	}
 
+	public boolean isRepositoryClassEmpty() {
+		for (Map.Entry<Repository, String> entry : this.repositoriesMap.entrySet()) {
+			String repositoryClassName = entry.getValue().trim();
+			if (!repositoryClassName.isEmpty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean isValidCorpus() {
+		return !isEmpty(this.arffName) && isRepositoryClassEmpty();
+	}
+
+	@Command
+	@NotifyChange({ "validCorpus", "repositoryClassEmpty" })
+	public void checkCorpus() {
+	}
+
+	public Validator getArffNameValidator() {
+		return new AbstractValidator() {
+			@Override
+			public void validate(final ValidationContext ctx) {
+				final String name = (String) ctx.getProperty().getValue();
+
+				if (isEmpty(name)) {
+					addInvalidMessage(ctx, "Name can't be empty");
+				}
+			}
+		};
+	}
+
 	@Command
 	public void confirm() {
+		final String userLogin = this.user.getLogin();
 		final String basePath = RepositoryManager.getRepositoryPath() + File.separator;
 
-		System.out.println("--------------------------------------------------");
 		this.repositoriesMap.forEach((repository, repositoryClassName) -> {
-
 			repositoryClassName = repositoryClassName.trim();
 
 			if (!repositoryClassName.isEmpty()) {
-				final String userLogin = repository.getUser().getLogin();
 				final String repositoryPath = basePath + userLogin + File.separator + repository.getPath();
 
 				final File directory = new File(repositoryPath);
 
-				final String temporalDirectory = TEMPORAL_DIRECTORY + userLogin + File.separator + this.arffName
+				final String tmpDir = TEMPORAL_DIRECTORY + userLogin + File.separator + this.arffName
 						+ File.separator + repositoryClassName;
 
-				RepositoryManager.checkIfDirectoryExist(temporalDirectory);
+				RepositoryManager.checkIfDirectoryExist(tmpDir);
 
-				RepositoryManager.copyFilesInRepository(directory, temporalDirectory);
-
-				// filesInRepository.forEach(fir -> {
-				// System.out.println(fir);
-				// });
-
-				// TextDirectoryLoader textDirectoryLoader = new
-				// TextDirectoryLoader();
-				// try {
-				// textDirectoryLoader.setDirectory(new
-				// File(temporalDirectory));
-				// textDirectoryLoader.run(textDirectoryLoader,
-				// textDirectoryLoader.getOptions());
-				// StringToWordVector stringToWordVector = new
-				// StringToWordVector();
-				// stringToWordVector.setDoNotOperateOnPerClassBasis(true);
-				// stringToWordVector.setLowerCaseTokens(true);
-				// stringToWordVector.setWordsToKeep(1000000);
-				// stringToWordVector.setIDFTransform(true);
-				// stringToWordVector.run(stringToWordVector,
-				// stringToWordVector.getOptions());
-				// try {
-				// Instances data = textDirectoryLoader.getDataSet();
-				//
-				// System.out.println(data.toString());
-				//
-				// // BufferedWriter writer = new BufferedWriter(new
-				// // FileWriter("/tmp/test.arff"));
-				// // System.out.println("START WRITING");
-				// // writer.write(data.toString());
-				// // writer.flush();
-				// // writer.close();
-				// // System.out.println("FINISH WRITING");
-				// } catch (Exception e) {
-				// e.printStackTrace();
-				// }
-				// } catch (IOException e) {
-				// e.printStackTrace();
-				// }
-
-				// Instances structure;
-				// try {
-				// structure = textDirectoryLoader.getStructure();
-				// System.out.println(structure);
-				// textDirectoryLoader.getNextInstance(structure);
-				// Instance temp;
-				// do {
-				// temp = textDirectoryLoader.getNextInstance(structure);
-				// if (temp != null) {
-				// System.out.println(temp);
-				// }
-				// } while (temp != null);
-				// } catch (IOException e) {
-				// e.printStackTrace();
-				// }
-
+				RepositoryManager.copyFilesInRepository(directory, tmpDir);
 			}
-
 		});
-		System.out.println("--------------------------------------------------");
+
+		final String tmpDir = TEMPORAL_DIRECTORY + userLogin + File.separator + this.arffName;
+		TextDirectoryLoader textDirectoryLoader = new TextDirectoryLoader();
+		try {
+			textDirectoryLoader.setDirectory(new File(tmpDir));
+			textDirectoryLoader.setCharSet("UTF-8");
+
+			Instances rawData = textDirectoryLoader.getDataSet();
+
+			StringToWordVector stringToWordVector = new StringToWordVector();
+			stringToWordVector.setLowerCaseTokens(true);
+			stringToWordVector.setWordsToKeep(10000);
+			stringToWordVector.setIDFTransform(true);
+			stringToWordVector
+					.setStopwordsHandler(new RegExStopwords("([\\W+]|[0-9]|^[a-zA-Z]$|@|n\\/a|[\\%\\€\\$\\£])"));
+			try {
+				stringToWordVector.setInputFormat(rawData);
+
+				Instances dataFiltered = Filter.useFilter(rawData, stringToWordVector);
+
+				final String arffFile = tmpDir + File.separator + this.arffName + ".arff";
+				final DataSink dataSink = new DataSink(arffFile);
+				dataSink.write(dataFiltered);
+				Filedownload.save(new File(arffFile), null);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 	}
 
-	@Command
-	public void refresh() {
-		System.out.println("REFRESH");
+	private class RegExStopwords implements StopwordsHandler {
+		private final Pattern pattern;
+
+		public RegExStopwords(String regexString) {
+			pattern = Pattern.compile(regexString);
+		}
+
+		@Override
+		public boolean isStopword(String s) {
+			Matcher matcher = pattern.matcher(s);
+			return matcher.find();
+		}
 	}
 }

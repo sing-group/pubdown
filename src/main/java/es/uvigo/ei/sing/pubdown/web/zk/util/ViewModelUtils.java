@@ -1,5 +1,9 @@
 package es.uvigo.ei.sing.pubdown.web.zk.util;
 
+import static es.uvigo.ei.sing.pubdown.web.entities.Role.USER;
+
+import java.io.File;
+
 import javax.persistence.EntityManager;
 
 import org.zkoss.bind.BindUtils;
@@ -8,6 +12,7 @@ import org.zkoss.zk.ui.Session;
 import org.zkoss.zk.ui.Sessions;
 
 import es.uvigo.ei.sing.pubdown.execution.EventQueueUtils;
+import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
 
 /**
@@ -16,6 +21,7 @@ import es.uvigo.ei.sing.pubdown.web.entities.User;
  */
 public class ViewModelUtils {
 	public static final String USER_SESSION_KEY = "user";
+	private static final String TEMPORAL_DIRECTORY = System.getProperty("java.io.tmpdir") + File.separator;
 
 	/**
 	 * Returns the application's current {@link User}
@@ -48,7 +54,7 @@ public class ViewModelUtils {
 			BindUtils.postNotifyChange(EventQueueUtils.QUEUE_NAME, null, object, property);
 		}
 	}
-	
+
 	/**
 	 * Notifies a bean to update its properties
 	 * 
@@ -70,6 +76,15 @@ public class ViewModelUtils {
 		final Session current = Sessions.getCurrent(false);
 
 		if (current != null && current.hasAttribute(USER_SESSION_KEY)) {
+			final User user = (User) current.getAttribute(USER_SESSION_KEY);
+			if (user.getRole().equals(USER)) {
+				EventQueueUtils.unregisterUserGlobalListener();
+				final String tmpDir = TEMPORAL_DIRECTORY + user.getLogin();
+				RepositoryManager.deleteDirectoryWithFiles(new File(tmpDir));
+			} else {
+				EventQueueUtils.unregisterAdminGlobalListener();
+			}
+			
 			current.removeAttribute(USER_SESSION_KEY);
 
 			Executions.sendRedirect("index.zul");

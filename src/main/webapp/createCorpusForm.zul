@@ -12,7 +12,10 @@
 			<vlayout hflex="true" vflex="true">
 				<hbox width="100%" align="center" pack="center">
 					<label value="ARFF name:" />
-					<textbox value="@bind(vm.arffName)" />
+					<textbox id="rbName"
+						value="@bind(vm.arffName) @validator(vm.arffNameValidator)"
+						onChange="@command('checkCorpus')" />
+					<label value="@load(vmsgs[rbName])" sclass="error" />
 				</hbox>
 				<hlayout hflex="true" vflex="true">
 					<grid model="@load(vm.repositoriesMap.entrySet())"
@@ -25,19 +28,18 @@
 						<template name="model" var="repository">
 							<row>
 								<label value="@load(repository.key)" />
-								<textbox
-									value="@bind(repository.value)" />
+								<textbox value="@bind(repository.value)"
+									onChange="@command('checkCorpus')" />
 							</row>
 						</template>
 					</grid>
 				</hlayout>
 				<hbox width="100%" align="center" pack="center">
-					<button label="Create"
-						onClick="@command('confirm')" />
-					<button label="Cancel" onClick="@command('refresh')"
+					<button label="Create" onClick="@command('confirm')"
+						disabled="@load(not vm.validCorpus or not empty vmsgs)"
 						forward="createCorpusForm.onClose" />
-					<button label="Reset form"
-						onClick="@command('refresh')" />
+					<button label="Cancel"
+						forward="createCorpusForm.onClose" />
 				</hbox>
 			</vlayout>
 		</groupbox>

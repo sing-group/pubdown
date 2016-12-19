@@ -1,5 +1,7 @@
 package es.uvigo.ei.sing.pubdown.paperdown.downloader.pubmed;
 
+import static es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager.numberOfPapersInRepository;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.LinkedList;
@@ -47,7 +49,6 @@ public class PubMedDownloader implements Searcher {
 	private String paperTitle = "";
 	private String completePaperTitle = "";
 	private String date = "";
-	private final List<String> authorList = new LinkedList<>();
 
 	public PubMedDownloader() {
 	}
@@ -72,7 +73,8 @@ public class PubMedDownloader implements Searcher {
 	public void downloadPapers(final boolean isCompletePaper, final boolean convertPDFtoTXT, final boolean keepPDF,
 			final boolean directoryType, final int downloadLimit, final int downloadFrom, int downloadTo) {
 
-		int searchIncrease = 1;
+		List<PubMed> pubMedList = new LinkedList<>();
+		int searchIncrease = 100;
 		final int resultNumber = getResultSize();
 		if (resultNumber > 0) {
 			if (resultNumber < searchIncrease) {
@@ -91,7 +93,7 @@ public class PubMedDownloader implements Searcher {
 
 			String queryURL = SEARCH_REQUEST + this.query.replace(" ", "+") + "&retmax=" + searchIncrease;
 			final PubMedXMLParser xmlParser = new PubMedXMLParser(this.httpClient, this.context, queryURL);
-			final PubMedHTMLParser htmlParser = new PubMedHTMLParser(this.httpClient, this.context, null);
+			final PubMedHTMLParser htmlParser = new PubMedHTMLParser(this.httpClient, this.context);
 
 			queryURL = queryURL + "&retstart=";
 
@@ -105,23 +107,22 @@ public class PubMedDownloader implements Searcher {
 
 				final List<String> idList = xmlParser.getPubMedIDs();
 
-				final int numberOfPapers = (int) RepositoryManager.numberOfPapersInRepository(this.directory);
-
-				for (final String id : idList) {
-					if (shouldDownloadPaper(id, isCompletePaper)) {
-						if ((numberOfPapers < downloadLimit)) {
-							htmlParser.setIdList(idList);
-							htmlParser.download(this.directory, isCompletePaper, convertPDFtoTXT, keepPDF,
-									directoryType);
-							RepositoryManager.writeMetaData(this.directory, doi, paperTitle, completePaperTitle, date, authorList,
-									isCompletePaper);
-							authorList.clear();
-						}
-					}
-				}
+				pubMedList.addAll(shouldDownloadPaper(idList, isCompletePaper));
 
 				aux = aux - searchIncrease;
+			}
 
+
+			for (PubMed toDownload : pubMedList) {
+				if (numberOfPapersInRepository(this.directory) < downloadLimit) {
+
+					htmlParser.download(toDownload, this.directory, convertPDFtoTXT, keepPDF, directoryType);
+					RepositoryManager.writeMetaData(this.directory, toDownload.getDoi(), toDownload.getPaperTitle(),
+							toDownload.getCompletePaperTitle(), toDownload.getDate(), toDownload.getAuthorList(),
+							toDownload.isCompletePaper());
+				} else {
+					break;
+				}
 			}
 		}
 	}
@@ -178,47 +179,60 @@ public class PubMedDownloader implements Searcher {
 		}
 	}
 
-	private boolean shouldDownloadPaper(final String id, final boolean isCompletePaper) {
-		final String queryURL = SEARCH_ID + id;
-		final String queryURLXML = queryURL + SEARCH_XML;
-		try {
-			final org.jsoup.nodes.Document document = Jsoup.connect(queryURL).get();
+	private List<PubMed> shouldDownloadPaper(final List<String> idList, final boolean isCompletePaper) {
+		List<PubMed> pubMedList = new LinkedList<>();
+		for (String pubMedId : idList) {
+			final String queryURL = SEARCH_ID + pubMedId;
+			final String queryURLXML = queryURL + SEARCH_XML;
 
-			final Elements titlesTexts = document.select("h1");
-			for (final Element titleText : titlesTexts) {
-				if (!titleText.text().equals("PubMed")) {
-					paperTitle = titleText.text().replaceAll("[/|.]", "_");
-					completePaperTitle = paperTitle;
-//					paperTitle = paperTitle.substring(0, paperTitle.length() - 1);
-					if (paperTitle.length() > 130) {
-						paperTitle = paperTitle.substring(0, 130);
+			try {
+				final org.jsoup.nodes.Document document = Jsoup.connect(queryURL).get();
+				List<String> authorList = new LinkedList<>();
+				String paperUrl = "";
+
+				final Elements titlesTexts = document.select("h1");
+				for (final Element titleText : titlesTexts) {
+					if (!titleText.text().equals("PubMed")) {
+						paperTitle = titleText.text().replaceAll("[/|.|;]", "_");
+						completePaperTitle = paperTitle;
+						if (paperTitle.length() > 130) {
+							paperTitle = paperTitle.substring(0, 130);
+						}
 					}
 				}
-			}
 
-			final Elements authors = document.select("div.auths > a");
-			for (final Element author : authors) {
-				authorList.add(author.text());
-			}
-
-			date = getMetadataDate(queryURLXML);
-
-			final Elements links = document.select("a");
-			for (final Element link : links) {
-				if (link.attr("ref").contains("aid_type=doi")) {
-					doi = link.text();
-
-					final Set<String> auxList = RepositoryManager.readDOIInMetaData(this.directory, doi);
-					final String paperType = isCompletePaper ? "full" : "abstract";
-
-					return !auxList.contains(paperType);
+				final Elements authors = document.select("div.auths > a");
+				for (final Element author : authors) {
+					authorList.add(author.text());
 				}
+
+				final Elements url = document.select("div.icons > a");
+				if (url != null) {
+					paperUrl = url.attr("href");
+				}
+
+				date = getMetadataDate(queryURLXML);
+
+				final Elements links = document.select("a");
+				for (final Element link : links) {
+					if (link.attr("ref").contains("aid_type=doi")) {
+						doi = link.text();
+
+						final Set<String> auxList = RepositoryManager.readDOIInMetaData(this.directory, doi);
+						final String paperType = isCompletePaper ? "full" : "abstract";
+
+						if (!auxList.contains(paperType)) {
+							pubMedList.add(new PubMed(pubMedId, paperUrl, doi, paperTitle, completePaperTitle, date,
+									authorList, isCompletePaper));
+						}
+					}
+				}
+			} catch (final IOException e) {
+				e.printStackTrace();
 			}
-		} catch (final IOException e) {
-			e.printStackTrace();
 		}
 
-		return false;
+		return pubMedList;
 	}
 
 	private String getMetadataDate(final String queryURL) {
@@ -245,4 +259,51 @@ public class PubMedDownloader implements Searcher {
 		}
 		return null;
 	}
+
+	// private boolean shouldDownloadPaper(final String id, final boolean
+	// isCompletePaper) {
+	// final String queryURL = SEARCH_ID + id;
+	// final String queryURLXML = queryURL + SEARCH_XML;
+	// try {
+	// final org.jsoup.nodes.Document document = Jsoup.connect(queryURL).get();
+	//
+	// final Elements titlesTexts = document.select("h1");
+	// for (final Element titleText : titlesTexts) {
+	// if (!titleText.text().equals("PubMed")) {
+	// paperTitle = titleText.text().replaceAll("[/|.]", "_");
+	// completePaperTitle = paperTitle;
+	// // paperTitle = paperTitle.substring(0, paperTitle.length()
+	// // - 1);
+	// if (paperTitle.length() > 130) {
+	// paperTitle = paperTitle.substring(0, 130);
+	// }
+	// }
+	// }
+	//
+	// final Elements authors = document.select("div.auths > a");
+	// for (final Element author : authors) {
+	// authorList.add(author.text());
+	// }
+	//
+	// date = getMetadataDate(queryURLXML);
+	//
+	// final Elements links = document.select("a");
+	// for (final Element link : links) {
+	// if (link.attr("ref").contains("aid_type=doi")) {
+	// doi = link.text();
+	//
+	// final Set<String> auxList =
+	// RepositoryManager.readDOIInMetaData(this.directory, doi);
+	// final String paperType = isCompletePaper ? "full" : "abstract";
+	//
+	// return !auxList.contains(paperType);
+	// }
+	// }
+	// } catch (final IOException e) {
+	// e.printStackTrace();
+	// }
+	//
+	// return false;
+	// }
+
 }

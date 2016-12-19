@@ -25,9 +25,6 @@ public class ScopusXMLParser {
 	private final CloseableHttpClient httpClient;
 	private final HttpClientContext context;
 	private String queryURL;
-	private String selfLink;
-	private String lastLink;
-	private String nextLink;
 
 	public ScopusXMLParser(final CloseableHttpClient httpclient, final HttpClientContext context,
 			final String queryURL) {
@@ -35,33 +32,6 @@ public class ScopusXMLParser {
 		this.httpClient = httpclient;
 		this.context = context;
 		this.queryURL = queryURL;
-		this.selfLink = "";
-		this.nextLink = "";
-		this.lastLink = "";
-	}
-
-	public String getSelfLink() {
-		return selfLink;
-	}
-
-	public void setSelfLink(final String selfLink) {
-		this.selfLink = selfLink;
-	}
-
-	public String getLastLink() {
-		return lastLink;
-	}
-
-	public void setLastLink(final String lastLink) {
-		this.lastLink = lastLink;
-	}
-
-	public String getNextLink() {
-		return nextLink;
-	}
-
-	public void setNextLink(final String nextLink) {
-		this.nextLink = nextLink;
 	}
 
 	public String getQueryURL() {
@@ -105,15 +75,17 @@ public class ScopusXMLParser {
 						}
 						if (child.getNodeName().equals("dc:title")) {
 							paperTitle = child.getFirstChild().getTextContent();
-							if (paperTitle.contains(";")) {
-								paperTitle = paperTitle.replace(";", " - ");
-							}
-							if (paperTitle.contains("/")) {
-								paperTitle = paperTitle.replace("/", " - ");
-							}
-							if (paperTitle.contains(".")) {
-								paperTitle = paperTitle.replace(".", " - ");
-							}
+							// if (paperTitle.contains(";")) {
+							// paperTitle = paperTitle.replace(";", " - ");
+							// }
+							// if (paperTitle.contains("/")) {
+							// paperTitle = paperTitle.replace("/", " - ");
+							// }
+							// if (paperTitle.contains(".")) {
+							// paperTitle = paperTitle.replace(".", " - ");
+							// }
+
+							paperTitle = paperTitle.replaceAll("[/|.|;]", " - ");
 							if (paperTitle.length() > 130) {
 								paperTitle = paperTitle.substring(0, 130);
 							}
@@ -183,49 +155,5 @@ public class ScopusXMLParser {
 			e.printStackTrace();
 		}
 		return null;
-	}
-
-	public void updateXMLURLs() {
-		try {
-			final HttpGet httpget = new HttpGet(this.queryURL);
-			final CloseableHttpResponse response = this.httpClient.execute(httpget, this.context);
-			final String xmlDocument = EntityUtils.toString(response.getEntity());
-			response.close();
-
-			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-			final DocumentBuilder builder = factory.newDocumentBuilder();
-			final Document document = builder.parse(new InputSource(new StringReader(xmlDocument)));
-			document.getDocumentElement().normalize();
-			final NodeList linkElements = document.getElementsByTagName("link");
-			for (int i = 0; i < linkElements.getLength(); i++) {
-				final String ref = linkElements.item(i).getAttributes().getNamedItem("ref").getNodeValue().toString();
-				if (linkElements.item(i).getAttributes().getNamedItem("type") != null) {
-					switch (ref) {
-					case "self":
-						this.setSelfLink(
-								(linkElements.item(i).getAttributes().getNamedItem("href").getNodeValue().toString())
-										.replace("https://api.elsevier.com:80", "https://api.elsevier.com")
-										.replace("&xml-decode=true", ""));
-						break;
-					case "next":
-						this.setNextLink(
-								(linkElements.item(i).getAttributes().getNamedItem("href").getNodeValue().toString())
-										.replace("https://api.elsevier.com:80", "https://api.elsevier.com")
-										.replace("&xml-decode=true", ""));
-						break;
-					case "last":
-						this.setLastLink(
-								(linkElements.item(i).getAttributes().getNamedItem("href").getNodeValue().toString())
-										.replace("https://api.elsevier.com:80", "https://api.elsevier.com")
-										.replace("&xml-decode=true", ""));
-						break;
-					default:
-						break;
-					}
-				}
-			}
-		} catch (IOException | SAXException | ParserConfigurationException e) {
-			e.printStackTrace();
-		}
 	}
 }

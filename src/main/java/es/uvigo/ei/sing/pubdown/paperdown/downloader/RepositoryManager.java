@@ -474,22 +474,8 @@ public class RepositoryManager {
 		papers.addAll(hs);
 		return papers;
 
-		// try {
-		// Files.find(Paths.get(finalPath), Integer.MAX_VALUE, (filePath,
-		// fileAttr) -> fileAttr.isRegularFile())
-		// .forEach(file -> {
-		// if (!file.getFileName().toString().contains(".csv")) {
-		// titles.add(file.getFileName().toString());
-		// }
-		// });
-		// } catch (IOException e) {
-		// e.printStackTrace();
-		// }
-		//
-		// return titles;
 	}
-	
-	
+
 	public static void checkIfDirectoryExist(String temporalDirectory) {
 		if (!Files.exists(Paths.get(temporalDirectory))) {
 			try {
@@ -498,6 +484,17 @@ public class RepositoryManager {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public static void deleteDirectoryWithFiles(File file) {
+		if (!file.exists())
+			return;
+		if (file.isDirectory()) {
+			for (File f : file.listFiles()) {
+				deleteDirectoryWithFiles(f);
+			}
+		}
+		file.delete();
 	}
 
 	public static void copyFilesInRepository(File dirObj, String destination) {

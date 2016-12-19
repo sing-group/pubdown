@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.zkoss.bind.ValidationContext;
 import org.zkoss.bind.Validator;
@@ -245,11 +246,6 @@ public class MainViewModel extends ViewModelUtils {
 	public void setRepositoryQueryFilterByName(String repositoryQueryFilterByName) {
 		this.repositoryQueryFilterByName = repositoryQueryFilterByName;
 	}
-
-	// @DependsOn("repository")
-	// public List<String> getRepositoryPapers() {
-	// return readRepositoryPapers();
-	// }
 
 	@DependsOn("repository")
 	public List<Paper> getRepositoryPapers() {
@@ -604,11 +600,10 @@ public class MainViewModel extends ViewModelUtils {
 	public void persistRepository() {
 		final Repository repository = this.repository;
 
-		repository.setPath(repository.getName());
-
 		final boolean isNew = isNewRepository();
 
 		if (isNew) {
+			repository.setPath(UUID.randomUUID().toString());
 			repository.setUser(getCurrentUser(tm));
 			tm.runInTransaction(em -> em.persist(repository));
 			this.repositories.add(repository);

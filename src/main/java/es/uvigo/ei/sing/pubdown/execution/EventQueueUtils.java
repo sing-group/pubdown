@@ -142,7 +142,6 @@ public class EventQueueUtils {
 
 			return listener;
 		} else {
-
 			final String adminQueueName = getAdminQueueName();
 
 			final AdminGlobalEventListener listener = new AdminGlobalEventListener(adminQueueName);
@@ -156,7 +155,6 @@ public class EventQueueUtils {
 
 	public static UserGlobalEventListener unregisterUserGlobalListener() throws IllegalStateException {
 		final Session session = Sessions.getCurrent(false);
-
 		if (session == null || !session.hasAttribute("userGlobalListener")) {
 			return null;
 		} else {
@@ -173,7 +171,6 @@ public class EventQueueUtils {
 
 	public static AdminGlobalEventListener unregisterAdminGlobalListener() throws IllegalStateException {
 		final Session session = Sessions.getCurrent(false);
-
 		if (session == null || !session.hasAttribute("adminGlobalListener")) {
 			return null;
 		} else {

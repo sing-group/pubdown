@@ -25,6 +25,10 @@ import es.uvigo.ei.sing.pubdown.util.Compare;
 @Entity(name = "RepositoryQuery")
 public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 
+	private static final String FIRST_SCOPUS = "Scopus";
+
+	private static final String FIRST_PUBMED = "PubMed";
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
@@ -40,6 +44,9 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 
 	@Basic
 	private boolean pubmed = false;
+
+	@Basic
+	private boolean downloadFirst = false;
 
 	@Basic
 	private int scopusDownloadTo = Integer.MAX_VALUE;
@@ -73,7 +80,6 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	@OneToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "taskId")
 	private RepositoryQueryTask task;
-	
 
 	/**
 	 * Empty Constructor
@@ -89,13 +95,14 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	}
 
 	public RepositoryQuery(final String name, final String query, final Repository repository, final boolean scopus,
-			final boolean pubmed, final int scopusDownloadTo, final int pubmedDownloadTo, final boolean groupBy,
-			final boolean checked, final boolean scheduled, final RepositoryQueryTask task) {
+			final boolean pubmed, final boolean downloadFirst, final int scopusDownloadTo, final int pubmedDownloadTo,
+			final boolean groupBy, final boolean checked, final boolean scheduled, final RepositoryQueryTask task) {
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
+		this.downloadFirst = downloadFirst;
 		this.scopusDownloadTo = scopusDownloadTo;
 		this.pubmedDownloadTo = pubmedDownloadTo;
 		this.groupBy = groupBy;
@@ -105,14 +112,16 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	}
 
 	private RepositoryQuery(final Integer id, final String name, final String query, final Repository repository,
-			final boolean scopus, final boolean pubmed, final int scopusDownloadTo, final int pubmedDownloadTo,
-			final boolean groupBy, final boolean checked, final boolean scheduled, final RepositoryQueryTask task) {
+			final boolean scopus, final boolean pubmed, final boolean downloadFirst, final int scopusDownloadTo,
+			final int pubmedDownloadTo, final boolean groupBy, final boolean checked, final boolean scheduled,
+			final RepositoryQueryTask task) {
 		this.id = id;
 		this.name = name;
 		this.query = query;
 		this.repository = repository;
 		this.scopus = scopus;
 		this.pubmed = pubmed;
+		this.downloadFirst = downloadFirst;
 		this.scopusDownloadTo = scopusDownloadTo;
 		this.pubmedDownloadTo = pubmedDownloadTo;
 		this.groupBy = groupBy;
@@ -195,6 +204,31 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 		this.pubmed = pubmed;
 	}
 
+	public boolean isDownloadFirst() {
+		return downloadFirst;
+	}
+
+	public void setDownloadFirst(boolean downloadFirst) {
+		this.downloadFirst = downloadFirst;
+	}
+
+	public void setFirstFromScopus(final String frequency) {
+		switch (frequency) {
+		case FIRST_SCOPUS:
+			this.setDownloadFirst(false);
+			break;
+		case FIRST_PUBMED:
+			this.setDownloadFirst(true);
+			break;
+		default:
+			throw new IllegalArgumentException("Valid options are 'scopus' and 'pubmed'");
+		}
+	}
+
+	public String getFirstFromScopus() {
+		return this.isDownloadFirst() ? FIRST_PUBMED : FIRST_SCOPUS;
+	}
+
 	public int getScopusDownloadTo() {
 		return scopusDownloadTo;
 	}
@@ -262,11 +296,11 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public void setTask(final RepositoryQueryTask task) {
 		this.task = task;
 	}
-	
-	public boolean isRunning(){
+
+	public boolean isRunning() {
 		return getExecutionState().equals(RUNNING);
 	}
-	
+
 	/**
 	 * {@link RepositoryQuery} hashcode method
 	 */
@@ -311,8 +345,8 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	@Override
 	public RepositoryQuery clone() {
 		return new RepositoryQuery(this.id, this.name, this.query, this.repository.clone(), this.scopus, this.pubmed,
-				this.scopusDownloadTo, this.pubmedDownloadTo, this.groupBy, this.checked, this.scheduled,
-				this.task.clone());
+				this.downloadFirst, this.scopusDownloadTo, this.pubmedDownloadTo, this.groupBy, this.checked,
+				this.scheduled, this.task.clone());
 	}
 
 	/**
@@ -325,7 +359,8 @@ public class RepositoryQuery implements Cloneable, Comparable<RepositoryQuery> {
 	public int compareTo(final RepositoryQuery obj) {
 		return Compare.objects(this, obj).by(RepositoryQuery::getId).thenBy(RepositoryQuery::getName)
 				.thenBy(RepositoryQuery::getQuery).thenBy(RepositoryQuery::getRepository)
-				.thenBy(RepositoryQuery::isScopus).thenBy(RepositoryQuery::isPubmed).thenBy(RepositoryQuery::isGroupBy)
+				.thenBy(RepositoryQuery::isScopus).thenBy(RepositoryQuery::isPubmed)
+				.thenBy(RepositoryQuery::isDownloadFirst).thenBy(RepositoryQuery::isGroupBy)
 				.thenBy(RepositoryQuery::getTask).andGet();
 	}
 

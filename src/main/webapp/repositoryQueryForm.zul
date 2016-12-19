@@ -47,6 +47,17 @@
 						onCheck="@command('checkData')" />
 					<label value=" (You must select at least one)" />
 				</hlayout>
+				<hlayout valign="middle"
+					visible="@load(vm.newRepositoryQuery)">
+					<label value="Download First: " />
+					<radiogroup onCheck="@command('checkData')"
+						selectedItem="@bind(vm.repositoryQuery.firstFromScopus)">
+						<radio label="Scopus" value="Scopus"
+							disabled="@load(not vm.repositoryQuery.scopus or not vm.repositoryQuery.pubmed)" />
+						<radio label="PubMed" value="PubMed"
+							disabled="@load(not vm.repositoryQuery.scopus or not vm.repositoryQuery.pubmed)" />
+					</radiogroup>
+				</hlayout>
 				<groupbox closable="false">
 					<caption>Schedule</caption>
 					<vlayout hflex="true" vflex="true" spacing="10px">

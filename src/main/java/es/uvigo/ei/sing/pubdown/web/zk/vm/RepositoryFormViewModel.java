@@ -3,6 +3,8 @@ package es.uvigo.ei.sing.pubdown.web.zk.vm;
 import static es.uvigo.ei.sing.pubdown.util.Checks.isEmpty;
 import static java.util.Collections.singletonMap;
 
+import java.util.UUID;
+
 import org.zkoss.bind.BindUtils;
 import org.zkoss.bind.ValidationContext;
 import org.zkoss.bind.Validator;
@@ -105,11 +107,10 @@ public class RepositoryFormViewModel extends ViewModelUtils {
 
 		Repository repository = this.getRepository();
 		
-		repository.setPath(repository.getName());
-
 		final boolean isNew = isNewRepository();
 
 		if (isNew) {
+			repository.setPath(UUID.randomUUID().toString());
 			repository.setUser(getCurrentUser(tm));
 			tm.runInTransaction(em -> em.persist(repository));
 

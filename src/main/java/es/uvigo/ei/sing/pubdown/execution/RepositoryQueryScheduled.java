@@ -122,27 +122,79 @@ public class RepositoryQueryScheduled {
 
 		if (repository.isFulltextPaper()) {
 			final boolean directoryType = repositoryQuery.isGroupBy();
-			if (repositoryQuery.isScopus() && scopusReady) {
-				scopusDownloader.downloadPapers(true, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
-						repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
-			}
 
-			if (repositoryQuery.isPubmed() && pubmedReady) {
-				pubmedDownloader.downloadPapers(true, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
-						repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+			if (!repositoryQuery.isDownloadFirst()) {
+				downloadFromScopusFullText(startsDownloadFrom, scopusDownloader, scopusReady, repository,
+						repositoryDownloadLimit, directoryType);
+
+				downloadFromPubMedFullText(startsDownloadFrom, pubmedDownloader, pubmedReady, repository,
+						repositoryDownloadLimit, directoryType);
+			} else {
+				downloadFromPubMedFullText(startsDownloadFrom, pubmedDownloader, pubmedReady, repository,
+						repositoryDownloadLimit, directoryType);
+
+				downloadFromScopusFullText(startsDownloadFrom, scopusDownloader, scopusReady, repository,
+						repositoryDownloadLimit, directoryType);
 			}
 		}
-
 		if (repository.isAbstractPaper()) {
 			final boolean directoryType = repositoryQuery.isGroupBy();
-			if (repositoryQuery.isScopus() && scopusReady) {
-				scopusDownloader.downloadPapers(false, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
-						repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+
+			if (!repositoryQuery.isDownloadFirst()) {
+				downloadFromScopusAbstract(startsDownloadFrom, scopusDownloader, scopusReady, repository,
+						repositoryDownloadLimit, directoryType);
+				downloadFromPubMedAbstract(startsDownloadFrom, pubmedDownloader, pubmedReady, repository,
+						repositoryDownloadLimit, directoryType);
+			} else {
+				downloadFromPubMedAbstract(startsDownloadFrom, pubmedDownloader, pubmedReady, repository,
+						repositoryDownloadLimit, directoryType);
+				downloadFromScopusAbstract(startsDownloadFrom, scopusDownloader, scopusReady, repository,
+						repositoryDownloadLimit, directoryType);
 			}
-			if (repositoryQuery.isPubmed() && pubmedReady) {
-				pubmedDownloader.downloadPapers(false, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
-						repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+
+		}
+	}
+
+	private void downloadFromPubMedAbstract(final int startsDownloadFrom, PubMedDownloader pubmedDownloader,
+			boolean pubmedReady, final Repository repository, final int repositoryDownloadLimit,
+			final boolean directoryType) {
+		if (repositoryQuery.isPubmed() && pubmedReady) {
+			pubmedDownloader.downloadPapers(false, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
+					repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
+		}
+	}
+
+	private void downloadFromScopusAbstract(final int startsDownloadFrom, ScopusDownloader scopusDownloader,
+			boolean scopusReady, final Repository repository, int repositoryDownloadLimit,
+			final boolean directoryType) {
+		if (repositoryQuery.isScopus() && scopusReady) {
+			if (repositoryDownloadLimit > 6000) {
+				repositoryDownloadLimit = 6000;
 			}
+
+			scopusDownloader.downloadPapers(false, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
+					repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+		}
+	}
+
+	private void downloadFromScopusFullText(final int startsDownloadFrom, ScopusDownloader scopusDownloader,
+			boolean scopusReady, final Repository repository, int repositoryDownloadLimit,
+			final boolean directoryType) {
+		if (repositoryQuery.isScopus() && scopusReady) {
+			if (repositoryDownloadLimit > 6000) {
+				repositoryDownloadLimit = 6000;
+			}
+			scopusDownloader.downloadPapers(true, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
+					repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getScopusDownloadTo());
+		}
+	}
+
+	private void downloadFromPubMedFullText(final int startsDownloadFrom, PubMedDownloader pubmedDownloader,
+			boolean pubmedReady, final Repository repository, final int repositoryDownloadLimit,
+			final boolean directoryType) {
+		if (repositoryQuery.isPubmed() && pubmedReady) {
+			pubmedDownloader.downloadPapers(true, repository.isPdfToText(), repository.isKeepPdf(), directoryType,
+					repositoryDownloadLimit, startsDownloadFrom, repositoryQuery.getPubmedDownloadTo());
 		}
 	}
 

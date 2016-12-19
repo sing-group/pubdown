@@ -192,6 +192,12 @@ public class RepositoryQueryFormViewModel extends ViewModelUtils {
 
 		final boolean isNew = isNewRepositoryQuery();
 
+		if (repositoryQuery.isScopus() && repositoryQuery.isPubmed()) {
+			repositoryQuery.setDownloadFirst(repositoryQuery.isDownloadFirst());
+		} else {
+			repositoryQuery.setDownloadFirst(false);
+		}
+
 		if (isNew) {
 			tm.runInTransaction(em -> em.persist(repositoryQuery));
 		} else {

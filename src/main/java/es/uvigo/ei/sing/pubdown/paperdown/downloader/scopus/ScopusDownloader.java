@@ -104,38 +104,16 @@ public class ScopusDownloader implements Searcher {
 			String queryURL = SEARCH_REQUEST + "count=" + searchIncrease + "&query=" + this.query + "&apiKey="
 					+ this.apiKey + "&httpAccept=application%2F" + SEARCH_REQUEST_TYPE + "&start=";
 
-			// final ScopusXMLParser xmlParser = new
-			// ScopusXMLParser(this.httpClient, this.context, queryURL);
 			final ScopusHTMLParser htmlParser = new ScopusHTMLParser(this.httpClient, this.context);
 
 			for (int i = downloadFrom; i < downloadTo; i += searchIncrease) {
 				queryURL = queryURL + i;
-				// xmlParser.setQueryURL(queryURL + i);
 
 				if (aux < searchIncrease) {
 					queryURL = SEARCH_REQUEST + "count=" + aux + "&query=" + this.query + "&apiKey=" + this.apiKey
 							+ "&httpAccept=application%2F" + SEARCH_REQUEST_TYPE + "&start=" + i;
-					// xmlParser.setQueryURL(queryURL);
 				}
 
-				// final Map<String, String> urlsWithTitle = isCompletePaper ?
-				// xmlParser.getCompletePaperPDFURLs()
-				// : xmlParser.getAbstractPaperPDFURLs(this.apiKey);
-
-				// if (numberOfPapersInRepository(this.directory) <
-				// downloadLimit) {
-				// htmlParser.setUrlsWithTitle(urlsWithTitle);
-				// downloadCompleteOrAbstract(completePaperTitle,
-				// isCompletePaper, htmlParser, convertPDFtoTXT,
-				// keepPDF, directoryType);
-				// RepositoryManager.writeMetaData(this.directory, doi,
-				// paperTitle, completePaperTitle, date,
-				// authorList, isCompletePaper);
-				// authorList.clear();
-				// }
-
-				// scopusList.addAll(shouldDownloadPaper(xmlParser.getQueryURL(),
-				// isCompletePaper));
 				scopusList.addAll(shouldDownloadPaper(queryURL, isCompletePaper));
 
 				aux = aux - searchIncrease;
@@ -143,9 +121,6 @@ public class ScopusDownloader implements Searcher {
 
 			for (Scopus toDownload : scopusList) {
 				if (numberOfPapersInRepository(this.directory) < downloadLimit) {
-
-					System.out.println("Downloading: " + toDownload.getPaperUrl() + " - complete: "
-							+ toDownload.isCompletePaper());
 
 					downloadCompleteOrAbstract(toDownload, htmlParser, convertPDFtoTXT, keepPDF, directoryType);
 					RepositoryManager.writeMetaData(this.directory, toDownload.getDoi(), toDownload.getPaperTitle(),
@@ -288,15 +263,6 @@ public class ScopusDownloader implements Searcher {
 
 						if (child.getNodeName().equals("dc:title")) {
 							paperTitle = child.getFirstChild().getTextContent();
-							// if (paperTitle.contains(";")) {
-							// paperTitle = paperTitle.replace(";", " - ");
-							// }
-							// if (paperTitle.contains("/")) {
-							// paperTitle = paperTitle.replace("/", " - ");
-							// }
-							// if (paperTitle.contains(".")) {
-							// paperTitle = paperTitle.replace(".", " - ");
-							// }
 
 							paperTitle = paperTitle.replaceAll("[/|.|;]", " - ");
 							completePaperTitle = paperTitle;
@@ -334,84 +300,4 @@ public class ScopusDownloader implements Searcher {
 			htmlParser.downloadAbstractTXTs(scopus, this.directory, convertPDFtoTXT, keepPDF, directoryType);
 		}
 	}
-
-	// private boolean shouldDownloadPaper(final String query, final boolean
-	// isCompletePaper) {
-	// final HttpGet httpget = new HttpGet(query);
-	// try (final CloseableHttpResponse response =
-	// this.httpClient.execute(httpget, this.context)) {
-	// final DocumentBuilderFactory factory =
-	// DocumentBuilderFactory.newInstance();
-	// final DocumentBuilder builder = factory.newDocumentBuilder();
-	// final Document document = builder.parse(new
-	// InputSource(response.getEntity().getContent()));
-	// document.getDocumentElement().normalize();
-	// final NodeList errorElements = document.getElementsByTagName("error");
-	// if (errorElements.item(0) != null) {
-	// } else {
-	// final NodeList entryElements = document.getElementsByTagName("entry");
-	// for (int i = 0; i < entryElements.getLength(); i++) {
-	// final NodeList entryChildrens = entryElements.item(i).getChildNodes();
-	//
-	// for (int j = 0; j < entryChildrens.getLength(); j++) {
-	//
-	// final Node child = entryChildrens.item(j);
-	// if (child.getNodeName().equals("authors")) {
-	// final NodeList authorsChildren = child.getChildNodes();
-	// for (int k = 0; k < authorsChildren.getLength(); k++) {
-	// final NodeList author = authorsChildren.item(k).getChildNodes();
-	// if (!author.item(0).getTextContent().equalsIgnoreCase("NA")) {
-	// final String authorName = author.item(0).getTextContent();
-	// final String authorSurName = author.item(1).getTextContent();
-	// authorList.add(authorSurName + " " + authorName);
-	// }
-	// }
-	// }
-	//
-	// if (child.getNodeName().equals("prism:coverDate")) {
-	// date = child.getFirstChild().getTextContent();
-	// if (date.contains(";")) {
-	// date = date.replace(";", "-");
-	// }
-	// }
-	// }
-	//
-	// for (int j = 0; j < entryChildrens.getLength(); j++) {
-	// final Node child = entryChildrens.item(j);
-	//
-	// if (child.getNodeName().equals("dc:title")) {
-	// paperTitle = child.getFirstChild().getTextContent();
-	// if (paperTitle.contains(";")) {
-	// paperTitle = paperTitle.replace(";", " - ");
-	// }
-	// if (paperTitle.contains("/")) {
-	// paperTitle = paperTitle.replace("/", " - ");
-	// }
-	// if (paperTitle.contains(".")) {
-	// paperTitle = paperTitle.replace(".", " - ");
-	// }
-	// completePaperTitle = paperTitle;
-	// if (paperTitle.length() > 130) {
-	// paperTitle = paperTitle.substring(0, 130);
-	// }
-	// }
-	//
-	// if (child.getNodeName().equals("prism:doi")) {
-	// doi = child.getFirstChild().getTextContent();
-	//
-	// final Set<String> auxList =
-	// RepositoryManager.readDOIInMetaData(this.directory, doi);
-	// final String paperType = isCompletePaper ? "full" : "abstract";
-	//
-	// return !auxList.contains(paperType);
-	// }
-	// }
-	// }
-	// }
-	// } catch (IOException | SAXException | ParserConfigurationException e) {
-	// e.printStackTrace();
-	// }
-	// return false;
-	// }
-
 }

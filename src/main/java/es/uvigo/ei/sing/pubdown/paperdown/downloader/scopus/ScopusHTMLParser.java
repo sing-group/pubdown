@@ -25,40 +25,19 @@ public class ScopusHTMLParser {
 
 	private final CloseableHttpClient httpClient;
 	private final HttpClientContext context;
-	// private Map<String, String> urlsWithTitle;
 
 	public ScopusHTMLParser(final CloseableHttpClient httpClient, final HttpClientContext context) {
 		super();
 		this.httpClient = httpClient;
 		this.context = context;
 	}
-	// public ScopusHTMLParser(final CloseableHttpClient httpClient, final
-	// HttpClientContext context,
-	// final Map<String, String> urlsWithTitle) {
-	// super();
-	// this.httpClient = httpClient;
-	// this.context = context;
-	// this.urlsWithTitle = urlsWithTitle;
-	// }
-
-	// public Map<String, String> getUrlsWithTitle() {
-	// return urlsWithTitle;
-	// }
-	//
-	// public void setUrlsWithTitle(final Map<String, String> urlsWithTitle) {
-	// this.urlsWithTitle = urlsWithTitle;
-	// }
 
 	public void downloadCompletePDFs(final Scopus scopus, final String directory, final boolean convertPDFtoTXT,
 			final boolean keepPDF, final boolean directoryType) {
 		try {
-			System.out.println("URL COMPLETE PAPER: " + scopus.getPaperUrl());
 			final Document document = Jsoup.connect(scopus.getPaperUrl()).get();
-			System.out.println(document);
 			final Elements link = document.select("#pdfLink");
 			final String redirectLink = link.attr("pdfurl");
-			System.out.println("link: " + link);
-			System.out.println("redirect: " + redirectLink);
 
 			if (!redirectLink.isEmpty()) {
 				final HttpGet httpGet = new HttpGet(redirectLink);
@@ -85,54 +64,4 @@ public class ScopusHTMLParser {
 		RepositoryManager.generatePDFFile(scopus.getPaperUrl(), scopus.getPaperTitle(), scopus.getCompletePaperTitle(),
 				directory, directorySuffix, scopus.isCompletePaper(), convertPDFtoTXT, keepPDF, directoryType);
 	}
-
-	// public void downloadCompletePDFs(final String completeFileName, final
-	// String directory,
-	// final boolean isCompletePaper, final boolean convertPDFtoTXT, final
-	// boolean keepPDF,
-	// final boolean directoryType) {
-	// this.urlsWithTitle.forEach((url, fileName) -> {
-	// try {
-	// System.out.println("DOWNADLOAD COMPLETE: "+url);
-	// final Document document = Jsoup.connect(url).get();
-	// final Elements link = document.select("#pdfLink");
-	// final String redirectLink = link.attr("pdfurl");
-	// if (!redirectLink.isEmpty()) {
-	// final HttpGet httpGet = new HttpGet(redirectLink);
-	// final CloseableHttpResponse response = this.httpClient.execute(httpGet,
-	// context);
-	// final HttpHost target = context.getTargetHost();
-	// final List<URI> redirectLocations = context.getRedirectLocations();
-	// final URI location = URIUtils.resolve(httpGet.getURI(), target,
-	// redirectLocations);
-	// response.close();
-	// final String directorySuffix = directoryType ? COMPLETE_PAPERS :
-	// SUB_FOLDER_NAME;
-	//
-	// RepositoryManager.generatePDFFile(location.toASCIIString(), fileName,
-	// completeFileName, directory,
-	// directorySuffix, isCompletePaper, convertPDFtoTXT, keepPDF,
-	// directoryType);
-	// }
-	// } catch (URISyntaxException | IOException e) {
-	// e.printStackTrace();
-	// }
-	// });
-	// }
-	//
-	// public void downloadAbstractTXTs(final String completeFileName, final
-	// String directory,
-	// final boolean isCompletePaper, final boolean convertPDFtoTXT, final
-	// boolean keepPDF,
-	// final boolean directoryType) {
-	// this.urlsWithTitle.forEach((url, fileName) -> {
-	// System.out.println("DOWNADLOAD ABSTRACT: "+url);
-	// final String directorySuffix = directoryType ? ABSTRACT_PAPERS :
-	// SUB_FOLDER_NAME;
-	//
-	// RepositoryManager.generatePDFFile(url, fileName, completeFileName,
-	// directory, directorySuffix,
-	// isCompletePaper, convertPDFtoTXT, keepPDF, directoryType);
-	// });
-	// }
 }

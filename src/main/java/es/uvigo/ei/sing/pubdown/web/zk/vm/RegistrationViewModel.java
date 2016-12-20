@@ -155,19 +155,6 @@ public class RegistrationViewModel extends ViewModelUtils {
 		};
 	}
 
-	// public Validator getApikeyValidator() {
-	// return new AbstractValidator() {
-	// @Override
-	// public void validate(final ValidationContext ctx) {
-	// final String apikey = (String) ctx.getProperty().getValue();
-	//
-	// if (isEmpty(apikey)) {
-	// addInvalidMessage(ctx, "Apikey can't be empty");
-	// }
-	// }
-	// };
-	// }
-
 	/**
 	 * Checks if exists a {@link Registration} in DB {@link Registration} table
 	 * 

@@ -29,30 +29,12 @@ public class PubMedHTMLParser {
 
 	private final CloseableHttpClient httpClient;
 	private final HttpClientContext context;
-	// private List<String> idList;
 
 	public PubMedHTMLParser(final CloseableHttpClient httpClient, final HttpClientContext context) {
 		super();
 		this.httpClient = httpClient;
 		this.context = context;
 	}
-
-	// public PubMedHTMLParser(final CloseableHttpClient httpClient, final
-	// HttpClientContext context,
-	// final List<String> idList) {
-	// super();
-	// this.httpClient = httpClient;
-	// this.context = context;
-	//// this.idList = idList;
-	// }
-
-	// public List<String> getIdList() {
-	// return idList;
-	// }
-	//
-	// public void setIdList(final List<String> idList) {
-	// this.idList = idList;
-	// }
 
 	public void download(final PubMed pubmed, final String directory, final boolean convertPDFtoTXT,
 			final boolean keepPDF, final boolean directoryType) {
@@ -108,75 +90,5 @@ public class PubMedHTMLParser {
 		}
 		return null;
 	}
-
-	// public void download(final String directory, final boolean
-	// isCompletePaper, final boolean convertPDFtoTXT,
-	// final boolean keepPDF, final boolean directoryType) {
-	// for (final String id : this.idList) {
-	// final String queryURL = SEARCH_ID + id;
-	// String paperTitle = "PUBMED_DEFAULT_NAME";
-	// String completePaperTitle = paperTitle;
-	// try {
-	// Document document = Jsoup.connect(queryURL).get();
-	//
-	// final Elements titlesTexts = document.select("h1");
-	// for (final Element titleText : titlesTexts) {
-	// if (!titleText.text().equals("PubMed")) {
-	// paperTitle = titleText.text().replaceAll("[/|.]", "_");
-	// completePaperTitle = paperTitle;
-	// // paperTitle = paperTitle.substring(0,
-	// // paperTitle.length() - 1);
-	// if (paperTitle.length() > 130) {
-	// paperTitle = paperTitle.substring(0, 130);
-	// }
-	// }
-	// }
-	// if (isCompletePaper) {
-	// final Elements links = document.select("div.icons > a");
-	// final List<String> downloadedPDFList = new LinkedList<>();
-	// if (links != null) {
-	// String paperURL = links.attr("href");
-	// paperURL = redirectToURL(paperURL);
-	// document = Jsoup.connect(paperURL).get();
-	// final Elements pdfLinks = document.select("a");
-	// if (pdfLinks != null) {
-	// for (final Element link : pdfLinks) {
-	// final String href = link.absUrl("href");
-	// if (href.contains("pdf")) {
-	// paperURL = redirectToURL(href);
-	// if (!downloadedPDFList.contains(paperURL)) {
-	// downloadedPDFList.add(paperURL);
-	// final String directorySuffix = directoryType ? COMPLETE_PAPERS
-	// : SUB_FOLDER_NAME;
-	//
-	// RepositoryManager.generatePDFFile(paperURL, paperTitle,
-	// completePaperTitle,
-	// directory, directorySuffix, isCompletePaper, convertPDFtoTXT, keepPDF,
-	// directoryType);
-	// }
-	// }
-	// }
-	// }
-	// }
-	// } else {
-	// final Elements abstractTexts = document.select("div.abstr > div");
-	// if (abstractTexts != null) {
-	// final String htmlText = Jsoup.parse(abstractTexts.text()).text();
-	// if (!htmlText.isEmpty()) {
-	// final String directorySuffix = directoryType ? ABSTRACT_PAPERS :
-	// SUB_FOLDER_NAME;
-	//
-	// RepositoryManager.generateTXTFile(paperTitle, completePaperTitle,
-	// htmlText, directory,
-	// directorySuffix, isCompletePaper, directoryType);
-	// }
-	// }
-	// }
-	// } catch (final IOException e) {
-	// e.printStackTrace();
-	// }
-	//
-	// }
-	// }
 
 }

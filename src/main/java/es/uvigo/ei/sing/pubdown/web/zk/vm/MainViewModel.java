@@ -877,8 +877,6 @@ public class MainViewModel extends ViewModelUtils {
 
 		Collections.sort(localDateTimes);
 
-		System.out.println(localDateTimes);
-
 		return localDateTimes.get(0);
 
 	}
@@ -1090,20 +1088,6 @@ public class MainViewModel extends ViewModelUtils {
 		}
 		return new LinkedList<>();
 	}
-
-	// private Set<String> readRepositoryPapers() {
-	// if (isRepositoryReadyToDownload()) {
-	// final String userLogin = this.repository.getUser().getLogin() +
-	// File.separator;
-	// final String basePath = RepositoryManager.getRepositoryPath() +
-	// File.separator + userLogin;
-	// final String repositoryPath = this.repository.getPath() + File.separator;
-	// final String finalPath = basePath + repositoryPath;
-	//
-	// return RepositoryManager.readPaperTitleFromLog(finalPath);
-	// }
-	// return new HashSet<String>();
-	// }
 
 	@GlobalCommand(MainViewModel.GC_REFRESH_DATA)
 	public void refreshData(@BindingParam("data") String toRefresh) {

@@ -75,15 +75,6 @@ public class ScopusXMLParser {
 						}
 						if (child.getNodeName().equals("dc:title")) {
 							paperTitle = child.getFirstChild().getTextContent();
-							// if (paperTitle.contains(";")) {
-							// paperTitle = paperTitle.replace(";", " - ");
-							// }
-							// if (paperTitle.contains("/")) {
-							// paperTitle = paperTitle.replace("/", " - ");
-							// }
-							// if (paperTitle.contains(".")) {
-							// paperTitle = paperTitle.replace(".", " - ");
-							// }
 
 							paperTitle = paperTitle.replaceAll("[/|.|;]", " - ");
 							if (paperTitle.length() > 130) {

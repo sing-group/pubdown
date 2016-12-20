@@ -94,25 +94,6 @@ public class ExecutionEngine {
 	synchronized public void executeTask(final RepositoryQueryScheduled repositoryQueryScheduled) {
 		final TaskExecutor taskExecutor = new TaskExecutor(repositoryQueryScheduled);
 		executor.submit(taskExecutor);
-
-		// final TaskExecutor taskExecutor = new
-		// TaskExecutor(repositoryQueryScheduled);
-		// final RepositoryQuery repositoryQuery =
-		// repositoryQueryScheduled.getRepositoryQuery();
-		// final RepositoryQueryTask task = repositoryQuery.getTask();
-		// final Integer taskId = task.getId();
-		//
-		// if (taskReadyToBeScheduled(repositoryQuery) &&
-		// !scheduledTasks.containsKey(taskId)) {
-		// scheduledTasks.put(taskId, new LinkedList<ScheduledFuture<?>>());
-		// final ScheduledFuture<?> scheduledFuture =
-		// executor.schedule(taskExecutor, 0, TimeUnit.MILLISECONDS);
-		// final List<ScheduledFuture<?>> scheduledFutures =
-		// scheduledTasks.get(taskId);
-		// scheduledFutures.add(scheduledFuture);
-		// this.scheduledTasks.put(taskId, scheduledFutures);
-		// }
-
 	}
 
 	synchronized public boolean isScheduled(final RepositoryQueryScheduled repositoryQueryScheduled) {

@@ -418,23 +418,6 @@ public class RepositoryManager {
 	public static List<Paper> readPaperTitleFromLog(final String finalPath) {
 		final List<Paper> papers = new LinkedList<>();
 		Stream<String> stream = null;
-		// try {
-		// stream = Files.lines(Paths.get(finalPath + LOG_FILE));
-		// if (stream != null) {
-		// stream.forEach((line) -> {
-		// final String[] paper = line.split(SEMICOLON_DELIMITER);
-		// final String paperTitle = paper[1];
-		// final String isPaperDownloadedOrError = paper[2];
-		// if (isPaperDownloadedOrError.equals("OK") &&
-		// !papers.contains(paperTitle)) {
-		// papers.add(paperTitle);
-		// }
-		// });
-		// }
-		// } catch (final IOException e) {
-		// e.printStackTrace();
-		// }
-
 		try {
 			stream = Files.lines(Paths.get(finalPath + LOG_FILE));
 			if (stream != null) {

@@ -548,33 +548,6 @@ public class AdministrationViewModel extends ViewModelUtils {
 		}
 	}
 
-	// /**
-	// * Updates the user and queries list
-	// *
-	// * @param repositoryQuery
-	// * the {@link RepositoryQuery} to add in the queries list
-	// */
-	// @GlobalCommand
-	// public void addRepositoryQuery(@BindingParam("repositoryQuery") final
-	// RepositoryQuery repositoryQuery) {
-	// queries.add(repositoryQuery);
-	// queries = getAllQueries();
-	// users = getAllUsers();
-	// postNotifyChangeAdmins(this, "queries", "users");
-	// }
-	//
-	// @GlobalCommand
-	// public void updateRepositoryQuery(@BindingParam("repositoryQuery") final
-	// RepositoryQuery repositoryQuery) {
-	// final int indexOf = this.queries.indexOf(repositoryQuery);
-	// this.queries.remove(indexOf);
-	// this.queries.add(indexOf, repositoryQuery);
-	//
-	// sortQueries(this.queries);
-	//
-	// postNotifyChangeAdmins(this, "queries", "users");
-	// }
-
 	@Command
 	public void removeRepositoryQuery(@BindingParam("current") final RepositoryQuery repositoryQuery) {
 		findRepositoryQuery(repositoryQuery);
@@ -626,7 +599,6 @@ public class AdministrationViewModel extends ViewModelUtils {
 	@Command
 	@NotifyChange("valid")
 	public void checkGlobalConfiguration() {
-		System.out.println(isValid());
 	}
 
 	public Validator getValueValidator() {

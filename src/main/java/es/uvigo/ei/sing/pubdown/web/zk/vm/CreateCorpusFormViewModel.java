@@ -25,6 +25,7 @@ import es.uvigo.ei.sing.pubdown.paperdown.downloader.RepositoryManager;
 import es.uvigo.ei.sing.pubdown.web.entities.Repository;
 import es.uvigo.ei.sing.pubdown.web.entities.User;
 import weka.core.Instances;
+import weka.core.Stopwords;
 import weka.core.converters.ConverterUtils.DataSink;
 import weka.core.converters.TextDirectoryLoader;
 import weka.core.stopwords.StopwordsHandler;
@@ -111,8 +112,8 @@ public class CreateCorpusFormViewModel {
 
 				final File directory = new File(repositoryPath);
 
-				final String tmpDir = TEMPORAL_DIRECTORY + userLogin + File.separator + this.arffName
-						+ File.separator + repositoryClassName;
+				final String tmpDir = TEMPORAL_DIRECTORY + userLogin + File.separator + this.arffName + File.separator
+						+ repositoryClassName;
 
 				RepositoryManager.checkIfDirectoryExist(tmpDir);
 
@@ -132,8 +133,8 @@ public class CreateCorpusFormViewModel {
 			stringToWordVector.setLowerCaseTokens(true);
 			stringToWordVector.setWordsToKeep(10000);
 			stringToWordVector.setIDFTransform(true);
-			stringToWordVector
-					.setStopwordsHandler(new RegExStopwords("([\\W+]|[0-9]|^[a-zA-Z]$|@|n\\/a|[\\%\\€\\$\\£])"));
+			stringToWordVector.setStopwordsHandler(
+					new CustomStopWordsHandler("([\\W+]|[0-9]|^[a-zA-Z]$|@|_|n\\/a|[\\%\\€\\$\\£])"));
 			try {
 				stringToWordVector.setInputFormat(rawData);
 
@@ -152,17 +153,22 @@ public class CreateCorpusFormViewModel {
 
 	}
 
-	private class RegExStopwords implements StopwordsHandler {
+	private class CustomStopWordsHandler implements StopwordsHandler {
 		private final Pattern pattern;
+		private Stopwords stopWords = new Stopwords();
 
-		public RegExStopwords(String regexString) {
+		public CustomStopWordsHandler(String regexString) {
 			pattern = Pattern.compile(regexString);
 		}
 
 		@Override
 		public boolean isStopword(String s) {
+			if(stopWords.is(s)){
+				return true;
+			}
 			Matcher matcher = pattern.matcher(s);
 			return matcher.find();
 		}
 	}
+
 }

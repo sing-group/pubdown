@@ -93,8 +93,6 @@
 											<checkbox label="full text"
 												disabled="true" checked="@bind(vm.repository.fulltextPaper)"
 												onCheck="@command('checkRepository')" />
-											<label
-												value=" (You must select at least one)" />
 										</hlayout>
 										<hlayout valign="middle">
 											<label value="PDF: " />
